@@ -5,3 +5,9 @@ task:
     table_destination: "data_samples"
     schema: "dbo"
     active: true
+
+  - name: "Carga de clienets Mensuales"
+    file: "data/input/cliente.csv"
+    table_destination: "cliente"
+    schema: "dbo"
+    active: true

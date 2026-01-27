@@ -9,3 +9,16 @@ wheels/
 # Virtual environments
 .venv
 settings.yaml
+
+# Extensiones de C y carpetas de caché de herramientas
+.ipynb_checkpoints
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.polars_cache/
+
+# Archivos de datos pesados 
+*.csv
+*.ods
+*.xlsx
+*.parquet
