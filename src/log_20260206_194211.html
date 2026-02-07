@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log Viewer - log_20260206_194211.json</title>
+    <style>
+/* ===================================
+   LOG VIEWER - Tema Azul Océano
+   =================================== */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --bg-gradient-start: #0f0f14;
+    --bg-gradient-end: #9fb6e7;
+    --container-bg: #ebf1fa;
+    --text-primary: #1e293b;
+    --text-secondary: #64748b;
+    --header-bg: #1e293b;
+    --stats-bg: #fbfcff;
+    --card-bg: rgb(213, 223, 235);
+    --entry-bg: #f0f7ff;
+    --entry-hover-bg: #e0f2fe;
+    --border-color: #bae6fd;
+    --accent-color: #81a8bb;
+    --accent-hover: #81a8bb;
+    --value-bg: #f0f9ff;
+    --shadow: rgba(14, 165, 233, 0.1);
+    --shadow-hover: rgba(14, 165, 233, 0.2);
+}
+
+[data-theme="dark"] {
+    --bg-gradient-start: #0c4a6e;
+    --bg-gradient-end: #075985;
+    --container-bg: #082f49;
+    --text-primary: #e0f2fe;
+    --text-secondary: #7dd3fc;
+    --header-bg: #082f49;
+    --stats-bg: #0c4a6e;
+    --card-bg: #075985;
+    --entry-bg: #075985;
+    --entry-hover-bg: #0369a1;
+    --border-color: #0284c7;
+    --accent-color: #282b2fe0;
+    --accent-hover: #282b2fe0;
+    --value-bg: #0c4a6e;
+    --shadow: rgba(56, 189, 248, 0.2);
+    --shadow-hover: rgba(56, 189, 248, 0.3);
+}
+
+/* Mismo CSS que los anteriores */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #ebececdc;
+    padding: 20px;
+    min-height: 100vh;
+    transition: background 0.3s ease;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    background: var(--container-bg);
+    border-radius: 12px;
+    box-shadow: 0 20px 60px var(--shadow);
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.header {
+    background: var(--header-bg);
+    color: white;
+    padding: 30px;
+    text-align: center;
+    position: relative;
+}
+
+.header h1 {
+    font-size: 28px;
+    margin-bottom: 10px;
+}
+
+.header p {
+    opacity: 0.9;
+    font-size: 14px;
+}
+
+.theme-toggle {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    background: rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.theme-toggle:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.05);
+}
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    padding: 20px 30px;
+    background: var(--stats-bg);
+    border-bottom: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+}
+
+.stat-card {
+    background: var(--card-bg);
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px var(--shadow);
+    transition: all 0.3s ease;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    margin-bottom: 5px;
+}
+
+.stat-value {
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--accent-color);
+}
+
+.timeline {
+    padding: 30px;
+}
+
+.log-entry {
+    margin-bottom: 20px;
+    border-left: 4px solid var(--accent-color);
+    background: var(--entry-bg);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.log-entry:hover {
+    box-shadow: 0 4px 12px var(--shadow-hover);
+    transform: translateX(5px);
+}
+
+.log-header {
+    padding: 15px 20px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--card-bg);
+    transition: all 0.3s ease;
+}
+
+.log-header:hover {
+    background: var(--entry-hover-bg);
+}
+
+.timestamp {
+    font-family: 'Courier New', monospace;
+    font-size: 18px;
+    color: var(--text-secondary);
+    font-weight: bold;
+}
+
+.evento {
+    display: inline-block;
+    background: var(--accent-color);
+    color: white;
+    padding: 6px 16px;
+    border-radius: 8px;
+    font-size: 18px;
+    font-weight: 600;
+    margin-left: 15px;
+}
+
+.toggle-icon {
+    font-size: 20px;
+    color: var(--accent-color);
+    transition: transform 0.3s ease;
+}
+
+.log-entry.expanded .toggle-icon {
+    transform: rotate(90deg);
+}
+
+.detalles {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    background: var(--card-bg);
+}
+
+.log-entry.expanded .detalles {
+    max-height: 2000px;
+}
+
+.detalles-content {
+    padding: 20px;
+    border-top: 1px solid var(--border-color);
+}
+
+.detalle-item {
+    margin-bottom: 15px;
+    padding-left: 20px;
+    border-left: 2px solid var(--border-color);
+}
+
+.detalle-key {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 17px;
+    margin-bottom: 5px;
+}
+
+.detalle-value {
+    color: var(--text-secondary);
+    font-size: 18px;
+    font-family: 'Courier New', monospace;
+    background: var(--value-bg);
+    padding: 8px 12px;
+    border-radius: 4px;
+    word-break: break-all;
+}
+
+.detalle-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.detalle-list-item {
+    background: var(--accent-color);
+    color: rgb(240, 240, 240);
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 18px;
+}
+
+.expand-all {
+    background: var(--accent-color);
+    color: rgb(240, 240, 240);
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 18px;
+    margin-bottom: 20px;
+    transition: all 0.3s ease;
+}
+
+.expand-all:hover {
+    background: var(--accent-hover);
+    transform: scale(1.05);
+}
+
+/* ===================================
+   SECCIÓN DE COLUMNAS (al final)
+   =================================== */
+
+.columnas-section {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 2px dashed var(--border-color) !important;
+}
+
+.toggle-columns {
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 18px;
+    margin-left: 12px;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.toggle-columns:hover {
+    background: var(--accent-hover);
+    transform: scale(1.05);
+}
+
+.toggle-columns-icon {
+    transition: transform 0.3s ease;
+    display: inline-block;
+}
+
+.toggle-columns.active .toggle-columns-icon {
+    transform: rotate(180deg);
+}
+
+.columnas-container {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease;
+    margin-top: 12px;
+}
+
+.columnas-container.show {
+    max-height: 2000px;
+}
+
+.columnas-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px;
+    padding: 12px;
+    background: var(--value-bg);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.columna-item {
+    background: var(--card-bg);
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-family: 'Courier New', monospace;
+    color: var(--text-primary);
+    border-left: 3px solid var(--accent-color);
+    transition: all 0.2s ease;
+}
+
+.columna-item:hover {
+    background: var(--entry-hover-bg);
+    transform: translateX(3px);
+}
+
+.col-num {
+    color: var(--accent-color);
+    font-weight: bold;
+    margin-right: 6px;
+    font-size: 11px;
+}
+
+/* Variante compacta para muchas columnas */
+@media (max-width: 768px) {
+    .columnas-grid {
+        grid-template-columns: 1fr;
+    }
+}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="theme-toggle" onclick="toggleTheme()">
+                <span id="theme-icon">🌙</span>
+                <span id="theme-text">Modo Oscuro</span>
+            </button>
+            <h1>📊 Visor de Logs</h1>
+            <p>log_20260206_194211.json</p>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-label">Total de Eventos</div>
+                <div class="stat-value">2</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Primer Evento</div>
+                <div class="stat-value">19:42:12</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Último Evento</div>
+                <div class="stat-value">19:42:12</div>
+            </div>
+        </div>
+        
+        <div class="timeline">
+            <button class="expand-all" onclick="toggleAll()">Expandir/Colapsar Todo</button>
+
+            <div class="log-entry" id="entry-0">
+                <div class="log-header" onclick="toggleEntry(0)">
+                    <div>
+                        <span class="timestamp">2026-02-06T19:42:12.071450</span>
+                        <span class="evento">analisis_inicial</span>
+                    </div>
+                    <span class="toggle-icon">▶</span>
+                </div>
+                <div class="detalles">
+                    <div class="detalles-content">
+                        <div class="detalle-item">
+                            <div class="detalle-key">archivo_origen</div>
+                            <div class="detalle-value">C:\Users\octmi\OneDrive\Documentos\TI\Project_ETL\data\input\cliente.csv</div>
+                        </div>
+                        <div class="detalle-item">
+                            <div class="detalle-key">encoding</div>
+                            <div class="detalle-value">utf8</div>
+                        </div>
+                        <div class="detalle-item">
+                            <div class="detalle-key">delimitador</div>
+                            <div class="detalle-value">;</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="log-entry" id="entry-1">
+                <div class="log-header" onclick="toggleEntry(1)">
+                    <div>
+                        <span class="timestamp">2026-02-06T19:42:12.071764</span>
+                        <span class="evento">estadisticas_carga</span>
+                    </div>
+                    <span class="toggle-icon">▶</span>
+                </div>
+                <div class="detalles">
+                    <div class="detalles-content">
+                        <div class="detalle-item">
+                            <div class="detalle-key">total_filas</div>
+                            <div class="detalle-value">480,485</div>
+                        </div>
+                        <div class="detalle-item">
+                            <div class="detalle-key">total_columnas</div>
+                            <div class="detalle-value">11</div>
+                        </div>
+                        <div class="detalle-item columnas-section">
+                            <div class="detalle-key">
+                                columnas (11 campos)
+                                <button class="toggle-columns" onclick="toggleColumns(event, 1)">
+                                    <span class="toggle-columns-icon">▼</span> Mostrar columnas
+                                </button>
+                            </div>
+                            <div class="columnas-container" id="columnas-1">
+                                <div class="columnas-grid">
+                                    <div class="columna-item"><span class="col-num">1.</span> indice</div>
+                                    <div class="columna-item"><span class="col-num">2.</span> rut</div>
+                                    <div class="columna-item"><span class="col-num">3.</span> nombre</div>
+                                    <div class="columna-item"><span class="col-num">4.</span> direccion</div>
+                                    <div class="columna-item"><span class="col-num">5.</span> telefono</div>
+                                    <div class="columna-item"><span class="col-num">6.</span> producto</div>
+                                    <div class="columna-item"><span class="col-num">7.</span> fecha_envio</div>
+                                    <div class="columna-item"><span class="col-num">8.</span> correspondencia</div>
+                                    <div class="columna-item"><span class="col-num">9.</span> tasa</div>
+                                    <div class="columna-item"><span class="col-num">10.</span> segmento</div>
+                                    <div class="columna-item"><span class="col-num">11.</span> oficina</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Cargar tema guardado
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        updateThemeButton(savedTheme);
+        
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeButton(newTheme);
+        }
+        
+        function updateThemeButton(theme) {
+            const icon = document.getElementById('theme-icon');
+            const text = document.getElementById('theme-text');
+            
+            if (theme === 'dark') {
+                icon.textContent = '☀️';
+                text.textContent = 'Modo Claro';
+            } else {
+                icon.textContent = '🌙';
+                text.textContent = 'Modo Oscuro';
+            }
+        }
+        
+        function toggleEntry(id) {
+            const entry = document.getElementById('entry-' + id);
+            entry.classList.toggle('expanded');
+        }
+        
+        function toggleColumns(event, entryId) {
+            event.stopPropagation(); // Evitar que se cierre el entry padre
+            
+            const container = document.getElementById('columnas-' + entryId);
+            const button = event.currentTarget;
+            
+            container.classList.toggle('show');
+            button.classList.toggle('active');
+            
+            if (container.classList.contains('show')) {
+                button.innerHTML = '<span class="toggle-columns-icon">▼</span> Ocultar columnas';
+            } else {
+                button.innerHTML = '<span class="toggle-columns-icon">▼</span> Mostrar columnas';
+            }
+        }
+        
+        let allExpanded = false;
+        function toggleAll() {
+            const entries = document.querySelectorAll('.log-entry');
+            allExpanded = !allExpanded;
+            
+            entries.forEach(entry => {
+                if (allExpanded) {
+                    entry.classList.add('expanded');
+                } else {
+                    entry.classList.remove('expanded');
+                }
+            });
+        }
+    </script>
+</body>
+</html>

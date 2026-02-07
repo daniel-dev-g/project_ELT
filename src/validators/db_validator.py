@@ -2,7 +2,7 @@ from sqlalchemy import create_engine, inspect, text
 import urllib
 
 
-def validar_conexion_db(engine) -> bool:
+def check_db_connection(engine) -> bool:
     """Valida que el engine puede conectarse y ejecutar una consulta básica."""
     try:
         with engine.connect() as conn:
@@ -15,7 +15,7 @@ def validar_conexion_db(engine) -> bool:
         return False
 
         
-def valida_existencia_tabla(engine_global: str, tabla: str, schema: str = "dbo") -> bool:
+def check_table_exists(engine_global: str, tabla: str, schema: str = "dbo") -> bool:
     try:
         inspector = inspect(engine_global)
         # has_table es el estándar de SQLAlchemy 2.0+
@@ -35,7 +35,7 @@ def valida_existencia_tabla(engine_global: str, tabla: str, schema: str = "dbo")
 
 import re
 
-def valida_permiso_bulk(engine_global) -> bool:
+def check_bulk_permission(engine_global) -> bool:
     """
     Verifica si el usuario actual tiene permisos de BULK INSERT en el servidor.
     """

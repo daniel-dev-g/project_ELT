@@ -2,7 +2,7 @@ import pathlib
 import os
 
 
-def valida_ruta(ruta: str, extension: str) -> bool:
+def validate_path(ruta: str, extension: str) -> bool:
     path = pathlib.Path(ruta)
 
     # 1. ¿Existe?
