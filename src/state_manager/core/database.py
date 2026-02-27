@@ -1,8 +1,9 @@
-import pyodbc
-import urllib.parse
+""" database.py - Módulo para manejo de conexiones a la base de datos y carga de configuración """
+
 from contextlib import contextmanager
-import yaml
 import os
+import pyodbc
+import yaml
 from src.state_manager.core.query_loader import create_query_loader
 
 def load_config():
@@ -17,9 +18,9 @@ def get_connection_string(config=None):
     """Genera connection string para pyodbc"""
     if config is None:
         config = load_config()
-    
+
     driver = config.get('driver', 'ODBC Driver 17 for SQL Server')
-    
+
     params = {
         'DRIVER': f'{{{driver}}}',
         'SERVER': config['server'],
@@ -27,7 +28,7 @@ def get_connection_string(config=None):
         'Trusted_Connection': config.get('trusted_connection', 'yes'),
         'Encrypt': config.get('encrypt', 'no')
     }
-    
+
     return ';'.join([f'{k}={v}' for k, v in params.items()])
 
 @contextmanager
@@ -54,4 +55,4 @@ def get_metadata_schema():
 def get_queries():
     """Obtiene cargador de queries con schema correcto"""
     schema = get_metadata_schema()
-    return create_query_loader(schema)  # ← NUEVA FUNCIÓN
+    return create_query_loader(schema)

@@ -1,2 +1,0 @@
-{"timestamp": "2026-02-06T19:42:12.071450", "evento": "analisis_inicial", "detalles": {"archivo_origen": "C:\\Users\\octmi\\OneDrive\\Documentos\\TI\\Project_ETL\\data\\input\\cliente.csv", "encoding": "utf8", "delimitador": ";"}}
-{"timestamp": "2026-02-06T19:42:12.071764", "evento": "estadisticas_carga", "detalles": {"columnas": ["indice", "rut", "nombre", "direccion", "telefono", "producto", "fecha_envio", "correspondencia", "tasa", "segmento", "oficina"], "total_filas": 480485, "total_columnas": 11}}

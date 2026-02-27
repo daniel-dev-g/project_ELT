@@ -1,9 +1,11 @@
-# log_csv.py
+""" log_csv.py """
 
 import logging
 import json
 from datetime import datetime
 from pathlib import Path
+
+
 
 # Crear logger específico para JSON (no usa el root logger)
 json_logger = logging.getLogger('json_audit')
@@ -23,10 +25,10 @@ json_handler.setFormatter(logging.Formatter('%(message)s'))
 json_logger.addHandler(json_handler)
 
 
-def registrar(evento, contenido):
+def registrar_log(evento, contenido):
     """
     Registra un evento en formato JSON.
-    
+
     Args:
         evento: Nombre del evento (ej: 'analisis_inicial')
         contenido: Diccionario con los detalles del evento
