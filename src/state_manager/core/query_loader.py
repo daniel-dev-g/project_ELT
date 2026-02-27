@@ -4,6 +4,7 @@ Implementación del QueryLoader.
 """
 import os
 import re
+import logging
 from typing import Dict
 
 class QueryLoader:
@@ -32,10 +33,10 @@ class QueryLoader:
         ]
 
         if not archivos_sql:
-            print("⚠️  No se encontraron archivos .sql")
+            logging.warning("No se encontraron archivos .sql")
             return
 
-        print(f"📂 Cargando {len(archivos_sql)} archivo(s) SQL...")
+        logging.info("Cargando %d archivo(s) SQL...", len(archivos_sql))
 
         for archivo_sql in archivos_sql:
             ruta_completa = os.path.join(directorio_sql, archivo_sql)
@@ -65,7 +66,7 @@ class QueryLoader:
             coincidencias = list(re.finditer(patron, contenido, re.DOTALL))
 
             if not coincidencias:
-                print(f"   ⚠️  {os.path.basename(ruta_archivo)}: Sin queries nombradas")
+                logging.warning("%s: Sin queries nombradas", os.path.basename(ruta_archivo))
                 return
 
             for coincidencia in coincidencias:
@@ -77,12 +78,12 @@ class QueryLoader:
 
                 if sql_limpio:
                     self._cache[nombre_query] = sql_limpio
-                    print(f"   ✅ {nombre_query}")
+                    logging.info("%s", nombre_query)
                 else:
-                    print(f"   ⚠️  {nombre_query}: Query vacía")
+                    logging.warning("%s: Query vacía", nombre_query)
 
         except ImportError as error:
-            print(f"❌ Error cargando {ruta_archivo}: {error}")
+            logging.error("Error cargando %s: %s", ruta_archivo, error)
 
     def _limpiar_query(self, sql: str) -> str:
         """Limpia comentarios y espacios innecesarios del SQL"""

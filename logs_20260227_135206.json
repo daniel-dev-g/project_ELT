@@ -1,0 +1,2 @@
+{"timestamp": "2026-02-27T13:52:06.841489", "evento": "pipeline_init", "detalles": {"status": "success", "cantidad": 3, "archivos": ["cliente.csv", "oficinas.csv", "productos.csv"]}}
+{"timestamp": "2026-02-27T13:52:06.987976", "evento": "file_not_found", "detalles": {"status": "error", "path": "C:\\Users\\octmi\\OneDrive\\Documentos\\TI\\Project_ETL\\data\\input\\oficinas.csv"}}

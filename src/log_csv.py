@@ -6,6 +6,8 @@ from datetime import datetime
 from pathlib import Path
 
 
+# Crear carpeta logs si no existe
+Path("logs").mkdir(exist_ok=True)
 
 # Crear logger específico para JSON (no usa el root logger)
 json_logger = logging.getLogger('json_audit')
@@ -14,7 +16,7 @@ json_logger.propagate = False  # NO propagar al root logger
 
 # Generar nombre de archivo
 timestamp_id = datetime.now().strftime("%Y%m%d_%H%M%S")
-nombre_log = f"log_{timestamp_id}.json"
+nombre_log = f"logs/log_{timestamp_id}.json"
 
 # Configurar handler específico para este logger
 json_handler = logging.FileHandler(nombre_log, encoding='utf-8')

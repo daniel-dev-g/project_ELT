@@ -1,0 +1,154 @@
+
+2026-02-27 14:38:07,555 [INFO] src.validators.db_validator: Database connection established successfully.
+2026-02-27 14:38:07,721 [DEBUG] charset_normalizer: Encoding detection: utf_8 is most likely the one.
+2026-02-27 14:38:07,756 [DEBUG] charset_normalizer: Encoding detection: ascii is most likely the one.
+2026-02-27 14:38:07,818 [INFO] src.validators.db_validator: Table [dbo].[data_samples] exists.
+2026-02-27 14:38:07,836 [WARNING] src.validators.db_validator: The table [dbo].[oficinas] was not found.
+2026-02-27 14:38:07,862 [INFO] src.validators.db_validator: Table [dbo].[productos] exists.
+2026-02-27 14:38:50,378 [INFO] src.validators.db_validator: Database connection established successfully.
+2026-02-27 14:38:50,501 [DEBUG] charset_normalizer: Encoding detection: utf_8 is most likely the one.
+2026-02-27 14:38:50,538 [DEBUG] charset_normalizer: Encoding detection: ascii is most likely the one.
+2026-02-27 14:38:50,590 [INFO] src.validators.db_validator: Table [dbo].[data_samples] exists.
+2026-02-27 14:38:50,593 [INFO] src.validators.db_validator: The user has permissions for BULK INSERT on the server: LAPTOP-6N8CIQUQ
+2026-02-27 14:38:53,533 [WARNING] src.validators.db_validator: The table [dbo].[oficinas] was not found.
+2026-02-27 14:38:53,535 [INFO] src.validators.db_validator: The user has permissions for BULK INSERT on the server: LAPTOP-6N8CIQUQ
+2026-02-27 14:38:53,556 [INFO] src.validators.db_validator: Table [dbo].[productos] exists.
+2026-02-27 14:38:53,559 [INFO] src.validators.db_validator: The user has permissions for BULK INSERT on the server: LAPTOP-6N8CIQUQ
+2026-02-27 16:49:57,266 [INFO] src.validators.db_validator: Database connection established successfully.
+2026-02-27 16:49:57,420 [DEBUG] charset_normalizer: Encoding detection: utf_8 is most likely the one.
+2026-02-27 16:49:57,492 [DEBUG] charset_normalizer: Encoding detection: ascii is most likely the one.
+2026-02-27 16:49:57,568 [INFO] src.validators.db_validator: Table [dbo].[data_samples] exists.
+2026-02-27 16:49:57,572 [INFO] src.validators.db_validator: The user has permissions for BULK INSERT on the server: LAPTOP-6N8CIQUQ
+2026-02-27 16:50:00,294 [WARNING] src.validators.db_validator: The table [dbo].[oficinas] was not found.
+2026-02-27 16:50:00,296 [INFO] src.validators.db_validator: The user has permissions for BULK INSERT on the server: LAPTOP-6N8CIQUQ
+2026-02-27 16:50:00,312 [INFO] src.validators.db_validator: Table [dbo].[productos] exists.
+2026-02-27 16:50:00,312 [INFO] src.validators.db_validator: The user has permissions for BULK INSERT on the server: LAPTOP-6N8CIQUQ
+2026-02-27 16:51:50,651 [INFO] src.validators.db_validator: Database connection established successfully.
+2026-02-27 16:51:50,779 [DEBUG] charset_normalizer: Encoding detection: utf_8 is most likely the one.
+2026-02-27 16:51:50,808 [DEBUG] charset_normalizer: Encoding detection: ascii is most likely the one.
+2026-02-27 16:51:50,839 [INFO] src.validators.db_validator: Table [dbo].[data_samples] exists.
+2026-02-27 16:51:50,842 [INFO] src.validators.db_validator: The user has permissions for BULK INSERT on the server: LAPTOP-6N8CIQUQ
+2026-02-27 16:51:53,686 [WARNING] src.validators.db_validator: The table [dbo].[oficinas] was not found.
+2026-02-27 16:51:53,687 [INFO] src.validators.db_validator: The user has permissions for BULK INSERT on the server: LAPTOP-6N8CIQUQ
+2026-02-27 16:51:53,703 [INFO] src.validators.db_validator: Table [dbo].[productos] exists.
+2026-02-27 16:51:53,705 [INFO] src.validators.db_validator: The user has permissions for BULK INSERT on the server: LAPTOP-6N8CIQUQ
+2026-02-27 16:58:24,808 [INFO] src.validators.db_validator: Database connection established successfully.
+2026-02-27 16:58:24,984 [DEBUG] charset_normalizer: Encoding detection: utf_8 is most likely the one.
+2026-02-27 16:58:25,019 [DEBUG] charset_normalizer: Encoding detection: ascii is most likely the one.
+2026-02-27 16:58:25,112 [INFO] src.validators.db_validator: Table [dbo].[data_samples] exists.
+2026-02-27 16:58:25,119 [INFO] src.validators.db_validator: The user has permissions for BULK INSERT on the server: LAPTOP-6N8CIQUQ
+2026-02-27 16:58:27,691 [WARNING] src.validators.db_validator: The table [dbo].[oficinas] was not found.
+2026-02-27 16:58:27,694 [INFO] src.validators.db_validator: The user has permissions for BULK INSERT on the server: LAPTOP-6N8CIQUQ
+2026-02-27 16:58:27,706 [INFO] src.validators.db_validator: Table [dbo].[productos] exists.
+2026-02-27 16:58:27,707 [INFO] src.validators.db_validator: The user has permissions for BULK INSERT on the server: LAPTOP-6N8CIQUQ
+2026-02-27 17:01:49,927 [INFO] src.validators.db_validator: Database connection established successfully.
+2026-02-27 17:01:50,130 [DEBUG] charset_normalizer: Encoding detection: utf_8 is most likely the one.
+2026-02-27 17:01:50,169 [DEBUG] charset_normalizer: Encoding detection: ascii is most likely the one.
+2026-02-27 17:01:50,213 [INFO] src.validators.db_validator: Table [dbo].[data_samples] exists.
+2026-02-27 17:01:50,215 [INFO] src.validators.db_validator: The user has permissions for BULK INSERT on the server: LAPTOP-6N8CIQUQ
+2026-02-27 17:01:50,226 [WARNING] src.validators.db_validator: The table [dbo].[oficinas] was not found.
+2026-02-27 17:01:50,227 [INFO] src.validators.db_validator: The user has permissions for BULK INSERT on the server: LAPTOP-6N8CIQUQ
+2026-02-27 17:01:50,237 [INFO] src.validators.db_validator: Table [dbo].[productos] exists.
+2026-02-27 17:01:50,237 [INFO] src.validators.db_validator: The user has permissions for BULK INSERT on the server: LAPTOP-6N8CIQUQ
+2026-02-27 17:04:30,883 [INFO] src.validators.db_validator: Database connection established successfully.
+2026-02-27 17:04:31,043 [DEBUG] charset_normalizer: Encoding detection: utf_8 is most likely the one.
+2026-02-27 17:04:31,093 [DEBUG] charset_normalizer: Encoding detection: ascii is most likely the one.
+2026-02-27 17:04:31,288 [INFO] src.validators.db_validator: Table [dbo].[data_samples] exists.
+2026-02-27 17:04:31,292 [INFO] src.validators.db_validator: The user has permissions for BULK INSERT on the server: LAPTOP-6N8CIQUQ
+2026-02-27 17:04:31,293 [INFO] root: Ruta completa: C:\Users\octmi\OneDrive\Documentos\TI\Project_ETL\data\input\cliente.csv
+2026-02-27 17:04:31,293 [INFO] root: Existe: True
+2026-02-27 17:04:31,293 [INFO] root: Ejecutando BULK INSERT...
+2026-02-27 17:04:34,395 [INFO] root: BULK INSERT exitoso - 480485 filas insertadas
+2026-02-27 17:04:34,408 [WARNING] src.validators.db_validator: The table [dbo].[oficinas] was not found.
+2026-02-27 17:04:34,411 [INFO] src.validators.db_validator: The user has permissions for BULK INSERT on the server: LAPTOP-6N8CIQUQ
+2026-02-27 17:04:34,427 [INFO] src.validators.db_validator: Table [dbo].[productos] exists.
+2026-02-27 17:04:34,428 [INFO] src.validators.db_validator: The user has permissions for BULK INSERT on the server: LAPTOP-6N8CIQUQ
+2026-02-27 17:04:34,429 [INFO] root: Ruta completa: C:\Users\octmi\OneDrive\Documentos\TI\Project_ETL\data\input\productos.csv
+2026-02-27 17:04:34,429 [INFO] root: Existe: True
+2026-02-27 17:04:34,429 [INFO] root: Ejecutando BULK INSERT...
+2026-02-27 17:04:34,441 [INFO] root: BULK INSERT exitoso - 41 filas insertadas
+2026-02-27 17:05:52,638 [INFO] src.validators.db_validator: Database connection established successfully.
+2026-02-27 17:05:52,827 [DEBUG] charset_normalizer: Encoding detection: utf_8 is most likely the one.
+2026-02-27 17:05:52,870 [DEBUG] charset_normalizer: Encoding detection: ascii is most likely the one.
+2026-02-27 17:05:52,942 [INFO] src.validators.db_validator: Table [dbo].[data_samples] exists.
+2026-02-27 17:05:52,947 [INFO] src.validators.db_validator: The user has permissions for BULK INSERT on the server: LAPTOP-6N8CIQUQ
+2026-02-27 17:05:52,950 [INFO] root: Ruta completa: C:\Users\octmi\OneDrive\Documentos\TI\Project_ETL\data\input\cliente.csv
+2026-02-27 17:05:52,950 [INFO] root: Existe: True
+2026-02-27 17:05:52,950 [INFO] root: Ejecutando BULK INSERT...
+2026-02-27 17:05:57,621 [INFO] root: BULK INSERT exitoso - 480485 filas insertadas
+2026-02-27 17:05:57,695 [WARNING] src.validators.db_validator: The table [dbo].[oficinas] was not found.
+2026-02-27 17:05:57,722 [INFO] src.validators.db_validator: The user has permissions for BULK INSERT on the server: LAPTOP-6N8CIQUQ
+2026-02-27 17:05:57,748 [INFO] src.validators.db_validator: Table [dbo].[productos] exists.
+2026-02-27 17:05:57,756 [INFO] src.validators.db_validator: The user has permissions for BULK INSERT on the server: LAPTOP-6N8CIQUQ
+2026-02-27 17:05:57,759 [INFO] root: Ruta completa: C:\Users\octmi\OneDrive\Documentos\TI\Project_ETL\data\input\productos.csv
+2026-02-27 17:05:57,759 [INFO] root: Existe: True
+2026-02-27 17:05:57,760 [INFO] root: Ejecutando BULK INSERT...
+2026-02-27 17:05:57,776 [INFO] root: BULK INSERT exitoso - 41 filas insertadas
+2026-02-27 17:19:27,891 [INFO] src.validators.db_validator: Database connection established successfully.
+2026-02-27 17:19:28,138 [DEBUG] charset_normalizer: Encoding detection: utf_8 is most likely the one.
+2026-02-27 17:19:28,342 [DEBUG] charset_normalizer: Encoding detection: ascii is most likely the one.
+2026-02-27 17:19:28,758 [INFO] src.validators.db_validator: Table [dbo].[data_samples] exists.
+2026-02-27 17:19:28,763 [INFO] src.validators.db_validator: The user has permissions for BULK INSERT on the server: LAPTOP-6N8CIQUQ
+2026-02-27 17:19:28,768 [INFO] root: Path: C:\Users\octmi\OneDrive\Documentos\TI\Project_ETL\data\input\cliente.csv
+2026-02-27 17:19:28,768 [INFO] root: File Exist: True
+2026-02-27 17:19:28,768 [INFO] root: Ejecutando BULK INSERT...
+2026-02-27 17:19:32,115 [INFO] root: BULK INSERT exitoso - 480485 filas insertadas
+2026-02-27 17:19:32,150 [WARNING] src.validators.db_validator: The table [dbo].[oficinas] was not found.
+2026-02-27 17:19:32,153 [INFO] src.validators.db_validator: The user has permissions for BULK INSERT on the server: LAPTOP-6N8CIQUQ
+2026-02-27 17:19:32,177 [INFO] src.validators.db_validator: Table [dbo].[productos] exists.
+2026-02-27 17:19:32,180 [INFO] src.validators.db_validator: The user has permissions for BULK INSERT on the server: LAPTOP-6N8CIQUQ
+2026-02-27 17:19:32,185 [INFO] root: Path: C:\Users\octmi\OneDrive\Documentos\TI\Project_ETL\data\input\productos.csv
+2026-02-27 17:19:32,185 [INFO] root: File Exist: True
+2026-02-27 17:19:32,185 [INFO] root: Ejecutando BULK INSERT...
+2026-02-27 17:19:32,198 [INFO] root: BULK INSERT exitoso - 41 filas insertadas
+2026-02-27 17:21:53,301 [INFO] src.validators.db_validator: Database connection established successfully.
+2026-02-27 17:21:53,462 [DEBUG] charset_normalizer: Encoding detection: utf_8 is most likely the one.
+2026-02-27 17:21:53,498 [DEBUG] charset_normalizer: Encoding detection: ascii is most likely the one.
+2026-02-27 17:21:53,534 [INFO] src.validators.db_validator: Table [dbo].[data_samples] exists.
+2026-02-27 17:21:53,539 [INFO] src.validators.db_validator: The user has permissions for BULK INSERT on the server: LAPTOP-6N8CIQUQ
+2026-02-27 17:21:53,540 [INFO] root: Path: C:\Users\octmi\OneDrive\Documentos\TI\Project_ETL\data\input\cliente.csv
+2026-02-27 17:21:53,540 [INFO] root: Path File Exist: True
+2026-02-27 17:21:53,540 [INFO] root: Ejecutando BULK INSERT...
+2026-02-27 17:21:56,737 [INFO] root: BULK INSERT successful - 480485 inserted rows
+2026-02-27 17:21:56,750 [WARNING] src.validators.db_validator: The table [dbo].[oficinas] was not found.
+2026-02-27 17:21:56,752 [INFO] src.validators.db_validator: The user has permissions for BULK INSERT on the server: LAPTOP-6N8CIQUQ
+2026-02-27 17:21:56,767 [INFO] src.validators.db_validator: Table [dbo].[productos] exists.
+2026-02-27 17:21:56,769 [INFO] src.validators.db_validator: The user has permissions for BULK INSERT on the server: LAPTOP-6N8CIQUQ
+2026-02-27 17:21:56,770 [INFO] root: Path: C:\Users\octmi\OneDrive\Documentos\TI\Project_ETL\data\input\productos.csv
+2026-02-27 17:21:56,770 [INFO] root: Path File Exist: True
+2026-02-27 17:21:56,770 [INFO] root: Ejecutando BULK INSERT...
+2026-02-27 17:21:56,780 [INFO] root: BULK INSERT successful - 41 inserted rows
+2026-02-27 17:22:39,450 [INFO] src.validators.db_validator: Database connection established successfully.
+2026-02-27 17:22:39,595 [DEBUG] charset_normalizer: Encoding detection: utf_8 is most likely the one.
+2026-02-27 17:22:39,632 [DEBUG] charset_normalizer: Encoding detection: ascii is most likely the one.
+2026-02-27 17:22:39,695 [INFO] src.validators.db_validator: Table [dbo].[data_samples] exists.
+2026-02-27 17:22:39,701 [INFO] src.validators.db_validator: The user has permissions for BULK INSERT on the server: LAPTOP-6N8CIQUQ
+2026-02-27 17:22:39,702 [INFO] root: Path: C:\Users\octmi\OneDrive\Documentos\TI\Project_ETL\data\input\cliente.csv
+2026-02-27 17:22:39,702 [INFO] root: Path File Exist: True
+2026-02-27 17:22:39,702 [INFO] root: Executing BULK INSERT...
+2026-02-27 17:22:43,034 [INFO] root: BULK INSERT successful - 480485 inserted rows
+2026-02-27 17:22:43,044 [WARNING] src.validators.db_validator: The table [dbo].[oficinas] was not found.
+2026-02-27 17:22:43,045 [INFO] src.validators.db_validator: The user has permissions for BULK INSERT on the server: LAPTOP-6N8CIQUQ
+2026-02-27 17:22:43,060 [INFO] src.validators.db_validator: Table [dbo].[productos] exists.
+2026-02-27 17:22:43,061 [INFO] src.validators.db_validator: The user has permissions for BULK INSERT on the server: LAPTOP-6N8CIQUQ
+2026-02-27 17:22:43,062 [INFO] root: Path: C:\Users\octmi\OneDrive\Documentos\TI\Project_ETL\data\input\productos.csv
+2026-02-27 17:22:43,062 [INFO] root: Path File Exist: True
+2026-02-27 17:22:43,062 [INFO] root: Executing BULK INSERT...
+2026-02-27 17:22:43,069 [INFO] root: BULK INSERT successful - 41 inserted rows
+2026-02-27 17:24:10,266 [INFO] src.validators.db_validator: Database connection established successfully.
+2026-02-27 17:24:10,401 [DEBUG] charset_normalizer: Encoding detection: utf_8 is most likely the one.
+2026-02-27 17:24:10,433 [DEBUG] charset_normalizer: Encoding detection: ascii is most likely the one.
+2026-02-27 17:24:10,480 [INFO] src.validators.db_validator: Table [dbo].[data_samples] exists.
+2026-02-27 17:24:10,482 [INFO] src.validators.db_validator: The user has permissions for BULK INSERT on the server: LAPTOP-6N8CIQUQ
+2026-02-27 17:24:10,483 [INFO] root: Path: C:\Users\octmi\OneDrive\Documentos\TI\Project_ETL\data\input\cliente.csv
+2026-02-27 17:24:10,483 [INFO] root: Path File Exist: True
+2026-02-27 17:24:10,483 [INFO] root: Executing BULK INSERT...
+2026-02-27 17:24:13,370 [INFO] root: BULK INSERT successful - 480485 inserted rows
+2026-02-27 17:24:13,383 [WARNING] src.validators.db_validator: The table [dbo].[oficinas] was not found.
+2026-02-27 17:24:13,384 [INFO] src.validators.db_validator: The user has permissions for BULK INSERT on the server: LAPTOP-6N8CIQUQ
+2026-02-27 17:24:13,399 [INFO] src.validators.db_validator: Table [dbo].[productos] exists.
+2026-02-27 17:24:13,400 [INFO] src.validators.db_validator: The user has permissions for BULK INSERT on the server: LAPTOP-6N8CIQUQ
+2026-02-27 17:24:13,400 [INFO] root: Path: C:\Users\octmi\OneDrive\Documentos\TI\Project_ETL\data\input\productos.csv
+2026-02-27 17:24:13,400 [INFO] root: Path File Exist: True
+2026-02-27 17:24:13,400 [INFO] root: Executing BULK INSERT...
+2026-02-27 17:24:13,409 [INFO] root: BULK INSERT successful - 41 inserted rows

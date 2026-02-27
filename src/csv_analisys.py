@@ -269,12 +269,9 @@ def run_csv_analysis(execution_id=None):
 
 
     df_metadata = create_metadata_dataframe(all_metadata)
-    print (df_metadata)
-    # archivo actual
     current_file = Path(__file__).resolve()
     metadata_path = current_file.parent.parent / "src" / "metadata"
     metadata_path_detail = current_file.parent.parent / "src" / "metadata_detail"
-    print (metadata_path)
     export_metadata(df_metadata, output_path=metadata_path, output_path_detail=metadata_path_detail)
 
 

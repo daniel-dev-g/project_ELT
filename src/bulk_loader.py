@@ -1,22 +1,25 @@
+""" Module to load data into SQL Server using BULK INSERT """
 import pathlib
+import logging
 import pyodbc
 from src.state_manager.core.database import get_connection_string
 
-def sqlserver_bcp_windows(ruta_csv, servidor, base_datos, schema, tabla):
-    """Carga CSV a SQL Server usando BULK INSERT (mejor que BCP CLI)"""
+def sqlserver_bcp_windows(ruta_csv, schema, tabla):
+    """Upload CSV to SQL Server using BULK INSERT """
+
     # Convertir a ruta absoluta
     if not pathlib.Path(ruta_csv).is_absolute():
         ruta_csv = pathlib.Path.cwd() / ruta_csv
-    
+
     ruta_csv = str(ruta_csv)  # Convertir a string para SQL
-    print(f"   📍 Ruta completa: {ruta_csv}")
-    print(f"   🔍 Existe: {pathlib.Path(ruta_csv).exists()}")
-    
+    logging.info("Path: %s", ruta_csv)
+    logging.info("Path File Exist: %s", pathlib.Path(ruta_csv).exists())
+
     # VERIFICAR QUE EL ARCHIVO EXISTE
     if not pathlib.Path(ruta_csv).exists():
-        print(f"❌ Error: Archivo no encontrado: {ruta_csv}")
+        logging.error("Error: File not found: %s", ruta_csv)
         return False
-    
+
     # Usar BULK INSERT desde T-SQL (mejor manejo de caracteres especiales)
     sql_query = f"""
     BULK INSERT [{schema}].[{tabla}]
@@ -28,9 +31,9 @@ def sqlserver_bcp_windows(ruta_csv, servidor, base_datos, schema, tabla):
         CODEPAGE = '65001'
     )
     """
-    
-    print(f"   🔧 Ejecutando BULK INSERT...")
-    
+
+    logging.info("Executing BULK INSERT...")
+
     try:
         conn_str = get_connection_string()
         conn = pyodbc.connect(conn_str)
@@ -40,10 +43,10 @@ def sqlserver_bcp_windows(ruta_csv, servidor, base_datos, schema, tabla):
         conn.commit()
         cursor.close()
         conn.close()
-        print(f"✅ BULK INSERT exitoso - {rows_affected} filas insertadas")
+        logging.info("BULK INSERT successful - %d inserted rows", rows_affected)
         return rows_affected
     except Exception as e:
-        print(f"❌ BULK INSERT falló")
-        print(f"   Error: {str(e)}")
+        logging.error("BULK INSERT failed")
+        logging.error("   Error: %s", str(e))
         return 0
 
