@@ -25,8 +25,8 @@ SET status = 'FAILED',
 WHERE file_id = ?;
 
 -- name: select_file_stats
-SELECT 
-    COUNT(*) as total_files,
+SELECT
+    COUNT(1) as total_files,
     SUM(CASE WHEN status = 'SUCCESS' THEN 1 ELSE 0 END) as successful_files,
     SUM(CASE WHEN status = 'FAILED' THEN 1 ELSE 0 END) as failed_files,
     SUM(ISNULL(rows_inserted, 0)) as total_rows
