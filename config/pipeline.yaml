@@ -1,5 +1,8 @@
 # config/pipeline.yaml
-# para archivos sin delimitador usar null
+# DataBridge — Pipeline Configuration
+# Supported formats: .csv, .txt (BCP bulk load)
+# Delimiter: use ";" "," "|" or "\t" for tab-separated files
+# Encoding: utf8, utf8-lossy, ascii
 task:
   - name: "Carga de Ventas Mensuales"
     file: "data/input/cliente.csv"
