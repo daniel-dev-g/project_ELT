@@ -1,6 +1,6 @@
 # src/state_manager/core/manager.py
 """
-StateManager - Clase principal para logging ETL.
+state_manager.core.manager - Clase StateManager para seguimiento de procesos ETL
 """
 import logging
 import uuid
