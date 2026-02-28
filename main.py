@@ -16,6 +16,7 @@ from src.validators import (
     check_bulk_permission,
     validate_path
 )
+
 # Crear carpeta logs si no existe
 Path("logs").mkdir(exist_ok=True)
 
@@ -24,89 +25,110 @@ _handler = logging.FileHandler("logs/technical.log", encoding="utf-8")
 _handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
 
 root_logger = logging.getLogger()
-root_logger.setLevel(logging.WARNING)  # default hasta leer YAML
+root_logger.setLevel(logging.WARNING)
 root_logger.addHandler(_handler)
 
 
-def main():
-    """ Punto de entrada principal del programa """
+def process_task(
+    task: dict,
+    engine_global,
+    state: StateManager
+) -> tuple[bool, int]:
+    """
+    Processes a single pipeline task.
 
-    # FASE 0: Inicializar StateManager
+    Returns:
+        tuple: (success: bool, rows_inserted: int)
+    """
+    file_id = state.start_file_processing(task['file'], task)
+
+    try:
+        check_table_exists(engine_global, task['table_destination'], task['schema'])
+        check_bulk_permission(engine_global)
+        validate_path(task['file'], ".csv")
+
+        start_time = time.time()
+
+        result = sqlserver_bcp_windows(
+            ruta_csv=task['file'],
+            schema=task['schema'],
+            tabla=task['table_destination']
+        )
+
+        duration      = time.time() - start_time
+        rows_inserted = result if isinstance(result, int) and result > 0 else 0
+
+        if rows_inserted > 0:
+            state.complete_file_processing(file_id, rows_inserted, duration)
+            return True, rows_inserted
+
+        state.fail_file_processing(file_id, "No rows inserted")
+        return False, 0
+
+    except (FileNotFoundError, IsADirectoryError, ValueError, PermissionError) as e:
+        state.fail_file_processing(file_id, str(e))
+        return False, 0
+
+    except Exception as e:
+        state.fail_file_processing(file_id, str(e))
+        return False, 0
+
+
+def main():
+    """ Entry point of the program """
+
+    # PHASE 0: Initialize StateManager
     state = StateManager("Carga_ETL_BCP")
     execution_id = state.start_process()
 
     try:
-        # FASE 1: Leer configuración
+        # PHASE 1: Read configuration
         with open("config/settings.yaml", "r", encoding="utf-8") as f:
             settings = yaml.safe_load(f)
 
         db_cfg        = settings.get('development', {})
-        db_cfg_db     = db_cfg['database']
-        db_cfg_server = db_cfg['server']
-        log_level = db_cfg.get('log_level', 'WARNING')
 
-        # Actualizar nivel según YAML
+        # Update logging level from YAML
+        log_level = db_cfg.get('log_level', 'WARNING')
         root_logger.setLevel(getattr(logging, log_level))
         _handler.setLevel(getattr(logging, log_level))
 
-        # FASE 2: Conexión a base de datos
+        # PHASE 2: Database connection
         engine_global = create_engine_db(db_cfg)
-
         if not check_db_connection(engine_global):
             state.complete_process(status='FAILED')
             sys.exit(1)
 
-        # FASE 3: Análisis de archivos
+        # PHASE 3: File analysis
         with open("config/pipeline.yaml", "r", encoding="utf-8") as f:
             pipeline_cfg = yaml.safe_load(f)
 
         run_csv_analysis(execution_id=execution_id)
 
-        # FASE 4: Ciclo de carga
-        total_tasks     = 0
+        # PHASE 4: Load cycle
+        total_tasks      = 0
         successful_tasks = 0
-        failed_tasks    = 0
+        failed_tasks     = 0
+        total_rows       = 0
 
         for task in pipeline_cfg['task']:
             if not task['active']:
                 continue
 
-            # file_id disponible antes del try → siempre disponible en except
-            file_id = state.start_file_processing(task['file'], task)
+            total_tasks += 1
+            success, rows = process_task(
+                task=task,
+                engine_global=engine_global,
+                state=state
+            )
 
-            try:
-                check_table_exists(engine_global, task['table_destination'], task['schema'])
-                check_bulk_permission(engine_global)
-                validate_path(task['file'], ".csv")
-
-                total_tasks += 1
-                start_time = time.time()
-
-                result = sqlserver_bcp_windows(
-                    ruta_csv=task['file'],
-                    schema=task['schema'],
-                    tabla=task['table_destination']
-                )
-
-                duration      = time.time() - start_time
-                rows_inserted = result if isinstance(result, int) and result > 0 else 0
-
-                if rows_inserted > 0:
-                    state.complete_file_processing(file_id, rows_inserted, duration)
-                    successful_tasks += 1
-                else:
-                    state.fail_file_processing(file_id, "No se insertaron filas")
-                    failed_tasks += 1
-
-            except (FileNotFoundError, IsADirectoryError, ValueError, PermissionError) as e:
+            if success:
+                successful_tasks += 1
+                total_rows += rows
+            else:
                 failed_tasks += 1
-                state.fail_file_processing(file_id, str(e))
 
-            except Exception as e:
-                failed_tasks += 1
-                state.fail_file_processing(file_id, str(e))
-
-        # FASE 5: Cerrar proceso
+        # PHASE 5: Close process
         final_status = 'COMPLETED' if failed_tasks == 0 else 'PARTIAL'
         state.complete_process(status=final_status)
 
