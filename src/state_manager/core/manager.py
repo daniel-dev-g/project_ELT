@@ -2,9 +2,11 @@
 """
 StateManager - Clase principal para logging ETL.
 """
+import logging
 import uuid
 import os
 from src.state_manager.core.database import get_db_cursor, get_queries
+logger = logging.getLogger(__name__)
 
 class StateManager:
     """Track archivos activos: {file_id: file_name}"""
@@ -25,7 +27,7 @@ class StateManager:
             )
 
 
-        print(f"🔧 Proceso '{self.process_name}' iniciado: {self.execution_id}")
+        logger.info("Process file '%s' started: %s", self.process_name, self.execution_id)
         return self.execution_id
 
     def start_file_processing(self, file_path: str, task_info: dict) -> int:
@@ -66,7 +68,7 @@ class StateManager:
         # Track archivo activo
         self.active_files[file_id] = file_name
 
-        print(f"   📄 Iniciando: {file_name}")
+        logger.info("Starting file: %s", file_name)
         return file_id
 
     def complete_file_processing(self, file_id: int, rows_inserted: int, duration_seconds: float):
@@ -89,7 +91,7 @@ class StateManager:
 
         # Remover de archivos activos
         file_name = self.active_files.pop(file_id)
-        print(f"   ✅ {file_name}: {rows_inserted} filas insertadas en {duration_seconds:.2f}s")
+        logger.info("%s: %d filas insertadas en %.2fs", file_name, rows_inserted, duration_seconds)
 
     def fail_file_processing(self, file_id: int, error_message: str):
         """
@@ -115,7 +117,7 @@ class StateManager:
         # Remover de archivos activos
         file_name = self.active_files.pop(file_id)
         error_preview = error_message[:100] + "..." if len(error_message) > 100 else error_message
-        print(f"   ❌ {file_name}: {error_preview}")
+        logger.error("File %s: failed: %s", file_name, error_preview)
 
     def complete_process(self, status: str = 'COMPLETED') -> str:
         """
@@ -132,7 +134,7 @@ class StateManager:
 
         # Verificar si hay archivos activos (no completados)
         if self.active_files:
-            print(f"⚠️  Advertencia: {len(self.active_files)} archivos aún activos")
+            logging.warning("Warning: %d files still active", len(self.active_files))
 
         with get_db_cursor() as cursor:
             # Obtener estadísticas del proceso
@@ -151,7 +153,10 @@ class StateManager:
                  )
             )
 
-        print(f"🔧 Proceso '{self.process_name}' {status}: {self.execution_id}")
+        logger.info(
+            "Process '%s' completed with status '%s': %s",
+             self.process_name, status, self.execution_id
+             )
         return self.execution_id
 
     def get_process_summary(self, execution_id: str = None):
