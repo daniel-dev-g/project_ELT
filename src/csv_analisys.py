@@ -60,12 +60,7 @@ def get_polars_scan_method(file_path):
     ext = get_extension(file_path)
     scanners = {
         ".csv": pl.read_csv,
-        ".txt": pl.read_csv,
-        ".parquet": pl.read_parquet,
-        ".json": pl.read_json,
-        ".jsonl": pl.read_json,
-        ".ipc": pl.read_ipc,
-        ".arrow": pl.read_ipc,
+        ".txt": pl.read_csv
     }
     return scanners.get(ext, None)
 
@@ -95,11 +90,7 @@ def metadata_polars(file_path, delimiter, encoding, execution_id=None):
     # 1. Definimos los métodos dinámicamente
     scanners = {
         ".csv": pl.scan_csv,
-        ".txt": pl.scan_csv,
-        ".parquet": pl.scan_parquet,
-        ".jsonl": pl.scan_ndjson,
-        ".ipc": pl.scan_ipc,
-        ".arrow": pl.scan_ipc,
+        ".txt": pl.scan_csv
     }
 
     try:
