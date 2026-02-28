@@ -4,8 +4,10 @@ import time
 import logging
 from pathlib import Path
 
+
 import yaml
 from src.csv_analisys import run_csv_analysis
+
 from src.log_csv import registrar_log
 from src.bulk_loader import sqlserver_bcp_windows
 from src.state_manager import StateManager
@@ -16,6 +18,8 @@ from src.validators import (
     check_bulk_permission,
     validate_path
 )
+from src.visualization.log_dashboard import generate_latest_dashboard
+
 
 # Crear carpeta logs si no existe
 Path("logs").mkdir(exist_ok=True)
@@ -131,6 +135,14 @@ def main():
         # PHASE 5: Close process
         final_status = 'COMPLETED' if failed_tasks == 0 else 'PARTIAL'
         state.complete_process(status=final_status)
+
+        # Log Dashboard generation
+        try:
+
+            dashboard_path = generate_latest_dashboard()
+            registrar_log("dashboard_generated", {"path": str(dashboard_path)})
+        except Exception as e:
+            registrar_log("dashboard_error", {"error": str(e)})
 
     except Exception as e:
         registrar_log("critical_error", {"error": str(e)})
