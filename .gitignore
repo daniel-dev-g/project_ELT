@@ -17,8 +17,10 @@ settings.yaml
 .ruff_cache
 .polars_cache/
 
-# Archivos de datos pesados 
+# Archivos de datos pesados
 *.csv
 *.ods
 *.xlsx
 *.parquet
+*.log
+*.json
