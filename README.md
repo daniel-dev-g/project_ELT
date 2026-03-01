@@ -1,7 +1,8 @@
 # DataBridge
 
-> Herramienta de carga masiva de archivos CSV/TXT a SQL Server usando BCP.
-> Alternativa simple a Airflow para analistas sin infraestructura DevOps.
+> Herramienta de carga masiva de archivos CSV a SQL Server mediante BCP.
+> Alternativa ligera a Airflow y SSIS para analistas que necesitan
+> cargar datos sin infraestructura DevOps.
 
 ## ⚡ Performance
 | Files | Rows      | Duration |
