@@ -96,6 +96,4 @@ if __name__ == "__main__":
         html_path = generate_dashboard(log_path)
     else:
         html_path = generate_latest_dashboard()
-
-    print(f"Dashboard: {html_path.absolute()}")
-    webbrowser.open(str(html_path.absolute()))
+        webbrowser.open(str(html_path.absolute()))
