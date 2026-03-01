@@ -80,7 +80,7 @@ def process_task(
 
 def main():
     """ Entry point of the program """
-
+    start_time = time.time()
     # PHASE 0: Initialize StateManager
     state = StateManager("Carga_ETL_BCP")
     execution_id = state.start_process()
@@ -107,7 +107,7 @@ def main():
         with open("config/pipeline.yaml", "r", encoding="utf-8") as f:
             pipeline_cfg = yaml.safe_load(f)
 
-        run_csv_analysis(execution_id=execution_id)
+
 
         # PHASE 4: Load cycle
         total_tasks      = 0
@@ -131,6 +131,9 @@ def main():
                 total_rows += rows
             else:
                 failed_tasks += 1
+
+        # Sumary log of the entire process
+        run_csv_analysis(execution_id=execution_id, start_time=start_time)
 
         # PHASE 5: Close process
         final_status = 'COMPLETED' if failed_tasks == 0 else 'PARTIAL'
