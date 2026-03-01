@@ -68,6 +68,15 @@ CSV/TXT → Polars Analysis → BCP Load → SQL Server
          JSON Audit Log → HTML Dashboard
 ```
 
+## Outputs
+| File                  | Description                          |
+|-----------------------|--------------------------------------|
+| logs/log_*.json       | JSON audit log per execution         |
+| logs/log_*.html       | Interactive HTML dashboard           |
+| src/metadata.csv      | File-level metrics per execution     |
+| src/metadata_detail.csv | Column inventory per execution     |
+
+
 ## Roadmap
 - [ ] Post-load stored procedure execution
 - [ ] Duration per file in dashboard
