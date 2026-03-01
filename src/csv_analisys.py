@@ -2,6 +2,7 @@
 
 from datetime import datetime
 from pathlib import Path
+import time
 
 import polars as pl
 import yaml
@@ -261,7 +262,7 @@ def export_metadata(df, output_path , output_path_detail):
 
 
 
-def run_csv_analysis(execution_id=None):
+def run_csv_analysis(execution_id=None,  start_time=None):
     """Ejecuta el análisis de archivos CSV definidos en el pipeline."""
     # creamos diccioanrio para metadata de cada archivo, con el mismo esquema de llaves para consistencia del DataFrame
     all_metadata = []
@@ -283,6 +284,7 @@ def run_csv_analysis(execution_id=None):
         "total_rows": total_rows,
         "files_ok": sum(1 for m in all_metadata if m.get("valid_csv")),
         "files_error": sum(1 for m in all_metadata if not m.get("valid_csv")),
+        "duration_seconds": round(time.time() - start_time, 2)
     })
 
     df_metadata = create_metadata_dataframe(all_metadata)
