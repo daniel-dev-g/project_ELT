@@ -31,7 +31,11 @@
             --radius-lg: 10px;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
         body {
             font-family: 'JetBrains Mono', monospace;
@@ -44,8 +48,11 @@
         body::before {
             content: '';
             position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.03) 2px, rgba(0, 0, 0, 0.03) 4px);
             pointer-events: none;
             z-index: 1000;
         }
@@ -75,7 +82,8 @@
         }
 
         .logo-dot {
-            width: 8px; height: 8px;
+            width: 8px;
+            height: 8px;
             background: var(--accent);
             border-radius: 50%;
             box-shadow: 0 0 8px var(--accent);
@@ -83,8 +91,17 @@
         }
 
         @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(0.8); }
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.5;
+                transform: scale(0.8);
+            }
         }
 
         .topbar-meta {
@@ -149,14 +166,23 @@
             border: 1px solid transparent;
         }
 
-        .nav-item:hover { background: var(--surface-2); color: var(--text); }
+        .nav-item:hover {
+            background: var(--surface-2);
+            color: var(--text);
+        }
+
         .nav-item.active {
             background: var(--accent-glow);
-            border-color: rgba(88,166,255,0.3);
+            border-color: rgba(88, 166, 255, 0.3);
             color: var(--accent);
         }
 
-        .nav-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+        .nav-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
 
         .nav-count {
             margin-left: auto;
@@ -167,7 +193,10 @@
             color: var(--text-dim);
         }
 
-        .main { padding: 28px 32px; overflow-y: auto; }
+        .main {
+            padding: 28px 32px;
+            overflow-y: auto;
+        }
 
         .kpi-grid {
             display: grid;
@@ -186,19 +215,34 @@
             transition: border-color 0.2s;
         }
 
-        .kpi-card:hover { border-color: var(--border-bright); }
+        .kpi-card:hover {
+            border-color: var(--border-bright);
+        }
 
         .kpi-card::before {
             content: '';
             position: absolute;
-            top: 0; left: 0; right: 0;
+            top: 0;
+            left: 0;
+            right: 0;
             height: 2px;
         }
 
-        .kpi-card.blue::before { background: var(--accent); }
-        .kpi-card.green::before { background: var(--green); }
-        .kpi-card.red::before { background: var(--red); }
-        .kpi-card.purple::before { background: var(--purple); }
+        .kpi-card.blue::before {
+            background: var(--accent);
+        }
+
+        .kpi-card.green::before {
+            background: var(--green);
+        }
+
+        .kpi-card.red::before {
+            background: var(--red);
+        }
+
+        .kpi-card.purple::before {
+            background: var(--purple);
+        }
 
         .kpi-label {
             font-size: 16px;
@@ -216,12 +260,26 @@
             margin-bottom: 6px;
         }
 
-        .kpi-card.blue .kpi-value { color: var(--accent); }
-        .kpi-card.green .kpi-value { color: var(--green); }
-        .kpi-card.red .kpi-value { color: var(--red); }
-        .kpi-card.purple .kpi-value { color: var(--purple); }
+        .kpi-card.blue .kpi-value {
+            color: var(--accent);
+        }
 
-        .kpi-sub { font-size: 16px; color: var(--text-dim); }
+        .kpi-card.green .kpi-value {
+            color: var(--green);
+        }
+
+        .kpi-card.red .kpi-value {
+            color: var(--red);
+        }
+
+        .kpi-card.purple .kpi-value {
+            color: var(--purple);
+        }
+
+        .kpi-sub {
+            font-size: 16px;
+            color: var(--text-dim);
+        }
 
         .section-header {
             display: flex;
@@ -243,12 +301,18 @@
         .section-title::before {
             content: '';
             display: block;
-            width: 3px; height: 14px;
+            width: 3px;
+            height: 14px;
             background: var(--accent);
             border-radius: 2px;
         }
 
-        .filters { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+        .filters {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
 
         .filter-btn {
             padding: 5px 14px;
@@ -263,12 +327,33 @@
             letter-spacing: 0.3px;
         }
 
-        .filter-btn:hover { border-color: var(--border-bright); color: var(--text); }
-        .filter-btn.active { background: var(--accent-glow); border-color: rgba(88,166,255,0.4); color: var(--accent); }
-        .filter-btn.success.active { background: var(--green-glow); border-color: rgba(63,185,80,0.4); color: var(--green); }
-        .filter-btn.error.active { background: var(--red-glow); border-color: rgba(248,81,73,0.4); color: var(--red); }
+        .filter-btn:hover {
+            border-color: var(--border-bright);
+            color: var(--text);
+        }
 
-        .search-wrap { position: relative; margin-bottom: 16px; }
+        .filter-btn.active {
+            background: var(--accent-glow);
+            border-color: rgba(88, 166, 255, 0.4);
+            color: var(--accent);
+        }
+
+        .filter-btn.success.active {
+            background: var(--green-glow);
+            border-color: rgba(63, 185, 80, 0.4);
+            color: var(--green);
+        }
+
+        .filter-btn.error.active {
+            background: var(--red-glow);
+            border-color: rgba(248, 81, 73, 0.4);
+            color: var(--red);
+        }
+
+        .search-wrap {
+            position: relative;
+            margin-bottom: 16px;
+        }
 
         .search-input {
             width: 100%;
@@ -283,8 +368,13 @@
             transition: border-color 0.2s;
         }
 
-        .search-input:focus { border-color: var(--accent); }
-        .search-input::placeholder { color: var(--text-dim); }
+        .search-input:focus {
+            border-color: var(--accent);
+        }
+
+        .search-input::placeholder {
+            color: var(--text-dim);
+        }
 
         .search-icon {
             position: absolute;
@@ -326,9 +416,17 @@
             align-items: center;
         }
 
-        .event-row:last-child { border-bottom: none; }
-        .event-row:hover { background: var(--surface-2); }
-        .event-row.expanded { background: var(--surface-2); }
+        .event-row:last-child {
+            border-bottom: none;
+        }
+
+        .event-row:hover {
+            background: var(--surface-2);
+        }
+
+        .event-row.expanded {
+            background: var(--surface-2);
+        }
 
         .event-time {
             font-size: 16px;
@@ -347,36 +445,54 @@
             width: fit-content;
         }
 
-        .badge-pipeline_start, .badge-pipeline_init {
-            background: var(--accent-glow); color: var(--accent);
-            border: 1px solid rgba(88,166,255,0.2);
+        .badge-pipeline_start,
+        .badge-pipeline_init {
+            background: var(--accent-glow);
+            color: var(--accent);
+            border: 1px solid rgba(88, 166, 255, 0.2);
         }
+
         .badge-file_analysis {
-            background: var(--green-glow); color: var(--green);
-            border: 1px solid rgba(63,185,80,0.2);
+            background: var(--green-glow);
+            color: var(--green);
+            border: 1px solid rgba(63, 185, 80, 0.2);
         }
+
         .badge-pipeline_summary {
-            background: rgba(188,140,255,0.1); color: var(--purple);
-            border: 1px solid rgba(188,140,255,0.2);
+            background: rgba(188, 140, 255, 0.1);
+            color: var(--purple);
+            border: 1px solid rgba(188, 140, 255, 0.2);
         }
+
         .badge-metadata {
-            background: var(--yellow-glow); color: var(--yellow);
-            border: 1px solid rgba(210,153,34,0.2);
+            background: var(--yellow-glow);
+            color: var(--yellow);
+            border: 1px solid rgba(210, 153, 34, 0.2);
         }
+
         .badge-columns {
-            background: rgba(188,140,255,0.1); color: var(--purple);
-            border: 1px solid rgba(188,140,255,0.2);
+            background: rgba(188, 140, 255, 0.1);
+            color: var(--purple);
+            border: 1px solid rgba(188, 140, 255, 0.2);
         }
-        .badge-analysis_error, .badge-file_not_found, .badge-critical_error {
-            background: var(--red-glow); color: var(--red);
-            border: 1px solid rgba(248,81,73,0.2);
+
+        .badge-analysis_error,
+        .badge-file_not_found,
+        .badge-critical_error {
+            background: var(--red-glow);
+            color: var(--red);
+            border: 1px solid rgba(248, 81, 73, 0.2);
         }
+
         .badge-dashboard_generated {
-            background: var(--surface-3); color: var(--text-muted);
+            background: var(--surface-3);
+            color: var(--text-muted);
             border: 1px solid var(--border);
         }
+
         .badge-default {
-            background: var(--surface-3); color: var(--text-muted);
+            background: var(--surface-3);
+            color: var(--text-muted);
             border: 1px solid var(--border);
         }
 
@@ -397,7 +513,10 @@
             transition: transform 0.2s, color 0.2s;
         }
 
-        .event-row.expanded .event-expand { transform: rotate(90deg); color: var(--accent); }
+        .event-row.expanded .event-expand {
+            transform: rotate(90deg);
+            color: var(--accent);
+        }
 
         .detail-panel {
             display: none;
@@ -407,7 +526,9 @@
             border-top: 1px solid var(--border);
         }
 
-        .detail-panel.show { display: block; }
+        .detail-panel.show {
+            display: block;
+        }
 
         .detail-grid {
             display: grid;
@@ -431,12 +552,29 @@
             margin-bottom: 4px;
         }
 
-        .detail-val { font-size: 16px; color: var(--text); word-break: break-all; }
-        .detail-val.num { color: var(--accent); font-size: 16px; font-weight: 600; }
-        .detail-val.ok { color: var(--green); }
-        .detail-val.err { color: var(--red); }
+        .detail-val {
+            font-size: 16px;
+            color: var(--text);
+            word-break: break-all;
+        }
 
-        .cols-section { margin-top: 12px; }
+        .detail-val.num {
+            color: var(--accent);
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .detail-val.ok {
+            color: var(--green);
+        }
+
+        .detail-val.err {
+            color: var(--red);
+        }
+
+        .cols-section {
+            margin-top: 12px;
+        }
 
         .cols-toggle {
             display: flex;
@@ -450,9 +588,18 @@
             transition: color 0.15s;
         }
 
-        .cols-toggle:hover { color: var(--text); }
-        .cols-toggle-arrow { transition: transform 0.2s; font-size: 16px; }
-        .cols-toggle.open .cols-toggle-arrow { transform: rotate(90deg); }
+        .cols-toggle:hover {
+            color: var(--text);
+        }
+
+        .cols-toggle-arrow {
+            transition: transform 0.2s;
+            font-size: 16px;
+        }
+
+        .cols-toggle.open .cols-toggle-arrow {
+            transform: rotate(90deg);
+        }
 
         .cols-grid {
             display: none;
@@ -461,7 +608,9 @@
             margin-top: 8px;
         }
 
-        .cols-grid.show { display: grid; }
+        .cols-grid.show {
+            display: grid;
+        }
 
         .col-chip {
             background: var(--surface-2);
@@ -476,8 +625,16 @@
             transition: all 0.15s;
         }
 
-        .col-chip:hover { border-color: var(--accent); color: var(--text); }
-        .col-idx { color: var(--text-dim); font-size: 16px; min-width: 18px; }
+        .col-chip:hover {
+            border-color: var(--accent);
+            color: var(--text);
+        }
+
+        .col-idx {
+            color: var(--text-dim);
+            font-size: 16px;
+            min-width: 18px;
+        }
 
         .status-bar {
             display: flex;
@@ -492,10 +649,25 @@
             border-radius: 0 0 var(--radius-lg) var(--radius-lg);
         }
 
-        .status-dot { width: 6px; height: 6px; border-radius: 50%; }
-        .status-dot.green { background: var(--green); box-shadow: 0 0 6px var(--green); }
-        .status-dot.red { background: var(--red); box-shadow: 0 0 6px var(--red); }
-        .status-dot.yellow { background: var(--yellow); }
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+
+        .status-dot.green {
+            background: var(--green);
+            box-shadow: 0 0 6px var(--green);
+        }
+
+        .status-dot.red {
+            background: var(--red);
+            box-shadow: 0 0 6px var(--red);
+        }
+
+        .status-dot.yellow {
+            background: var(--yellow);
+        }
 
         .timeline-wrap {
             background: var(--surface);
@@ -514,18 +686,33 @@
         }
 
         .timeline-dot {
-            width: 12px; height: 12px;
+            width: 12px;
+            height: 12px;
             border-radius: 50%;
             cursor: pointer;
             transition: transform 0.15s;
             flex-shrink: 0;
         }
 
-        .timeline-dot:hover { transform: scale(1.5); }
-        .timeline-dot.ok { background: var(--green); }
-        .timeline-dot.err { background: var(--red); }
-        .timeline-dot.info { background: var(--accent); }
-        .timeline-dot.warn { background: var(--yellow); }
+        .timeline-dot:hover {
+            transform: scale(1.5);
+        }
+
+        .timeline-dot.ok {
+            background: var(--green);
+        }
+
+        .timeline-dot.err {
+            background: var(--red);
+        }
+
+        .timeline-dot.info {
+            background: var(--accent);
+        }
+
+        .timeline-dot.warn {
+            background: var(--yellow);
+        }
 
         .empty-state {
             text-align: center;
@@ -543,16 +730,25 @@
             cursor: pointer;
             padding: 2px 8px;
             border-radius: 4px;
-            border: 1px solid rgba(88,166,255,0.2);
+            border: 1px solid rgba(88, 166, 255, 0.2);
             background: var(--accent-glow);
             transition: all 0.15s;
             user-select: none;
             margin-left: 6px;
         }
 
-        .file-list-toggle:hover { background: rgba(88,166,255,0.25); }
-        .file-list-toggle .arrow { transition: transform 0.2s; font-size: 14px; }
-        .file-list-toggle.open .arrow { transform: rotate(90deg); }
+        .file-list-toggle:hover {
+            background: rgba(88, 166, 255, 0.25);
+        }
+
+        .file-list-toggle .arrow {
+            transition: transform 0.2s;
+            font-size: 14px;
+        }
+
+        .file-list-toggle.open .arrow {
+            transform: rotate(90deg);
+        }
 
         .file-list-dropdown {
             display: none;
@@ -565,7 +761,9 @@
             border-radius: var(--radius);
         }
 
-        .file-list-dropdown.show { display: flex; }
+        .file-list-dropdown.show {
+            display: flex;
+        }
 
         .file-list-item {
             display: flex;
@@ -579,8 +777,17 @@
             transition: all 0.1s;
         }
 
-        .file-list-item:hover { background: var(--surface-2); border-left-color: var(--accent); color: var(--text); }
-        .file-list-num { color: var(--text-dim); font-size: 16px; min-width: 20px; }
+        .file-list-item:hover {
+            background: var(--surface-2);
+            border-left-color: var(--accent);
+            color: var(--text);
+        }
+
+        .file-list-num {
+            color: var(--text-dim);
+            font-size: 16px;
+            min-width: 20px;
+        }
 
         .summary-inline {
             display: flex;
@@ -603,8 +810,15 @@
             flex-shrink: 0;
         }
 
-        .summary-tag.ok { background: var(--green-glow); color: var(--green); }
-        .summary-tag.err { background: var(--red-glow); color: var(--red); }
+        .summary-tag.ok {
+            background: var(--green-glow);
+            color: var(--green);
+        }
+
+        .summary-tag.err {
+            background: var(--red-glow);
+            color: var(--red);
+        }
 
         .summary-filename {
             font-size: 16px;
@@ -614,25 +828,64 @@
             white-space: nowrap;
         }
 
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: var(--surface); }
-        ::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(4px); }
-            to { opacity: 1; transform: translateY(0); }
+        ::-webkit-scrollbar {
+            width: 6px;
         }
 
-        .event-row { animation: fadeIn 0.2s ease both; }
+        ::-webkit-scrollbar-track {
+            background: var(--surface);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-bright);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-dim);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(4px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .event-row {
+            animation: fadeIn 0.2s ease both;
+        }
 
         @media (max-width: 900px) {
-            .layout { grid-template-columns: 1fr; }
-            .sidebar { display: none; }
-            .kpi-grid { grid-template-columns: repeat(2, 1fr); }
-            .event-table-header, .event-row { grid-template-columns: 120px 120px 1fr; }
-            .event-row > :last-child { display: none; }
-            .event-table-header > :last-child { display: none; }
+            .layout {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                display: none;
+            }
+
+            .kpi-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .event-table-header,
+            .event-row {
+                grid-template-columns: 120px 120px 1fr;
+            }
+
+            .event-row> :last-child {
+                display: none;
+            }
+
+            .event-table-header> :last-child {
+                display: none;
+            }
         }
     </style>
 </head>
@@ -730,8 +983,8 @@
 
             <div class="search-wrap">
                 <span class="search-icon">⌕</span>
-                <input class="search-input" type="text" placeholder="Search events, files, columns..."
-                    id="search-input" oninput="applyFilters()">
+                <input class="search-input" type="text" placeholder="Search events, files, columns..." id="search-input"
+                    oninput="applyFilters()">
             </div>
 
             <div class="filters" id="filter-bar"></div>
@@ -774,7 +1027,7 @@
             renderEvents();
 
             const execId = findExecutionId();
-            document.getElementById('exec-id').textContent = execId ? execId.slice(0,8) + '...' : 'unknown';
+            document.getElementById('exec-id').textContent = execId ? execId.slice(0, 8) + '...' : 'unknown';
             document.getElementById('log-filename').textContent = 'pipeline log';
             const last = RAW_DATA[RAW_DATA.length - 1];
             document.getElementById('last-update').textContent =
@@ -801,7 +1054,7 @@
             // Filas totales — desde pipeline_summary si existe, sino sumar file_analysis
             const totalRows = summary?.total_rows ??
                 RAW_DATA.filter(e => e.evento === 'file_analysis')
-                        .reduce((s, e) => s + (e.detalles?.rows || 0), 0);
+                    .reduce((s, e) => s + (e.detalles?.rows || 0), 0);
 
             // Archivos ok — desde pipeline_summary si existe
             const filesOk = summary?.files_ok ??
@@ -812,8 +1065,8 @@
             document.getElementById('kpi-errors').textContent = errors.toLocaleString();
             document.getElementById('kpi-rows').textContent =
                 totalRows > 999999 ? (totalRows / 1000000).toFixed(1) + 'M' :
-                totalRows > 999 ? (totalRows / 1000).toFixed(1) + 'K' :
-                totalRows.toString();
+                    totalRows > 999 ? (totalRows / 1000).toFixed(1) + 'K' :
+                        totalRows.toString();
 
             // Sidebar
             const totalFiles = summary?.total_files ??
@@ -830,7 +1083,7 @@
             // Nav counts
             document.getElementById('nav-all').textContent = total;
             document.getElementById('nav-pipeline').textContent =
-                RAW_DATA.filter(e => ['pipeline_start','pipeline_init','pipeline_summary'].includes(e.evento)).length;
+                RAW_DATA.filter(e => ['pipeline_start', 'pipeline_init', 'pipeline_summary'].includes(e.evento)).length;
             document.getElementById('nav-file_analysis').textContent =
                 RAW_DATA.filter(e => e.evento === 'file_analysis').length;
             document.getElementById('nav-errors').textContent = errors;
@@ -849,34 +1102,39 @@
         }
 
         function buildSidebar() {
-            if (RAW_DATA.length >= 2) {
+            const summary = getPipelineSummary();
+
+            if (summary?.duration_seconds != null) {
+                // ← usar duration_seconds del log si existe
+                document.getElementById('sb-duration').textContent = summary.duration_seconds + 's';
+            } else if (RAW_DATA.length >= 2) {
+                // ← fallback: calcular desde timestamps
                 const t1 = new Date(RAW_DATA[0].timestamp);
                 const t2 = new Date(RAW_DATA[RAW_DATA.length - 1].timestamp);
                 const diff = ((t2 - t1) / 1000).toFixed(1);
                 document.getElementById('sb-duration').textContent = diff + 's';
             }
         }
-
         function buildTimeline() {
             const track = document.getElementById('timeline-track');
             track.innerHTML = '';
             RAW_DATA.forEach((e, i) => {
                 const dot = document.createElement('div');
                 dot.className = 'timeline-dot ' + getTimelineDotClass(e);
-                dot.title = `${e.timestamp.split('T')[1].slice(0,8)} — ${e.evento}`;
+                dot.title = `${e.timestamp.split('T')[1].slice(0, 8)} — ${e.evento}`;
                 dot.onclick = () => scrollToEvent(i);
                 track.appendChild(dot);
             });
             if (RAW_DATA.length > 0) {
-                const first = RAW_DATA[0].timestamp.split('T')[1].slice(0,8);
-                const last = RAW_DATA[RAW_DATA.length-1].timestamp.split('T')[1].slice(0,8);
+                const first = RAW_DATA[0].timestamp.split('T')[1].slice(0, 8);
+                const last = RAW_DATA[RAW_DATA.length - 1].timestamp.split('T')[1].slice(0, 8);
                 document.getElementById('timeline-range').textContent = `${first} → ${last}`;
             }
         }
 
         function getTimelineDotClass(e) {
             if (isError(e)) return 'err';
-            if (['pipeline_start','pipeline_init','pipeline_summary'].includes(e.evento)) return 'info';
+            if (['pipeline_start', 'pipeline_init', 'pipeline_summary'].includes(e.evento)) return 'info';
             if (e.evento === 'file_analysis') return 'ok';
             return 'info';
         }
@@ -886,7 +1144,7 @@
             const bar = document.getElementById('filter-bar');
             let html = '<button class="filter-btn active" onclick="setFilter(\'all\', this)">All</button>';
             events.forEach(ev => {
-                const isErr = ['analysis_error','file_not_found','critical_error'].includes(ev);
+                const isErr = ['analysis_error', 'file_not_found', 'critical_error'].includes(ev);
                 html += `<button class="filter-btn ${isErr ? 'error' : ''}" onclick="setFilter('${ev}', this)">${ev}</button>`;
             });
             bar.innerHTML = html;
@@ -894,7 +1152,7 @@
 
         function getFilteredData() {
             return RAW_DATA.filter(e => {
-                if (currentView === 'pipeline' && !['pipeline_start','pipeline_init','pipeline_summary'].includes(e.evento)) return false;
+                if (currentView === 'pipeline' && !['pipeline_start', 'pipeline_init', 'pipeline_summary'].includes(e.evento)) return false;
                 if (currentView === 'file_analysis' && e.evento !== 'file_analysis') return false;
                 if (currentView === 'errors' && !isError(e)) return false;
                 if (currentFilter !== 'all' && e.evento !== currentFilter) return false;
@@ -920,7 +1178,7 @@
 
             body.innerHTML = filtered.map((e, idx) => {
                 const originalIdx = RAW_DATA.indexOf(e);
-                const time = e.timestamp.split('T')[1]?.slice(0,12) || e.timestamp;
+                const time = e.timestamp.split('T')[1]?.slice(0, 12) || e.timestamp;
                 const badgeClass = getBadgeClass(e.evento);
                 const summary = getSummary(e);
                 const isExp = expandedRows.has(originalIdx);
@@ -983,18 +1241,18 @@
             if (e.evento === 'pipeline_init') {
                 const count = d.cantidad || 0;
                 const files = d.archivos || [];
-                const rowId = `filelist-${Math.random().toString(36).slice(2,7)}`;
+                const rowId = `filelist-${Math.random().toString(36).slice(2, 7)}`;
                 return `<span class="summary-inline" style="overflow:visible; flex-wrap:wrap; gap:4px;">
                     <span class="summary-tag">${count} files</span>
                     <span class="file-list-toggle" onclick="toggleFileList(event,'${rowId}')">
                         <span class="arrow">▶</span> show files
                     </span>
                     <span class="file-list-dropdown" id="${rowId}">
-                        ${files.map((f,i) =>
-                            `<span class="file-list-item">
-                                <span class="file-list-num">${i+1}.</span>${f}
+                        ${files.map((f, i) =>
+                    `<span class="file-list-item">
+                                <span class="file-list-num">${i + 1}.</span>${f}
                             </span>`
-                        ).join('')}
+                ).join('')}
                     </span>
                 </span>`;
             }
@@ -1022,8 +1280,8 @@
                 </span>`;
             }
 
-            const parts = Object.entries(d).slice(0,2)
-                .map(([k,v]) => `<span class="summary-tag">${k}: ${String(v).slice(0,20)}</span>`)
+            const parts = Object.entries(d).slice(0, 2)
+                .map(([k, v]) => `<span class="summary-tag">${k}: ${String(v).slice(0, 20)}</span>`)
                 .join('');
             return `<span class="summary-inline">${parts}</span>`;
         }
@@ -1040,15 +1298,15 @@
                         <div class="detail-key" style="margin-bottom:8px">${k} (${v.length})</div>
                         <div style="display:flex; flex-wrap:wrap; gap:6px;">
                             ${v.map((item, i) =>
-                                `<span class="file-list-item" style="flex:1; min-width:160px;">
-                                    <span class="file-list-num">${i+1}.</span>${item}
+                        `<span class="file-list-item" style="flex:1; min-width:160px;">
+                                    <span class="file-list-num">${i + 1}.</span>${item}
                                 </span>`
-                            ).join('')}
+                    ).join('')}
                         </div>
                     </div>`;
                 } else {
                     const cls = k === 'success' ? (v ? 'ok' : 'err') :
-                                (typeof v === 'number' ? 'num' : '');
+                        (typeof v === 'number' ? 'num' : '');
                     const display = typeof v === 'number' ? v.toLocaleString() : String(v ?? '—');
                     html += `<div class="detail-field">
                         <div class="detail-key">${k}</div>
@@ -1066,9 +1324,9 @@
                         <span>${columns.length} columns</span>
                     </div>
                     <div class="cols-grid" id="cols-${idx}">
-                        ${columns.map((c,i) =>
-                            `<div class="col-chip"><span class="col-idx">${i+1}</span>${c}</div>`
-                        ).join('')}
+                        ${columns.map((c, i) =>
+                    `<div class="col-chip"><span class="col-idx">${i + 1}</span>${c}</div>`
+                ).join('')}
                     </div>
                 </div>`;
             }
@@ -1155,4 +1413,5 @@
         init();
     </script>
 </body>
+
 </html>
