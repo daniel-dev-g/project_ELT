@@ -11,7 +11,7 @@ from charset_normalizer import from_path
 from src.log_csv import registrar_log
 
 
-def get_pipeline_files():
+def get_pipeline_files(execution_id=None):
     """Obtiene archivos activos desde el YAML de configuración."""
     current_file = Path(__file__).resolve()
     ruta_yaml = current_file.parent.parent / "config" / "pipeline.yaml"
@@ -36,7 +36,7 @@ def get_pipeline_files():
 
     registrar_log(
         "pipeline_init",
-        {
+        {   "execution_id": execution_id,
             "status": "success",
             "cantidad": len(archivos),
             "archivos": [a["file"].name for a in archivos],
@@ -165,7 +165,11 @@ def analyze_single_file(file_path, delimiter=None, execution_id=None):
     }
 
     if not file.exists():
-        registrar_log("file_not_found", {"status": "error", "path": str(file_path)})
+        registrar_log(
+
+            "file_not_found",
+            { "execution_id": execution_id,"status": "error", "path": str(file_path)}
+        )
         metadata["error"] = "Archivo no encontrado"
         return metadata
 
@@ -189,6 +193,12 @@ def analyze_single_file(file_path, delimiter=None, execution_id=None):
             metadata["columns_count"] = csv_analysis["columns_count"]
             metadata["rows_count"] = csv_analysis["rows_count"]
             metadata["valid_csv"] = csv_analysis["success"]
+
+            # log
+            registrar_log( "file_analysis", {"execution_id": execution_id,
+                                             "rows": metadata["rows_count"],
+                                             "file": str(Path(file_path).name)} )
+
         else:
             metadata["error"] = "Archivo vacío"
 
@@ -255,9 +265,25 @@ def run_csv_analysis(execution_id=None):
     """Ejecuta el análisis de archivos CSV definidos en el pipeline."""
     # creamos diccioanrio para metadata de cada archivo, con el mismo esquema de llaves para consistencia del DataFrame
     all_metadata = []
-    for file in get_pipeline_files():
-        all_metadata.append(analyze_single_file(file_path=file['file'], delimiter=file['delimiter'], execution_id=execution_id))
+    total_rows = 0  # ← acumulador local
 
+    for file in get_pipeline_files(execution_id=execution_id):
+        all_metadata.append(
+            analyze_single_file(file_path=file['file'],
+                                delimiter=file['delimiter'],
+                                execution_id=execution_id))
+
+
+    total_rows += sum(m.get("rows_count", 0) for m in all_metadata)  # ← acumular por archivo
+
+    # Resumen final — después de leer todos los archivos
+    registrar_log("pipeline_summary", {
+        "execution_id": execution_id,
+        "total_files": len(all_metadata),
+        "total_rows": total_rows,
+        "files_ok": sum(1 for m in all_metadata if m.get("valid_csv")),
+        "files_error": sum(1 for m in all_metadata if not m.get("valid_csv")),
+    })
 
     df_metadata = create_metadata_dataframe(all_metadata)
     current_file = Path(__file__).resolve()
