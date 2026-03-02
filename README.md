@@ -139,7 +139,7 @@ Al finalizar se generan automáticamente:
 
 ## 📁 Estructura del proyecto
 
-\```
+```
 project_ELT/
 ├── config/
 │   ├── settings.yaml          # Configuración de conexión y entorno
@@ -156,7 +156,7 @@ project_ELT/
 │   └── state_manager/         # Gestión de estado de ejecución
 ├── main.py                    # Punto de entrada
 └── pyproject.toml             # Dependencias del proyecto
-\```
+```
 
 ---
 
