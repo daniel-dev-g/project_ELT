@@ -79,6 +79,7 @@ source venv/bin/activate
 
 3. Instalar dependencias
 pip install -r requirements.txt
+```
 
 ## 🔧 Configuración
 Editar archivos de configuración según tu entorno:
