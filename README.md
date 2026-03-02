@@ -162,15 +162,15 @@ project_ELT/
 
 ## 📊 Outputs
 
-| Archivo                   | Descripción                                  |
-|---------------------------|----------------------------------------------|
-| `logs/log_*.json`         | Log de auditoría por ejecución               |
-| `logs/log_*.html`         | Dashboard HTML interactivo                   |
-| `src/metadata.csv`        | Métricas por archivo (filas, encoding, etc.) |
-| `src/metadata_detail.csv` | Inventario de columnas por archivo           |
+| Archivo                   | Descripción                                          |
+|---------------------------|------------------------------------------------------|
+| `logs/log_*.json`         | Log de auditoría por ejecución (negocio)             |
+| `logs/log_*.html`         | Dashboard HTML interactivo                           |
+| `logs/technical.log`      | Log técnico del proceso (DEBUG/INFO/WARNING/ERROR)   |
+| `src/metadata.csv`        | Métricas por archivo (filas, encoding, tamaño, etc.) |
+| `src/metadata_detail.csv` | Inventario de columnas por archivo                   |
 
 Todos los outputs comparten `execution_id` para trazabilidad completa.
-
 ---
 
 ## 🎯 Características principales
@@ -196,9 +196,9 @@ Todos los outputs comparten `execution_id` para trazabilidad completa.
 
 ## 👨‍💻 Autor
 
-**Daniel XXXX**
+**Daniel Guevara**
 Data Engineer | SQL Server | Python | GCP
 Santiago, Chile
 
-- LinkedIn: [linkedin.com/in/daniel-xxxx](www.linkedin.com/in/daniel-guevara-2a64a479)
+- LinkedIn: [linkedin.com/in/daniel-guevara](www.linkedin.com/in/daniel-guevara-2a64a479)
 - GitHub: [github.com/daniel-dev-g](https://github.com/daniel-dev-g)
