@@ -97,23 +97,25 @@ database:
 python main.py
 
 Al finalizar se generarán:
+- Logs de ejecución en formato JSON
+- Reporte HTML con resumen del proceso
 
-Logs de ejecución en formato JSON
+---
 
 ## 📁 Estructura del proyecto
 Reporte HTML con resumen del proceso
-
+```
 project_ELT/
-├── config/              # Configuración YAML
-│   ├── settings.yaml
-│   └── pipeline.yaml
+├── config/ # Configuración YAML
+│ ├── settings.yaml
+│ └── pipeline.yaml
 ├── data/
-│   └── input/           # Archivos de entrada
-├── logs/                # Logs y dashboard HTML
-├── src/                 # Código fuente
-├── main.py              # Punto de entrada
+│ └── input/ # Archivos de entrada
+├── logs/ # Logs y dashboard HTML
+├── src/ # Código fuente
+├── main.py # Punto de entrada
 └── requirements.txt
-
+```
 ##🎯 Características principales
 
 Arquitectura configurable
