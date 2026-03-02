@@ -170,6 +170,10 @@ project_ELT/
 | `src/metadata.csv`        | Métricas por archivo (filas, encoding, tamaño, etc.) |
 | `src/metadata_detail.csv` | Inventario de columnas por archivo                   |
 
+> `log_*.json` registra eventos de negocio (archivos procesados, filas cargadas, errores).
+> `technical.log` registra eventos técnicos internos (conexiones, validaciones, tiempos).
+> Ambos se generan en cada ejecución y comparten `execution_id`.
+
 Todos los outputs comparten `execution_id` para trazabilidad completa.
 ---
 
