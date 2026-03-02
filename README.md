@@ -88,10 +88,10 @@ cd project_ELT
 
 ### 2. Instalar dependencias
 
-\```bash
+```bash
 pip install uv
 uv sync
-\```
+```
 
 ---
 
@@ -99,18 +99,18 @@ uv sync
 
 ### `config/settings.yaml`
 
-\```yaml
+```yaml
 development:
   server: "NOMBRE_SERVIDOR"
   database: "NOMBRE_DB"
   log_level: "WARNING"   # DEBUG para desarrollo, WARNING para producción
-\```
+```
 
 > El proyecto usa Windows Authentication. No se requiere usuario ni contraseña.
 
 ### `config/pipeline.yaml`
 
-\```yaml
+```yaml
 # Formatos soportados: .csv, .txt
 task:
   - name: "Carga de Clientes"
@@ -120,15 +120,15 @@ task:
     table_destination: "clientes"
     schema: "dbo"
     active: true
-\```
+```
 
 ---
 
 ## ▶️ Ejecución
 
-\```bash
+```bash
 python main.py
-\```
+```
 
 Al finalizar se generan automáticamente:
 
