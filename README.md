@@ -1,84 +1,148 @@
-# DataBridge
+# DataBridge — ELT con Python y SQL Server
 
-> Herramienta de carga masiva de archivos CSV a SQL Server mediante BCP.
-> Alternativa ligera a Airflow y SSIS para analistas que necesitan
-> cargar datos sin infraestructura DevOps.
+## 🚀 Descripción
+DataBridge es una herramienta ELT (Extract, Load, Transform) desarrollada en Python que automatiza la carga y procesamiento de archivos CSV/TXT hacia una base de datos SQL Server.
 
-## ⚡ Performance
-| Files | Rows      | Duration |
-|-------|-----------|----------|
-| 3     | 480,526   | 2.85s    |
+El pipeline es configurable mediante archivos YAML, permite cargas eficientes usando utilidades nativas y genera logs estructurados junto a un dashboard de ejecución.
 
-## Features
-- YAML-configured pipeline
-- BCP bulk load (faster than SQLAlchemy/pandas)
-- File metadata analysis with Polars
-- Structured JSON audit log
-- Interactive HTML dashboard
+Este proyecto demuestra un flujo de ingeniería de datos reproducible y orientado a automatización.
 
-## Requirements
-- Python 3.11+
-- SQL Server (Windows Auth)
-- BCP utility installed
+---
 
-## Quick Start
+## 📌 Problema que resuelve
+Las cargas manuales de datos desde archivos planos suelen ser lentas, poco auditables y difíciles de mantener.
+
+Este proyecto permite:
+- Automatizar cargas masivas de datos
+- Definir pipelines reutilizables mediante configuración
+- Registrar ejecución y errores de forma estructurada
+- Separar lógica de negocio y configuración
+- Facilitar monitoreo y trazabilidad de procesos
+
+---
+
+## 🛠️ Tecnologías utilizadas
+- Python 3
+- SQL Server
+- YAML para configuración
+- BCP Utility para carga eficiente de datos
+- Polars para análisis de archivos
+- Logs en formato JSON
+- Dashboard HTML de ejecución
+
+---
+
+## 🧠 Flujo del proceso ELT
+
+Archivo CSV/TXT
+↓
+Validación de estructura
+↓
+Análisis de datos con Polars
+↓
+Carga masiva a SQL Server (BCP)
+↓
+Registro de ejecución en logs JSON
+↓
+Generación de dashboard HTML
+
+
+---
+
+## 📦 Requisitos
+Antes de ejecutar el proyecto debes tener instalado:
+
+- Python 3.11 o superior
+- SQL Server (local o remoto)
+- BCP Utility disponible en el sistema
+- Acceso a una base de datos de pruebas
+
+---
+
+## ⚙️ Instalación
+
+### 1. Clonar repositorio
 ```bash
+git clone https://github.com/daniel-dev-g/project_ELT.git
+cd project_ELT
+
+
+2. Crear entorno virtual
+python -m venv venv
+
+Activar entorno:
+Windows
+venv\Scripts\activate
+
+Linux / Mac
+source venv/bin/activate
+
+3. Instalar dependencias
 pip install -r requirements.txt
-# Edit config/settings.yaml and config/pipeline.yaml
+
+## 🔧 Configuración
+Editar archivos de configuración según tu entorno:
+config/settings.yaml
+config/pipeline.yaml
+
+Ejemplo de configuración de conexión:
+database:
+  server: localhost
+  name: demo_db
+  user: user
+  password: password
+
+## ▶️ Ejecución del pipeline
 python main.py
-```
 
-## Configuration
-### settings.yaml
-```yaml
-development:
-  server: "SERVER_NAME"
-  database: "DB_NAME"
-  log_level: "WARNING"
-```
+Al finalizar se generarán:
 
-### pipeline.yaml
-```yaml
-task:
-  - name: "Sales Load"
-    file: "data/input/sales.csv"
-    delimiter: ";"
-    table_destination: "sales"
-    schema: "dbo"
-    active: true
-```
+Logs de ejecución en formato JSON
 
-## Project Structure
-```
-DataBridge/
-├── config/          # YAML configuration
-├── data/input/      # Source files
-├── logs/            # JSON audit logs + HTML dashboard
-├── src/             # Core modules
-│   ├── bulk_loader.py
-│   ├── csv_analisys.py
-│   ├── validators/
-│   └── state_manager/
-└── main.py
-```
+## 📁 Estructura del proyecto
+Reporte HTML con resumen del proceso
 
-## Architecture
-```
-CSV/TXT → Polars Analysis → BCP Load → SQL Server
-                ↓
-         JSON Audit Log → HTML Dashboard
-```
+project_ELT/
+├── config/              # Configuración YAML
+│   ├── settings.yaml
+│   └── pipeline.yaml
+├── data/
+│   └── input/           # Archivos de entrada
+├── logs/                # Logs y dashboard HTML
+├── src/                 # Código fuente
+├── main.py              # Punto de entrada
+└── requirements.txt
 
-## Outputs
-| File                  | Description                          |
-|-----------------------|--------------------------------------|
-| logs/log_*.json       | JSON audit log per execution         |
-| logs/log_*.html       | Interactive HTML dashboard           |
-| src/metadata.csv      | File-level metrics per execution     |
-| src/metadata_detail.csv | Column inventory per execution     |
+##🎯 Características principales
 
+Arquitectura configurable
 
-## Roadmap
-- [ ] Post-load stored procedure execution
-- [ ] Duration per file in dashboard
-- [ ] PostgreSQL support via COPY FROM
+Separación de configuración y lógica
+
+Carga eficiente de datos a SQL Server
+
+Registro estructurado de ejecución
+
+Pipeline reproducible
+
+Preparado para extensión a otros motores de base de datos
+
+##🧭 Posibles mejoras futuras
+
+Soporte para PostgreSQL y BigQuery
+
+Métricas de rendimiento por etapa
+
+Ejecución programada
+
+Integración con almacenamiento en la nube
+
+Contenerización con Docker
+
+##👨‍💻 Autor
+
+Daniel XXXX
+Data Engineer | Backend Cloud Developer
+Santiago, Chile
+
+LinkedIn: www.linkedin.com/in/daniel-xxxx
