@@ -102,7 +102,7 @@ Al finalizar se generarán:
 
 ---
 
-## 📁 Estructura del proyecto
+📁 Estructura del proyecto
 Reporte HTML con resumen del proceso
 ```
 project_ELT/
@@ -116,7 +116,8 @@ project_ELT/
 ├── main.py # Punto de entrada
 └── requirements.txt
 ```
-##🎯 Características principales
+
+🎯 Características principales
 
 Arquitectura configurable
 
@@ -130,7 +131,7 @@ Pipeline reproducible
 
 Preparado para extensión a otros motores de base de datos
 
-##🧭 Posibles mejoras futuras
+🧭 Posibles mejoras futuras
 
 Soporte para PostgreSQL y BigQuery
 
@@ -142,7 +143,7 @@ Integración con almacenamiento en la nube
 
 Contenerización con Docker
 
-##👨‍💻 Autor
+👨‍💻 Autor
 
 Daniel XXXX
 Data Engineer | Backend Cloud Developer
