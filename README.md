@@ -81,10 +81,10 @@ CSV/TXT → Validación → Análisis (Polars) → BCP → SQL Server
 
 ### 1. Clonar repositorio
 
-\```bash
+```bash
 git clone https://github.com/daniel-dev-g/project_ELT.git
 cd project_ELT
-\```
+```
 
 ### 2. Instalar dependencias
 
