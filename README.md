@@ -10,7 +10,7 @@
 
 | Archivos | Filas   | Duración |
 |----------|---------|----------|
-| 3        | 480.526 | 45.3s    |
+| 3        | 480.526 | 4.3s    |
 
 > Carga realizada con BCP sobre SQL Server en entorno local Windows.
 
