@@ -4,9 +4,9 @@ import time
 import logging
 from pathlib import Path
 
-
 import yaml
-from src.csv_analisys import run_csv_analysis
+from src.table_creator import table_creator_execute
+from src.csv_analisys import CSVAnalysis
 
 from src.log_csv import registrar_log
 from src.bulk_loader import sqlserver_bcp_windows
@@ -90,7 +90,7 @@ def main():
         with open("config/settings.yaml", "r", encoding="utf-8") as f:
             settings = yaml.safe_load(f)
 
-        db_cfg        = settings.get('development', {})
+        db_cfg  = settings.get('development', {})
 
         # Update logging level from YAML
         log_level = db_cfg.get('log_level', 'WARNING')
@@ -109,7 +109,7 @@ def main():
 
 
 
-        # PHASE 4: Load cycle
+        # PHASE 4: process each task
         total_tasks      = 0
         successful_tasks = 0
         failed_tasks     = 0
@@ -118,6 +118,13 @@ def main():
         for task in pipeline_cfg['task']:
             if not task['active']:
                 continue
+
+            #try:
+            #    table_creator_execute(file=task['file'], tabla=task['table_destination'])
+            #except Exception as e:
+            #   registrar_log("table_creation_error",
+            #               {"table": task['table_destination'], "error": str(e)})
+            #   state.complete_process(status='FAILED')
 
             total_tasks += 1
             success, rows = process_task(
@@ -133,7 +140,17 @@ def main():
                 failed_tasks += 1
 
         # Sumary log of the entire process
-        run_csv_analysis(execution_id=execution_id, start_time=start_time)
+        try:
+            csv_analysis = CSVAnalysis(execution_id=execution_id, start_time=start_time)
+            csv_analysis.run_csv_analysis()
+        except (OSError, ValueError, RuntimeError, AttributeError) as e:
+            registrar_log("analysis_error", {
+                "execution_id":execution_id,
+                "status": "fail",
+                "error_type": type(e).__name__,
+                "message": str(e),
+                "file": str(task['file'])
+            })
 
         # PHASE 5: Close process
         final_status = 'COMPLETED' if failed_tasks == 0 else 'PARTIAL'
@@ -155,3 +172,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
