@@ -43,6 +43,9 @@ Haz clic en el siguiente enlace para ver el dashboard interactivo con los result
 [**→ Ver Dashboard Interactivo ←**](https://htmlpreview.github.io/?https://github.com/daniel-dev-g/project_ELT/blob/main/logs/log_20260302_174109.html)
 
 *(El dashboard muestra KPIs como total de eventos, archivos procesados, errores y un registro detallado de la ejecución.)*
+<p align="center">
+  <img src="screenshot.png" alt="Dashboard de monitorización" width="800">
+</p>
 
 ## 🛠️ Tecnologías
 
