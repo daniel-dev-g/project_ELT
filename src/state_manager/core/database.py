@@ -4,7 +4,9 @@ from contextlib import contextmanager
 import os
 import pyodbc
 import yaml
+from sqlalchemy import  inspect, create_engine
 from src.state_manager.core.query_loader import create_query_loader
+
 
 def load_config():
     """Carga configuración desde settings.yaml"""
@@ -13,6 +15,16 @@ def load_config():
     config_path = os.path.join(project_root, 'config/settings.yaml')
     with open(config_path, 'r', encoding='utf-8') as f:
         return yaml.safe_load(f)['development']
+
+def get_engine(config=None):
+    """Crea engine SQLAlchemy para SQL Server"""
+    if config is None:
+        config = load_config()
+
+    conn_str = get_connection_string(config)
+    connection_url = f"mssql+pyodbc:///?odbc_connect={conn_str}"
+
+    return create_engine(connection_url)
 
 def get_connection_string(config=None):
     """Genera connection string para pyodbc"""
@@ -56,3 +68,7 @@ def get_queries():
     """Obtiene cargador de queries con schema correcto"""
     schema = get_metadata_schema()
     return create_query_loader(schema)
+
+def table_exists(engine, tabla: str, schema: str) -> bool:
+    inspector = inspect(engine)
+    return inspector.has_table(tabla, schema=schema)
