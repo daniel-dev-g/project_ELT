@@ -2,15 +2,15 @@
 
 > Herramienta ETL desarrollada en Python que automatiza la carga de archivos CSV/TXT hacia SQL Server mediante BCP.
 > Pipeline configurable por YAML, con auditoría estructurada y dashboard de ejecución.
-> Alternativa ligera a SSIS y Airflow para analistas que necesitan cargas masivas sin infraestructura DevOps.
+> Alternativa ligera a SSIS y Airflow para analistas que necesitan cargas masivas sin infraestructura DevOps..
 
 ---
 
 ## ⚡ Rendimiento
 
 | Archivos | Filas   | Duración |
-|----------|---------|----------|
-| 3        | 480.526 | 4.3s    |
+| -------- | ------- | -------- |
+| 3        | 480.526 | 4.3s     |
 
 > Carga realizada con BCP sobre SQL Server en entorno local Windows.
 
@@ -42,26 +42,28 @@ Haz clic en el siguiente enlace para ver el dashboard interactivo con los result
 
 [**→ Ver Dashboard Interactivo ←**](https://htmlpreview.github.io/?https://github.com/daniel-dev-g/project_ELT/blob/main/logs/log_20260302_174109.html)
 
-*(El dashboard muestra KPIs como total de eventos, archivos procesados, errores y un registro detallado de la ejecución.)*
+_(El dashboard muestra KPIs como total de eventos, archivos procesados, errores y un registro detallado de la ejecución.)_
+
 <p align="center">
   <img src="screenshot.png" alt="Dashboard de monitorización" width="800">
 </p>
 
 ## 🛠️ Tecnologías
 
-| Componente    | Tecnología                    |
-|---------------|-------------------------------|
-| Lenguaje      | Python 3.11+                  |
-| Base de datos | SQL Server (Windows Auth)     |
-| Carga masiva  | BCP Utility                   |
-| Análisis      | Polars                        |
-| Configuración | YAML                          |
-| Auditoría     | JSON + Dashboard HTML         |
-| Gestión deps  | uv                            |
+| Componente    | Tecnología                |
+| ------------- | ------------------------- |
+| Lenguaje      | Python 3.11+              |
+| Base de datos | SQL Server (Windows Auth) |
+| Carga masiva  | BCP Utility               |
+| Análisis      | Polars                    |
+| Configuración | YAML                      |
+| Auditoría     | JSON + Dashboard HTML     |
+| Gestión deps  | uv                        |
 
 ---
 
 ## 🧠 Flujo del proceso
+
 ```
 CSV/TXT → Validación → Análisis (Polars) → BCP → SQL Server
                                                ↓
@@ -114,7 +116,7 @@ uv sync
 development:
   server: "NOMBRE_SERVIDOR"
   database: "NOMBRE_DB"
-  log_level: "WARNING"   # DEBUG para desarrollo, WARNING para producción
+  log_level: "WARNING" # DEBUG para desarrollo, WARNING para producción
 ```
 
 > El proyecto usa Windows Authentication. No se requiere usuario ni contraseña.
@@ -174,7 +176,7 @@ project_ELT/
 ## 📊 Outputs
 
 | Archivo                   | Descripción                                          |
-|---------------------------|------------------------------------------------------|
+| ------------------------- | ---------------------------------------------------- |
 | `logs/log_*.json`         | Log de auditoría por ejecución (negocio)             |
 | `logs/log_*.html`         | Dashboard HTML interactivo                           |
 | `logs/technical.log`      | Log técnico del proceso (DEBUG/INFO/WARNING/ERROR)   |
@@ -185,8 +187,7 @@ project_ELT/
 > `technical.log` registra eventos técnicos internos (conexiones, validaciones, tiempos).
 > Ambos se generan en cada ejecución y comparten `execution_id`.
 
-Todos los outputs comparten `execution_id` para trazabilidad completa.
----
+## Todos los outputs comparten `execution_id` para trazabilidad completa.
 
 ## 🎯 Características principales
 
