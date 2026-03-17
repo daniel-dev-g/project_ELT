@@ -216,5 +216,5 @@ project_ELT/
 Data Engineer | SQL Server | Python | GCP
 Santiago, Chile
 
-- LinkedIn: [linkedin.com/in/daniel-guevara](www.linkedin.com/in/daniel-guevara-2a64a479)
+- LinkedIn: [linkedin.com/in/daniel-guevara](https://www.linkedin.com/in/daniel-guevara-2a64a479/)
 - GitHub: [github.com/daniel-dev-g](https://github.com/daniel-dev-g)
