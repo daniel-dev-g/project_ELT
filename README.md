@@ -1,4 +1,4 @@
-# DataBridge — Carga masiva de archivos a SQL Server
+# FlowELT — Carga masiva de archivos a SQL Server
 
 > Herramienta ETL desarrollada en Python que automatiza la carga de archivos CSV/TXT hacia SQL Server mediante BCP.
 > Pipeline configurable por YAML, con auditoría estructurada y dashboard de ejecución.
@@ -18,7 +18,7 @@
 
 ## 🚀 Descripción
 
-DataBridge automatiza el proceso de carga masiva desde archivos planos hacia SQL Server.
+FlowELT automatiza el proceso de carga masiva desde archivos planos hacia SQL Server.
 
 El pipeline analiza los archivos con Polars, valida su estructura, ejecuta la carga con BCP y genera un log estructurado en JSON junto a un dashboard HTML interactivo con el resumen de ejecución.
 
@@ -26,7 +26,7 @@ El pipeline analiza los archivos con Polars, valida su estructura, ejecuta la ca
 
 ## 📌 Problema que resuelve
 
-Las cargas manuales de archivos planos suelen ser lentas, poco auditables y difíciles de mantener. DataBridge permite:
+Las cargas manuales de archivos planos suelen ser lentas, poco auditables y difíciles de mantener. FlowELT permite:
 
 - Automatizar cargas masivas de datos mediante configuración YAML
 - Registrar cada ejecución con trazabilidad completa por `execution_id`
