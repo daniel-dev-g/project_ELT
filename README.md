@@ -202,19 +202,18 @@ project_ELT/
 
 ## 🧭 Roadmap
 
-- [ ] Ejecución de stored procedure post-carga (`post_load_sp`)
-- [ ] Soporte PostgreSQL via `COPY FROM`
-- [ ] Duración por archivo en dashboard
-- [ ] Ejecución programada
 - [ ] Contenerización con Docker
+- [ ] Soporte PostgreSQL via `COPY FROM`
+- [ ] Soporte IBMDB2 via `LOAD`
+- [ ] Soporte Mysql via `LOAD DATA INFILE`
+- [ ] Soporte Oracle via `sqlldr .ctl`
 
 ---
 
 ## 👨‍💻 Autor
 
 **Daniel Guevara**
-Data Engineer | SQL Server | Python | GCP
-Santiago, Chile
+Data Engineer | GCP | SQL Server | Python | Santiago, Chile
 
 - LinkedIn: [linkedin.com/in/daniel-guevara](https://www.linkedin.com/in/daniel-guevara-2a64a479/)
 - GitHub: [github.com/daniel-dev-g](https://github.com/daniel-dev-g)
