@@ -1,9 +1,9 @@
-""" Contains functions to validate the database connection,
+"""db_validator.py Contains functions to validate the database connection,
 existence of tables, and permissions. """
 
 import logging
 import re
-from sqlalchemy import  inspect, text
+from sqlalchemy import inspect, text
 from sqlalchemy.exc import OperationalError, ProgrammingError
 
 logger = logging.getLogger(__name__)
@@ -39,46 +39,4 @@ def check_table_exists(engine_global: str, tabla: str, schema: str = "dbo") -> b
         logger.error(" Connection or inspection error: %s", e)
         return False
     finally:
-        engine_global.dispose() # Limpia el pool de conexiones
-
-
-
-def check_bulk_permission(engine_global) -> bool:
-    """
-    Verifica si el usuario actual tiene permisos de BULK INSERT en el servidor.
-    """
-    query = """
-    SELECT 1
-    WHERE IS_SRVROLEMEMBER('bulkadmin') = 1
-       OR HAS_PERMS_BY_NAME(NULL, NULL, 'ADMINISTER BULK OPERATIONS') = 1;
-    """
-
-    # Intentar extraer el nombre del servidor para un log limpio
-    # Si .host es None (común en odbc_connect), buscamos en la cadena de conexión
-    server_name = engine_global.url.host
-    if not server_name:
-        params = engine_global.url.query.get('odbc_connect', '')
-        match = re.search(r"SERVER=([^;]+)", params, re.IGNORECASE)
-        server_name = match.group(1) if match else "SQL Server"
-
-    try:
-        with engine_global.connect() as connection:
-            result = connection.exec_driver_sql(query).fetchone()
-
-            if result:
-                logger.info(
-                    "The user has permissions for BULK INSERT on the server: %s",
-                     server_name
-                     )
-                return True
-            else:
-                logger.warning(
-                    "The user does NOT have BULK permissions on the server: %s",
-                    server_name)
-                return False
-    except (OperationalError, ProgrammingError) as e:
-        logger.error(
-            "Technical error while verifying permissions on %s: %s",
-            server_name, e
-            )
-        return False
+        engine_global.dispose()  # Limpia el pool de conexiones

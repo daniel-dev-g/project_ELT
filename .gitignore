@@ -24,3 +24,4 @@ settings.yaml
 *.parquet
 *.log
 *.json
+logs/*.html
