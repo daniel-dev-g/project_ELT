@@ -1,0 +1,16 @@
+# config/settings.example.yaml
+# Copia este archivo a settings.yaml y ajusta los valores
+development:
+  db_engine: "sqlserver" # sqlserver | postgres | mysql
+  driver: "ODBC Driver 18 for SQL Server"
+  server: "localhost,1433"
+  database: "demo_db"
+  trusted_connection: "no"
+  encrypt: "no"
+  username: "sa"
+  password: "your_password_here"
+  bulk_path_map:
+    host: "/ruta/absoluta/proyecto/data" # Linux/Mac
+    # host: "C:\\ruta\\proyecto\\data"   # Windows
+    container: "/data"
+  log_level: "DEBUG"
