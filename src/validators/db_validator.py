@@ -31,7 +31,7 @@ def check_table_exists(engine_global: str, tabla: str, schema: str = "dbo") -> b
             logger.info("Table [%s].[%s] exists.", schema, tabla)
             return True
         else:
-            logger.warning("The table [%s].[%s] was not found.", schema, tabla)
+            logger.info("The table [%s].[%s] was not found.", schema, tabla)
             return False
 
     except (OperationalError, ProgrammingError) as e:
