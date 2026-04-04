@@ -50,15 +50,39 @@ _(El dashboard muestra KPIs como total de eventos, archivos procesados, errores 
 
 ## 🛠️ Tecnologías
 
-| Componente    | Tecnología                |
-| ------------- | ------------------------- |
-| Lenguaje      | Python 3.11+              |
-| Base de datos | SQL Server (Windows Auth) |
-| Carga masiva  | BCP Utility               |
-| Análisis      | Polars                    |
-| Configuración | YAML                      |
-| Auditoría     | JSON + Dashboard HTML     |
-| Gestión deps  | uv                        |
+| Componente    | Tecnología            |
+| ------------- | --------------------- |
+| Lenguaje      | Python 3.14           |
+| Carga masiva  | Herramienta nativa por motor (ver tabla) |
+| Análisis      | Polars                |
+| Configuración | YAML                  |
+| Auditoría     | JSON + Dashboard HTML |
+| Gestión deps  | uv                    |
+
+---
+
+## 🗄️ Bases de datos soportadas
+
+### Imágenes Docker disponibles
+
+| Motor      | Imagen Docker                                        | Edición        | Login requerido |
+| ---------- | ---------------------------------------------------- | -------------- | --------------- |
+| SQL Server | `mcr.microsoft.com/mssql/server:2022-latest`         | Developer      | No              |
+| PostgreSQL | `postgres:16`                                        | —              | No              |
+| MySQL      | `mysql:8`                                            | Community      | No              |
+| IBM Db2    | `ibmcom/db2`                                         | Community      | No              |
+| Oracle     | `gvenzl/oracle-free`                                 | 23c Free       | No              |
+
+### Comparativa de adapters
+
+| Aspecto                     | SQL Server            | PostgreSQL              | IBM Db2                   | MySQL                    | Oracle                  |
+| --------------------------- | --------------------- | ----------------------- | ------------------------- | ------------------------ | ----------------------- |
+| Librería                    | `pyodbc`              | `psycopg2`              | `ibm_db_dbi`              | `pymysql`                | `oracledb`              |
+| SQLAlchemy engine           | `mssql+pyodbc`        | `postgresql+psycopg2`   | `db2+ibm_db`              | `mysql+pymysql`          | `oracle+oracledb`       |
+| Bulk load (herramienta nativa) | `BULK INSERT` (T-SQL) | `COPY FROM STDIN`    | `SYSPROC.ADMIN_CMD(LOAD)` | `LOAD DATA LOCAL INFILE` | `sqlldr` (SQL\*Loader)  |
+| Archivo de control          | —                     | —                       | —                         | —                        | `.ctl` (generado dinámico) |
+| Requiere cliente externo    | ODBC Driver           | —                       | IBM Db2 Client            | —                        | Oracle Instant Client   |
+| Verificación permisos       | `IS_SRVROLEMEMBER`    | `pg_has_role`           | `SYSIBMADM.PRIVILEGES`    | `mysql.user.File_priv`   | `USER_SYS_PRIVS`        |
 
 ---
 
@@ -83,7 +107,7 @@ CSV/TXT → Validación → Análisis (Polars) → BCP → SQL Server
 
 ## 📦 Requisitos
 
-- Python 3.11 o superior
+- Python 3.14 o superior
 - SQL Server (local o remoto, Windows Authentication)
 - BCP Utility disponible en el sistema (`bcp` en PATH)
 - uv instalado (`pip install uv`)
@@ -202,18 +226,19 @@ project_ELT/
 
 ## 🧭 Roadmap
 
-- [ ] Contenerización con Docker
-- [ ] Soporte PostgreSQL via `COPY FROM`
-- [ ] Soporte IBMDB2 via `LOAD`
-- [ ] Soporte Mysql via `LOAD DATA INFILE`
-- [ ] Soporte Oracle via `sqlldr .ctl`
+- [x] Soporte SQL Server via `BULK INSERT`
+- [x] Soporte PostgreSQL via `COPY FROM STDIN`
+- [x] Soporte IBM Db2 via `SYSPROC.ADMIN_CMD(LOAD)`
+- [x] Soporte MySQL via `LOAD DATA LOCAL INFILE`
+- [x] Soporte Oracle via `sqlldr` + `.ctl`
+- [ ] Contenerización con Docker (docker-compose con profiles por motor)
 
 ---
 
 ## 👨‍💻 Autor
 
 **Daniel Guevara**
-Data Engineer | GCP | SQL Server | Python | Santiago, Chile
+Data Engineer | GCP | SQL | Python | Santiago, Chile
 
 - LinkedIn: [linkedin.com/in/daniel-guevara](https://www.linkedin.com/in/daniel-guevara-2a64a479/)
 - GitHub: [github.com/daniel-dev-g](https://github.com/daniel-dev-g)
