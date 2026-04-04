@@ -24,7 +24,7 @@ class SqlServerAdapter(DatabaseAdapter):
         if config is None:
             config = load_config()
 
-        driver = config.get('driver', 'ODBC Driver 17 for SQL Server')
+        driver = config['driver']
 
         params = {
             'DRIVER': f'{{{driver}}}',
@@ -77,6 +77,8 @@ class SqlServerAdapter(DatabaseAdapter):
         server_name = self.engine.url.host
         if not server_name:
             params = self.engine.url.query.get('odbc_connect', '')
+            if isinstance(params, tuple):
+                params = params[0] if params else ''
             match = re.search(r"SERVER=([^;]+)", params, re.IGNORECASE)
             server_name = match.group(1) if match else "SQL Server"
 
