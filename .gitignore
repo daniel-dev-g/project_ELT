@@ -8,7 +8,10 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Configuración local con credenciales (nunca subir a git)
 settings.yaml
+.env
 
 # Extensiones de C y carpetas de caché de herramientas
 .ipynb_checkpoints
