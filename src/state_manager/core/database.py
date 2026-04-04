@@ -1,5 +1,6 @@
 """ database.py - Módulo para manejo de conexiones a la base de datos y carga de configuración """
 
+from collections.abc import Iterator
 from contextlib import contextmanager
 import os
 import pyodbc
@@ -40,7 +41,7 @@ def get_connection_string(config=None):
 
 
 @contextmanager
-def get_db_cursor():
+def get_db_cursor() -> Iterator[pyodbc.Cursor]:
     """Context manager para conexiones pyodbc"""
     conn_str = get_connection_string()
     conn = pyodbc.connect(conn_str)

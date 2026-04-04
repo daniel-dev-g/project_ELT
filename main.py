@@ -1,4 +1,4 @@
-""" Orquesta la carga de datos a SQL Server usando BCP."""
+""" Orquesta la carga de datos la base de datos."""
 import sys
 import time
 import logging

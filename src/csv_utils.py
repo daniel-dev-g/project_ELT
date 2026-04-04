@@ -40,6 +40,8 @@ class CSVUtils:
     def get_encoding(self):
         """Detecta el encoding del archivo."""
         resultado = from_path(self.file_path).best()
+        if resultado is None or resultado.encoding is None:
+            return "utf8"
         if resultado.encoding.lower() in ("utf_8", "utf-8"):
             return "utf8"
         return resultado.encoding
@@ -68,8 +70,9 @@ class CSVUtils:
             kwargs = {}
             if ext in [".csv", ".txt"]:
                 kwargs["separator"] = self.delimiter
+                encoding = self.encoding or "utf8"
                 kwargs["encoding"] = (
-                    "utf8" if self.encoding.lower() in ("utf8", "utf-8") else "utf8-lossy"
+                    "utf8" if encoding.lower() in ("utf8", "utf-8") else "utf8-lossy"
                 )
 
             if ext in scanners:
@@ -85,7 +88,7 @@ class CSVUtils:
                     "rows_count": row_count,
                     "success": True,
                 }
-        except (pl.ComputeError, FileNotFoundError, ValueError) as e:
+        except (pl.exceptions.ComputeError, FileNotFoundError, ValueError) as e:
             registrar_log("analysis_error", {
                 "status": "fail",
                 "error_type": type(e).__name__,
@@ -107,7 +110,7 @@ class CSVUtils:
             "columns_count": 0,
             "rows_count": 0,
             "success": False,
-            "error": str(e)
+            "error": f"Extensión no soportada: {self.get_extension()}"
         }
 
 

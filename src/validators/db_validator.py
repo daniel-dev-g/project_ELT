@@ -4,6 +4,7 @@ existence of tables, and permissions. """
 import logging
 import re
 from sqlalchemy import inspect, text
+from sqlalchemy.engine import Engine
 from sqlalchemy.exc import OperationalError, ProgrammingError
 
 logger = logging.getLogger(__name__)
@@ -22,7 +23,7 @@ def check_db_connection(engine) -> bool:
         return False
 
 
-def check_table_exists(engine_global: str, tabla: str, schema: str = "dbo") -> bool:
+def check_table_exists(engine_global: Engine, tabla: str, schema: str = "dbo") -> bool:
     "Check if the table exists in the database using SQLAlchemy Inspector."
     try:
         inspector = inspect(engine_global)

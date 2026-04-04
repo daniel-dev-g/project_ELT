@@ -1,7 +1,10 @@
 from abc import ABC, abstractmethod
+from sqlalchemy.engine import Engine
 
 
 class DatabaseAdapter(ABC):
+    engine: Engine
+
     @abstractmethod
     def get_engine(self, config: dict):
         pass

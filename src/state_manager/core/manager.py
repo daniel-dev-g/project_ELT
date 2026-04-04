@@ -159,7 +159,7 @@ class StateManager:
              )
         return self.execution_id
 
-    def get_process_summary(self, execution_id: str = None):
+    def get_process_summary(self, execution_id: str | None = None):
         """
         Obtiene resumen de un proceso.
 
@@ -203,7 +203,7 @@ class StateManager:
 
                 return process_exists and file_exists
 
-            except Exception:
+            except Exception:  # pylint: disable=broad-exception-caught
                 return False
 
     def __repr__(self):
@@ -244,24 +244,24 @@ if __name__ == "__main__":
             exit(1)
 
         # Iniciar proceso
-        execution_id = state.start_process()
-        print(f"✅ Proceso iniciado: {execution_id}")
+        result_id = state.start_process()
+        print(f"✅ Proceso iniciado: {result_id}")
 
         # Simular procesamiento de archivo
-        task_info = {
+        sample_task = {
             'table_destination': 'test_table',
             'schema': 'dbo'
         }
 
-        file_id = state.start_file_processing(
+        test_file_id = state.start_file_processing(
             file_path="C:\\test\\archivo.csv",
-            task_info=task_info
+            task_info=sample_task
         )
-        print(f"✅ Archivo registrado: file_id={file_id}")
+        print(f"✅ Archivo registrado: file_id={test_file_id}")
 
         # Simular éxito
         state.complete_file_processing(
-            file_id=file_id,
+            file_id=test_file_id,
             rows_inserted=1000,
             duration_seconds=45.5
         )
@@ -272,7 +272,7 @@ if __name__ == "__main__":
         # Obtener resumen
         summary = state.get_process_summary()
         if summary:
-            print(f"\n📊 Resumen del proceso:")
+            print("\n📊 Resumen del proceso:")
             print(f"  Execution ID: {summary[0]}")
             print(f"  Estado: {summary[3]}")
             print(f"  Archivos totales: {summary[4]}")
@@ -283,7 +283,7 @@ if __name__ == "__main__":
         print("\n" + "=" * 50)
         print("✅ Prueba completada exitosamente")
 
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         print(f"❌ Error durante la prueba: {e}")
         import traceback
         traceback.print_exc()
