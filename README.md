@@ -70,7 +70,7 @@ Edita `.env` (es la única fuente de credenciales — `settings.yaml` las lee de
 
 ```env
 # SQL Server
-SQLSERVER_HOST=localhost
+SQLSERVER_HOST=sqlserver
 SQLSERVER_USER=sa
 SQLSERVER_PASSWORD=TuPasswordSeguro123
 
@@ -94,6 +94,8 @@ DB2_DB=demo_db
 ORACLE_USER=system
 ORACLE_PASSWORD=TuPassword
 ```
+
+> `SQLSERVER_HOST=sqlserver` — cuando la app corre en Docker, usa el nombre del servicio definido en `docker-compose.yml`. Docker resuelve ese nombre automáticamente dentro de la red interna.
 
 > `.env` nunca se sube al repositorio (está en `.gitignore`).
 
