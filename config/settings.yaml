@@ -10,7 +10,7 @@ development:
   db_engine: sqlserver
   driver: "ODBC Driver 18 for SQL Server"
   server: "${SQLSERVER_HOST},1433"
-  database: "demo_db"
+  database: ${SQLSERVER_DB}
   username: ${SQLSERVER_USER}
   password: ${SQLSERVER_PASSWORD}
   trusted_connection: "no"
@@ -64,7 +64,7 @@ development:
 #   db_engine: oracle
 #   host: "oracle"
 #   port: 1521
-#   service_name: "FREEPDB1"
+#   service_name: ${ORACLE_DB}
 #   username: ${ORACLE_USER}
 #   password: ${ORACLE_PASSWORD}
 #   # instant_client_dir: "/opt/oracle/instantclient"  # solo si usas thick mode
