@@ -131,8 +131,7 @@ def _run_tasks(pipeline_cfg: dict, db_adapter, execution_id: str) -> dict:
         except Exception as e:  # pylint: disable=broad-exception-caught
             registrar_log("table_creation_error",
                           {"table": task['table_destination'], "error": str(e)})
-            registrar_log("process_failed", {"execution_id": execution_id, "error": str(e)})
-            sys.exit(1)
+            raise
 
         total_tasks += 1
         success, rows = process_task(task=task, db_adapter=db_adapter, execution_id=execution_id)
@@ -209,16 +208,15 @@ def main():
             "duration_seconds": round(time.time() - start_time, 2)
         })
 
-        # Dashboard generation
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        registrar_log("process_failed", {"execution_id": execution_id, "error": str(e)})
+
+    finally:
         try:
             dashboard_path = generate_latest_dashboard()
             registrar_log("dashboard_generated", {"path": str(dashboard_path)})
         except Exception as e:  # pylint: disable=broad-exception-caught
             registrar_log("dashboard_error", {"error": str(e)})
-
-    except Exception as e:  # pylint: disable=broad-exception-caught
-        registrar_log("critical_error", {"error": str(e)})
-        sys.exit(1)
 
 
 if __name__ == "__main__":
