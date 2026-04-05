@@ -1,0 +1,71 @@
+# config/settings.yaml
+# Activa el motor deseado descomentando su bloque.
+# Solo un bloque development activo a la vez.
+# Completa username y password con tus credenciales.
+
+# ─────────────────────────────────────────────
+# SQL Server
+# ─────────────────────────────────────────────
+development:
+  db_engine: sqlserver
+  driver: "ODBC Driver 18 for SQL Server"
+  server: "localhost,1433"
+  database: "demo_db"
+  username: ""
+  password: ""
+  trusted_connection: "no"
+  encrypt: "no"
+  bulk_path_map:
+    host: "/ruta/absoluta/proyecto/data"  # Linux/Mac — ajusta a tu ruta real
+    # host: "C:\\ruta\\proyecto\\data"    # Windows
+    container: "/data"
+  log_level: "INFO"
+
+# ─────────────────────────────────────────────
+# PostgreSQL
+# ─────────────────────────────────────────────
+# development:
+#   db_engine: postgres
+#   host: "localhost"
+#   port: 5432
+#   database: "demo_db"
+#   username: ""
+#   password: ""
+#   log_level: "INFO"
+
+# ─────────────────────────────────────────────
+# MySQL
+# ─────────────────────────────────────────────
+# development:
+#   db_engine: mysql
+#   host: "localhost"
+#   port: 3306
+#   database: "demo_db"
+#   username: ""
+#   password: ""
+#   log_level: "INFO"
+
+# ─────────────────────────────────────────────
+# IBM Db2
+# ─────────────────────────────────────────────
+# development:
+#   db_engine: db2
+#   host: "localhost"
+#   port: 50000
+#   database: "demo_db"
+#   username: ""
+#   password: ""
+#   log_level: "INFO"
+
+# ─────────────────────────────────────────────
+# Oracle
+# ─────────────────────────────────────────────
+# development:
+#   db_engine: oracle
+#   host: "localhost"
+#   port: 1521
+#   service_name: "FREEPDB1"
+#   username: ""
+#   password: ""
+#   # instant_client_dir: "/opt/oracle/instantclient"  # solo si usas thick mode
+#   log_level: "INFO"

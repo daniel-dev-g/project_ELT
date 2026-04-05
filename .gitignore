@@ -9,8 +9,7 @@ wheels/
 # Virtual environments
 .venv
 
-# Configuración local con credenciales (nunca subir a git)
-settings.yaml
+# Credenciales Docker (nunca subir a git)
 .env
 
 # Extensiones de C y carpetas de caché de herramientas
