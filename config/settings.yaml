@@ -16,9 +16,9 @@ development:
   trusted_connection: "no"
   encrypt: "no"
   bulk_path_map:
-    host: "/ruta/absoluta/proyecto/data"  # Linux/Mac — ajusta a tu ruta real
+    host: "/app/data"      # path en el contenedor de la app (WORKDIR=/app)
     # host: "C:\\ruta\\proyecto\\data"    # Windows
-    container: "/data"
+    container: "/data"     # path en el contenedor de SQL Server (./data:/data)
   log_level: "INFO"
 
 # ─────────────────────────────────────────────
