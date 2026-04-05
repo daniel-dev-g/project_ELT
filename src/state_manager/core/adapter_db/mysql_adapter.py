@@ -7,7 +7,6 @@ from sqlalchemy import create_engine
 from contextlib import contextmanager
 
 from src.state_manager.core.adapter_db.database_adapter import DatabaseAdapter
-from src.state_manager.core import load_config
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +20,7 @@ class MySQLAdapter(DatabaseAdapter):
     def _get_connection_params(self, config=None) -> dict:
         """Retorna parámetros de conexión para pymysql"""
         if config is None:
-            config = load_config()
+            config = self.config
 
         return {
             'host': config['host'],
@@ -35,7 +34,7 @@ class MySQLAdapter(DatabaseAdapter):
     def get_engine(self, config=None):
         """Crea engine SQLAlchemy para MySQL"""
         if config is None:
-            config = load_config()
+            config = self.config
 
         host = config['host']
         port = config.get('port', 3306)

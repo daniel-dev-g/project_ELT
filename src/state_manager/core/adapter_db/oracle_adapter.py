@@ -21,7 +21,6 @@ from sqlalchemy import create_engine
 from contextlib import contextmanager
 
 from src.state_manager.core.adapter_db.database_adapter import DatabaseAdapter
-from src.state_manager.core import load_config
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +44,7 @@ class OracleAdapter(DatabaseAdapter):
     def _get_dsn(self, config=None) -> str:
         """Genera DSN para oracledb"""
         if config is None:
-            config = load_config()
+            config = self.config
 
         return oracledb.makedsn(
             config['host'],
@@ -56,7 +55,7 @@ class OracleAdapter(DatabaseAdapter):
     def get_engine(self, config=None):
         """Crea engine SQLAlchemy para Oracle"""
         if config is None:
-            config = load_config()
+            config = self.config
 
         host = config['host']
         port = config.get('port', 1521)
