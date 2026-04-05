@@ -1,8 +1,37 @@
 # docker-compose.yml
-# Uso: docker compose --profile <motor> up -d
+# Uso: docker compose --profile <motor> up
 # Motores disponibles: sqlserver | postgres | mysql | db2 | oracle
 
 services:
+
+  # ─────────────────────────────────────────────
+  # FlowELT app (Python)
+  # Se levanta con cualquier profile de motor
+  # ─────────────────────────────────────────────
+  app:
+    profiles: [sqlserver, postgres, mysql, db2, oracle]
+    build: .
+    container_name: flowelt_app
+    volumes:
+      - ./data:/app/data        # archivos CSV de entrada
+      - ./config:/app/config    # settings.yaml y pipeline.yaml
+      - ./logs:/app/logs        # logs de salida
+    depends_on:
+      sqlserver:
+        condition: service_started
+        required: false
+      postgres:
+        condition: service_started
+        required: false
+      mysql:
+        condition: service_started
+        required: false
+      db2:
+        condition: service_started
+        required: false
+      oracle:
+        condition: service_started
+        required: false
 
   # ─────────────────────────────────────────────
   # SQL Server 2022 Developer Edition
