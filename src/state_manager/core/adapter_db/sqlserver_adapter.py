@@ -7,7 +7,6 @@ from sqlalchemy import create_engine
 import pyodbc
 
 from src.state_manager.core.adapter_db.database_adapter import DatabaseAdapter
-from src.state_manager.core import load_config
 from contextlib import contextmanager
 
 logger = logging.getLogger(__name__)
@@ -22,7 +21,7 @@ class SqlServerAdapter(DatabaseAdapter):
     def _get_connection_string(self, config=None):
         """Genera connection string para pyodbc"""
         if config is None:
-            config = load_config()
+            config = self.config
 
         driver = config['driver']
 
@@ -41,7 +40,7 @@ class SqlServerAdapter(DatabaseAdapter):
     def get_engine(self, config=None):
         """Crea engine SQLAlchemy para SQL Server"""
         if config is None:
-            config = load_config()
+            config = self.config
 
         conn_str = self._get_connection_string(config)
         connection_url = f"mssql+pyodbc:///?odbc_connect={conn_str}"

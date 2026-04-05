@@ -5,8 +5,6 @@ import polars as pl
 from src.validators import check_table_exists
 from src.log_csv import registrar_log
 
-from src.state_manager.core import get_db_cursor
-
 
 def get_columns_file(file: str, delimiter: str) -> str:
     """retorna str con campos separados por coma y tipo para DDL"""
@@ -24,9 +22,8 @@ def table_creator(execution_id: str, engine, schema: str, table: str, columns: s
                       "execution_id": execution_id, "tabla": table, "schema": schema})
         return
 
-    with get_db_cursor() as cursor:
-
-        cursor.execute(f"CREATE TABLE [{schema}].[{table}] ({columns})")
+    with engine.begin() as conn:
+        conn.exec_driver_sql(f"CREATE TABLE [{schema}].[{table}] ({columns})")
 
     registrar_log("table_created", {"tabla": table, "schema": schema})
 
