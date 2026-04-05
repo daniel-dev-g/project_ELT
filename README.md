@@ -73,6 +73,7 @@ Edita `.env` (es la única fuente de credenciales — `settings.yaml` las lee de
 SQLSERVER_HOST=sqlserver
 SQLSERVER_USER=sa
 SQLSERVER_PASSWORD=TuPasswordSeguro123
+SQLSERVER_DB=demo_db
 
 # PostgreSQL
 POSTGRES_USER=admin
@@ -93,6 +94,7 @@ DB2_DB=demo_db
 # Oracle
 ORACLE_USER=system
 ORACLE_PASSWORD=TuPassword
+ORACLE_DB=FREEPDB1
 ```
 
 > `SQLSERVER_HOST=sqlserver` — cuando la app corre en Docker, usa el nombre del servicio definido en `docker-compose.yml`. Docker resuelve ese nombre automáticamente dentro de la red interna.
@@ -110,11 +112,13 @@ development:
   db_engine: sqlserver
   driver: "ODBC Driver 18 for SQL Server"
   server: "${SQLSERVER_HOST},1433"
-  database: "demo_db"
+  database: ${SQLSERVER_DB}
   username: ${SQLSERVER_USER}
   password: ${SQLSERVER_PASSWORD}
   ...
 ```
+
+Todos los valores se leen desde `.env` — no es necesario editar `settings.yaml` directamente.
 
 Para usar otro motor, comenta el bloque activo y descomenta el correspondiente (postgres, mysql, db2 u oracle).
 
