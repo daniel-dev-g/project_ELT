@@ -1,8 +1,8 @@
-# FlowELT — Carga masiva de archivos a SQL Server
+# FlowELT
 
-> Herramienta ETL desarrollada en Python que automatiza la carga de archivos CSV/TXT hacia SQL Server mediante BCP.
-> Pipeline configurable por YAML, con auditoría estructurada y dashboard de ejecución.
-> Alternativa ligera a SSIS y Airflow para analistas que necesitan cargas masivas sin infraestructura DevOps..
+> Herramienta ETL en Python para carga masiva de archivos CSV hacia múltiples motores de base de datos.
+> Pipeline configurable por YAML, con log estructurado y dashboard de ejecución interactivo.
+> Alternativa ligera a SSIS y Airflow para analistas que necesitan cargas masivas sin infraestructura DevOps.
 
 ---
 
@@ -12,148 +12,115 @@
 | -------- | ------- | -------- |
 | 3        | 480.526 | 4.3s     |
 
-> Carga realizada con BCP sobre SQL Server en entorno local Windows.
-
----
-
-## 🚀 Descripción
-
-FlowELT automatiza el proceso de carga masiva desde archivos planos hacia SQL Server.
-
-El pipeline analiza los archivos con Polars, valida su estructura, ejecuta la carga con BCP y genera un log estructurado en JSON junto a un dashboard HTML interactivo con el resumen de ejecución.
-
----
-
-## 📌 Problema que resuelve
-
-Las cargas manuales de archivos planos suelen ser lentas, poco auditables y difíciles de mantener. FlowELT permite:
-
-- Automatizar cargas masivas de datos mediante configuración YAML
-- Registrar cada ejecución con trazabilidad completa por `execution_id`
-- Detectar errores de estructura antes de la carga
-- Generar reportes de ejecución sin intervención manual
-- Separar lógica de negocio y configuración
-
----
-
-## 📊 Dashboard de Monitorización
-
-Haz clic en el siguiente enlace para ver el dashboard interactivo con los resultados de la última ejecución del pipeline:
-
-[**→ Ver Dashboard Interactivo ←**](https://htmlpreview.github.io/?https://github.com/daniel-dev-g/project_ELT/blob/main/logs/log_20260302_174109.html)
-
-_(El dashboard muestra KPIs como total de eventos, archivos procesados, errores y un registro detallado de la ejecución.)_
-
-<p align="center">
-  <img src="screenshot.png" alt="Dashboard de monitorización" width="800">
-</p>
-
-## 🛠️ Tecnologías
-
-| Componente    | Tecnología            |
-| ------------- | --------------------- |
-| Lenguaje      | Python 3.14           |
-| Carga masiva  | Herramienta nativa por motor (ver tabla) |
-| Análisis      | Polars                |
-| Configuración | YAML                  |
-| Auditoría     | JSON + Dashboard HTML |
-| Gestión deps  | uv                    |
+> Carga realizada con BULK INSERT sobre SQL Server en entorno local.
 
 ---
 
 ## 🗄️ Bases de datos soportadas
 
-### Imágenes Docker disponibles
-
-| Motor      | Imagen Docker                                        | Edición        | Login requerido |
-| ---------- | ---------------------------------------------------- | -------------- | --------------- |
-| SQL Server | `mcr.microsoft.com/mssql/server:2022-latest`         | Developer      | No              |
-| PostgreSQL | `postgres:16`                                        | —              | No              |
-| MySQL      | `mysql:8`                                            | Community      | No              |
-| IBM Db2    | `ibmcom/db2`                                         | Community      | No              |
-| Oracle     | `gvenzl/oracle-free`                                 | 23c Free       | No              |
-
-### Comparativa de adapters
-
-| Aspecto                     | SQL Server            | PostgreSQL              | IBM Db2                   | MySQL                    | Oracle                  |
-| --------------------------- | --------------------- | ----------------------- | ------------------------- | ------------------------ | ----------------------- |
-| Librería                    | `pyodbc`              | `psycopg2`              | `ibm_db_dbi`              | `pymysql`                | `oracledb`              |
-| SQLAlchemy engine           | `mssql+pyodbc`        | `postgresql+psycopg2`   | `db2+ibm_db`              | `mysql+pymysql`          | `oracle+oracledb`       |
-| Bulk load (herramienta nativa) | `BULK INSERT` (T-SQL) | `COPY FROM STDIN`    | `SYSPROC.ADMIN_CMD(LOAD)` | `LOAD DATA LOCAL INFILE` | `sqlldr` (SQL\*Loader)  |
-| Archivo de control          | —                     | —                       | —                         | —                        | `.ctl` (generado dinámico) |
-| Requiere cliente externo    | ODBC Driver           | —                       | IBM Db2 Client            | —                        | Oracle Instant Client   |
-| Verificación permisos       | `IS_SRVROLEMEMBER`    | `pg_has_role`           | `SYSIBMADM.PRIVILEGES`    | `mysql.user.File_priv`   | `USER_SYS_PRIVS`        |
+| Motor      | Herramienta de carga         | Imagen Docker                                |
+| ---------- | ---------------------------- | -------------------------------------------- |
+| SQL Server | `BULK INSERT`                | `mcr.microsoft.com/mssql/server:2022-latest` |
+| PostgreSQL | `COPY FROM STDIN`            | `postgres:16`                                |
+| MySQL      | `LOAD DATA LOCAL INFILE`     | `mysql:8`                                    |
+| IBM Db2    | `SYSPROC.ADMIN_CMD(LOAD)`    | `ibmcom/db2`                                 |
+| Oracle     | `sqlldr` + `.ctl` dinámico   | `gvenzl/oracle-free`                         |
 
 ---
 
-## 🧠 Flujo del proceso
+## 📊 Dashboard de ejecución
 
-```
-CSV/TXT → Validación → Análisis (Polars) → BCP → SQL Server
-                                               ↓
-                                    JSON Log → Dashboard HTML
-```
+[**→ Ver Dashboard Interactivo ←**](https://htmlpreview.github.io/?https://github.com/daniel-dev-g/project_ELT/blob/main/logs/log_20260302_174109.html)
 
-**Detalle de fases:**
-
-1. Lectura de configuración desde `pipeline.yaml`
-2. Validación de conexión a SQL Server
-3. Análisis de archivos con Polars (encoding, columnas, filas)
-4. Carga masiva a SQL Server mediante BCP
-5. Registro de ejecución en log JSON
-6. Generación de dashboard HTML
+<p align="center">
+  <img src="screenshot.png" alt="Dashboard de monitorización" width="800">
+</p>
 
 ---
 
-## 📦 Requisitos
+## 🚀 Instalación
 
-- Python 3.14 o superior
-- SQL Server (local o remoto, Windows Authentication)
-- BCP Utility disponible en el sistema (`bcp` en PATH)
-- uv instalado (`pip install uv`)
+### Requisitos previos
+
+- [Git](https://git-scm.com/)
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (incluye Docker Compose)
+
+No se requiere instalar Python, uv ni drivers de base de datos — todo corre dentro del contenedor.
 
 ---
 
-## ⚙️ Instalación
-
-### 1. Clonar repositorio
+### Paso 1 — Clonar el repositorio
 
 ```bash
 git clone https://github.com/daniel-dev-g/project_ELT.git
 cd project_ELT
 ```
 
-### 2. Instalar dependencias
+---
+
+### Paso 2 — Configurar credenciales Docker
+
+Copia el archivo de ejemplo y completa las contraseñas para los contenedores:
 
 ```bash
-pip install uv
-uv sync
+cp .env.example .env
+```
+
+Edita `.env`:
+
+```env
+SQLSERVER_PASSWORD=TuPasswordSeguro123
+POSTGRES_USER=admin
+POSTGRES_PASSWORD=TuPassword
+POSTGRES_DB=demo_db
+# ... resto de motores
+```
+
+> `.env` nunca se sube al repositorio (está en `.gitignore`).
+
+---
+
+### Paso 3 — Configurar la conexión de la app
+
+Edita `config/settings.yaml`. El archivo ya viene con la estructura completa — solo debes completar `username` y `password` del motor que usarás, y dejar los demás comentados:
+
+```yaml
+development:
+  db_engine: sqlserver
+  server: "localhost,1433"
+  database: "demo_db"
+  username: "sa"
+  password: "TuPasswordSeguro123"
+  ...
+```
+
+Para usar otro motor, comenta el bloque activo y descomenta el correspondiente (postgres, mysql, db2 u oracle).
+
+---
+
+### Paso 4 — Agregar archivos CSV
+
+Copia tus archivos CSV a la carpeta `data/input/`:
+
+```bash
+data/
+└── input/
+    ├── clientes.csv
+    ├── productos.csv
+    └── ventas.csv
 ```
 
 ---
 
-## 🔧 Configuración
+### Paso 5 — Configurar el pipeline
 
-### `config/settings.yaml`
-
-```yaml
-development:
-  server: "NOMBRE_SERVIDOR"
-  database: "NOMBRE_DB"
-  log_level: "WARNING" # DEBUG para desarrollo, WARNING para producción
-```
-
-> El proyecto usa Windows Authentication. No se requiere usuario ni contraseña.
-
-### `config/pipeline.yaml`
+Edita `config/pipeline.yaml` para declarar qué archivos cargar y a qué tablas:
 
 ```yaml
-# Formatos soportados: .csv, .txt
 task:
   - name: "Carga de Clientes"
     file: "data/input/clientes.csv"
     delimiter: ";"
-    encoding: "utf8"
     table_destination: "clientes"
     schema: "dbo"
     active: true
@@ -161,16 +128,19 @@ task:
 
 ---
 
-## ▶️ Ejecución
+### Paso 6 — Levantar y ejecutar
 
 ```bash
-python main.py
+docker compose --profile sqlserver up
 ```
 
-Al finalizar se generan automáticamente:
+Reemplaza `sqlserver` por el motor que configuraste: `postgres`, `mysql`, `db2` u `oracle`.
 
-- `logs/log_TIMESTAMP.json` — log estructurado de la ejecución
-- `logs/log_TIMESTAMP.html` — dashboard HTML interactivo
+Docker levanta el motor de base de datos y la app FlowELT en secuencia. Al finalizar se generan en la carpeta `logs/`:
+
+- `log_TIMESTAMP.json` — log estructurado de la ejecución
+- `log_TIMESTAMP.html` — dashboard HTML interactivo
+- `technical.log` — log técnico interno
 
 ---
 
@@ -179,20 +149,23 @@ Al finalizar se generan automáticamente:
 ```
 project_ELT/
 ├── config/
-│   ├── settings.yaml          # Configuración de conexión y entorno
-│   └── pipeline.yaml          # Definición de tareas de carga
+│   ├── settings.yaml          # Conexión y motor activo (editar username/password)
+│   └── pipeline.yaml          # Tareas de carga (qué archivos, a qué tablas)
 ├── data/
-│   └── input/                 # Archivos CSV/TXT de entrada
-├── logs/                      # Logs JSON y dashboard HTML por ejecución
+│   └── input/                 # Archivos CSV/TXT de entrada (agregar aquí)
+├── logs/                      # Logs JSON y dashboard HTML (generados en ejecución)
 ├── src/
-│   ├── bulk_loader.py         # Carga masiva con BCP
+│   ├── state_manager/
+│   │   └── core/
+│   │       └── adapter_db/    # Adapters por motor (sqlserver, postgres, mysql, db2, oracle)
 │   ├── csv_analisys.py        # Análisis de archivos con Polars
 │   ├── log_csv.py             # Registro de auditoría JSON
-│   ├── log_dashboard.py       # Generador de dashboard HTML
-│   ├── validators/            # Validaciones de conexión y archivos
-│   └── state_manager/         # Gestión de estado de ejecución
+│   ├── table_creator.py       # Creación automática de tablas
+│   └── validators/            # Validaciones de conexión y archivos
+├── Dockerfile                 # Imagen Python con dependencias y ODBC Driver
+├── docker-compose.yml         # Orquestación de motores con profiles
 ├── main.py                    # Punto de entrada
-└── pyproject.toml             # Dependencias del proyecto
+└── pyproject.toml             # Dependencias Python
 ```
 
 ---
@@ -201,26 +174,44 @@ project_ELT/
 
 | Archivo                   | Descripción                                          |
 | ------------------------- | ---------------------------------------------------- |
-| `logs/log_*.json`         | Log de auditoría por ejecución (negocio)             |
+| `logs/log_*.json`         | Log de auditoría por ejecución con `execution_id`    |
 | `logs/log_*.html`         | Dashboard HTML interactivo                           |
-| `logs/technical.log`      | Log técnico del proceso (DEBUG/INFO/WARNING/ERROR)   |
-| `src/metadata.csv`        | Métricas por archivo (filas, encoding, tamaño, etc.) |
+| `logs/technical.log`      | Log técnico interno (DEBUG/INFO/WARNING/ERROR)       |
+| `src/metadata.csv`        | Métricas por archivo (filas, encoding, tamaño)       |
 | `src/metadata_detail.csv` | Inventario de columnas por archivo                   |
 
-> `log_*.json` registra eventos de negocio (archivos procesados, filas cargadas, errores).
-> `technical.log` registra eventos técnicos internos (conexiones, validaciones, tiempos).
-> Ambos se generan en cada ejecución y comparten `execution_id`.
+Todos los outputs comparten `execution_id` para trazabilidad completa entre ejecuciones.
 
-## Todos los outputs comparten `execution_id` para trazabilidad completa.
+---
 
-## 🎯 Características principales
+## 🧠 Flujo del proceso
 
-- Pipeline 100% configurable por YAML sin modificar código
-- Carga masiva con BCP — más rápido que SQLAlchemy/pandas
-- Análisis previo de archivos con Polars (encoding, columnas, filas)
-- Log estructurado en JSON con `execution_id` por ejecución
-- Dashboard HTML interactivo con timeline, KPIs y detalle por evento
-- Trazabilidad completa entre log, metadata y carga
+```
+CSV/TXT → Validación → Análisis (Polars) → Bulk Load (motor nativo)
+                                                       ↓
+                                           JSON Log → Dashboard HTML
+```
+
+1. Lectura de `pipeline.yaml` y `settings.yaml`
+2. Validación de conexión al motor de base de datos
+3. Creación automática de tabla destino si no existe
+4. Análisis de archivos con Polars (encoding, columnas, filas)
+5. Carga masiva con la herramienta nativa del motor
+6. Generación de log JSON y dashboard HTML
+
+---
+
+## 🛠️ Tecnologías
+
+| Componente    | Tecnología                              |
+| ------------- | --------------------------------------- |
+| Lenguaje      | Python 3.14                             |
+| Carga masiva  | Herramienta nativa por motor            |
+| Análisis      | Polars                                  |
+| Configuración | YAML                                    |
+| Auditoría     | JSON + Dashboard HTML                   |
+| Contenedores  | Docker + Docker Compose (profiles)      |
+| Gestión deps  | uv                                      |
 
 ---
 
@@ -231,7 +222,7 @@ project_ELT/
 - [x] Soporte IBM Db2 via `SYSPROC.ADMIN_CMD(LOAD)`
 - [x] Soporte MySQL via `LOAD DATA LOCAL INFILE`
 - [x] Soporte Oracle via `sqlldr` + `.ctl`
-- [ ] Contenerización con Docker (docker-compose con profiles por motor)
+- [x] Contenerización con Docker (docker-compose con profiles por motor)
 
 ---
 
