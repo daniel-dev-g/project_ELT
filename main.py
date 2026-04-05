@@ -119,6 +119,7 @@ def _run_tasks(pipeline_cfg: dict, db_adapter, execution_id: str) -> dict:
 
         last_task = task
 
+        total_tasks += 1
         try:
             table_creator_execute(
                 execution_id=execution_id,
@@ -131,9 +132,8 @@ def _run_tasks(pipeline_cfg: dict, db_adapter, execution_id: str) -> dict:
         except Exception as e:  # pylint: disable=broad-exception-caught
             registrar_log("table_creation_error",
                           {"table": task['table_destination'], "error": str(e)})
-            raise
-
-        total_tasks += 1
+            failed_tasks += 1
+            continue
         success, rows = process_task(task=task, db_adapter=db_adapter, execution_id=execution_id)
 
         if success:
