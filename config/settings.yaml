@@ -9,10 +9,10 @@
 development:
   db_engine: sqlserver
   driver: "ODBC Driver 18 for SQL Server"
-  server: "localhost,1433"
+  server: "sqlserver,1433"
   database: "demo_db"
-  username: ""
-  password: ""
+  username: ${SQLSERVER_USER}
+  password: ${SQLSERVER_PASSWORD}
   trusted_connection: "no"
   encrypt: "no"
   bulk_path_map:
@@ -26,11 +26,11 @@ development:
 # ─────────────────────────────────────────────
 # development:
 #   db_engine: postgres
-#   host: "localhost"
+#   host: "postgres"
 #   port: 5432
-#   database: "demo_db"
-#   username: ""
-#   password: ""
+#   database: ${POSTGRES_DB}
+#   username: ${POSTGRES_USER}
+#   password: ${POSTGRES_PASSWORD}
 #   log_level: "INFO"
 
 # ─────────────────────────────────────────────
@@ -38,11 +38,11 @@ development:
 # ─────────────────────────────────────────────
 # development:
 #   db_engine: mysql
-#   host: "localhost"
+#   host: "mysql"
 #   port: 3306
-#   database: "demo_db"
-#   username: ""
-#   password: ""
+#   database: ${MYSQL_DB}
+#   username: ${MYSQL_USER}
+#   password: ${MYSQL_PASSWORD}
 #   log_level: "INFO"
 
 # ─────────────────────────────────────────────
@@ -50,11 +50,11 @@ development:
 # ─────────────────────────────────────────────
 # development:
 #   db_engine: db2
-#   host: "localhost"
+#   host: "db2"
 #   port: 50000
-#   database: "demo_db"
-#   username: ""
-#   password: ""
+#   database: ${DB2_DB}
+#   username: ${DB2_USER}
+#   password: ${DB2_PASSWORD}
 #   log_level: "INFO"
 
 # ─────────────────────────────────────────────
@@ -62,10 +62,10 @@ development:
 # ─────────────────────────────────────────────
 # development:
 #   db_engine: oracle
-#   host: "localhost"
+#   host: "oracle"
 #   port: 1521
 #   service_name: "FREEPDB1"
-#   username: ""
-#   password: ""
+#   username: ${ORACLE_USER}
+#   password: ${ORACLE_PASSWORD}
 #   # instant_client_dir: "/opt/oracle/instantclient"  # solo si usas thick mode
 #   log_level: "INFO"

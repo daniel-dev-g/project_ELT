@@ -12,6 +12,7 @@ services:
     profiles: [sqlserver, postgres, mysql, db2, oracle]
     build: .
     container_name: flowelt_app
+    env_file: .env
     volumes:
       - ./data:/app/data        # archivos CSV de entrada
       - ./config:/app/config    # settings.yaml y pipeline.yaml

@@ -1,10 +1,12 @@
 """ Orquesta la carga de datos la base de datos."""
+import os
 import sys
 import time
 import uuid
 import logging
 from pathlib import Path
 import yaml
+from dotenv import load_dotenv
 
 
 from src.table_creator import table_creator_execute
@@ -159,8 +161,9 @@ def main():
 
     try:
         # PHASE 1: Read configuration
+        load_dotenv()
         with open("config/settings.yaml", "r", encoding="utf-8") as f:
-            settings = yaml.safe_load(f)
+            settings = yaml.safe_load(os.path.expandvars(f.read()))
 
         db_cfg = settings.get('development', {})
         log_level = db_cfg.get('log_level', 'WARNING')

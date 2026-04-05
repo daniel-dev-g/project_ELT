@@ -19,4 +19,5 @@ dependencies = [
     "pymysql>=1.1",
     # Oracle (requiere Oracle Instant Client para thick mode)
     "oracledb>=2.0",
+    "python-dotenv>=1.2.2",
 ]
