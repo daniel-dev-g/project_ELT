@@ -58,39 +58,59 @@ cd project_ELT
 
 ---
 
-### Paso 2 — Configurar credenciales Docker
+### Paso 2 — Configurar credenciales
 
-Copia el archivo de ejemplo y completa las contraseñas para los contenedores:
+Copia el archivo de ejemplo y completa las credenciales del motor que usarás:
 
 ```bash
 cp .env.example .env
 ```
 
-Edita `.env`:
+Edita `.env` (es la única fuente de credenciales — `settings.yaml` las lee desde aquí):
 
 ```env
+# SQL Server
+SQLSERVER_HOST=localhost
+SQLSERVER_USER=sa
 SQLSERVER_PASSWORD=TuPasswordSeguro123
+
+# PostgreSQL
 POSTGRES_USER=admin
 POSTGRES_PASSWORD=TuPassword
 POSTGRES_DB=demo_db
-# ... resto de motores
+
+# MySQL
+MYSQL_USER=admin
+MYSQL_ROOT_PASSWORD=TuPassword
+MYSQL_PASSWORD=TuPassword
+MYSQL_DB=demo_db
+
+# IBM Db2
+DB2_USER=db2inst1
+DB2_PASSWORD=TuPassword
+DB2_DB=demo_db
+
+# Oracle
+ORACLE_USER=system
+ORACLE_PASSWORD=TuPassword
 ```
 
 > `.env` nunca se sube al repositorio (está en `.gitignore`).
 
 ---
 
-### Paso 3 — Configurar la conexión de la app
+### Paso 3 — Elegir motor en settings.yaml
 
-Edita `config/settings.yaml`. El archivo ya viene con la estructura completa — solo debes completar `username` y `password` del motor que usarás, y dejar los demás comentados:
+Edita `config/settings.yaml`. El archivo ya viene con todos los bloques — activa el motor que usarás descomentándolo y deja los demás comentados. Las credenciales se toman automáticamente del `.env`:
 
 ```yaml
 development:
   db_engine: sqlserver
-  server: "localhost,1433"
+  driver: "ODBC Driver 18 for SQL Server"
+  server: "${SQLSERVER_HOST},1433"
   database: "demo_db"
-  username: "sa"
-  password: "TuPasswordSeguro123"
+  username: ${SQLSERVER_USER}
+  password: ${SQLSERVER_PASSWORD}
   ...
 ```
 
@@ -128,15 +148,33 @@ task:
 
 ---
 
-### Paso 6 — Levantar y ejecutar
+### Paso 6 — Levantar el motor de base de datos
 
 ```bash
-docker compose --profile sqlserver up
+docker compose --profile sqlserver up -d sqlserver
 ```
 
 Reemplaza `sqlserver` por el motor que configuraste: `postgres`, `mysql`, `db2` u `oracle`.
 
-Docker levanta el motor de base de datos y la app FlowELT en secuencia. Al finalizar se generan en la carpeta `logs/`:
+**Solo para SQL Server** — crea la base de datos (espera ~30s a que el contenedor esté listo):
+
+```bash
+docker exec flowelt_sqlserver /opt/mssql-tools18/bin/sqlcmd \
+  -S localhost -U sa -P "$SQLSERVER_PASSWORD" -No \
+  -Q "CREATE DATABASE demo_db"
+```
+
+Para los demás motores (postgres, mysql, db2, oracle) la base de datos se crea automáticamente desde el `docker-compose.yml`.
+
+---
+
+### Paso 7 — Ejecutar la app
+
+```bash
+docker compose --profile sqlserver run --rm app
+```
+
+Al finalizar se generan en la carpeta `logs/`:
 
 - `log_TIMESTAMP.json` — log estructurado de la ejecución
 - `log_TIMESTAMP.html` — dashboard HTML interactivo
