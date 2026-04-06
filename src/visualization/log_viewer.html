@@ -1,18 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>FlowELT — Pipeline Monitor | Dark Elegant</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DataBridge — Pipeline Monitor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
- :root {
+        :root {
     /* Modo claro suave - reducido el blanco, tonos más cálidos */
     --bg-deep: #eef2f5;
     --bg-surface: #f8fafc;
@@ -677,91 +672,333 @@ body::before {
 }
     </style>
 </head>
+
 <body>
-<div class="topbar">
-    <div class="logo"><div class="logo-dot"></div>FlowELT</div>
-    <div class="topbar-meta"><span id="log-filename">—</span><span class="execution-badge" id="exec-id">execution_id</span><span id="last-update"></span></div>
-</div>
-<div class="layout">
-    <aside class="sidebar"><div class="sidebar-section"><div class="sidebar-label">Views</div>
-        <div class="nav-item active" onclick="setView('all', this)"><div class="nav-dot" style="background: var(--accent-primary)"></div>All Events<span class="nav-count" id="nav-all">0</span></div>
-        <div class="nav-item" onclick="setView('pipeline', this)"><div class="nav-dot" style="background: var(--purple-accent)"></div>Pipeline<span class="nav-count" id="nav-pipeline">0</span></div>
-        <div class="nav-item" onclick="setView('file_analysis', this)"><div class="nav-dot" style="background: var(--success)"></div>File Analysis<span class="nav-count" id="nav-file_analysis">0</span></div>
-        <div class="nav-item" onclick="setView('errors', this)"><div class="nav-dot" style="background: var(--error)"></div>Errors<span class="nav-count" id="nav-errors">0</span></div>
+    <div class="topbar">
+        <div class="logo">
+            <div class="logo-dot"></div>
+            DataBridge
+        </div>
+        <div class="topbar-meta">
+            <span id="log-filename" style="color: var(--text-dim)">—</span>
+            <span class="execution-badge" id="exec-id">execution_id</span>
+            <span id="last-update" style="font-size:16px; color: var(--text-dim)"></span>
+        </div>
     </div>
-    <div class="sidebar-section"><div class="sidebar-label">Summary</div><div class="summary-stats"><div>Files: <span id="sb-files">—</span></div><div>Rows: <span id="sb-rows">—</span></div><div>Duration: <span id="sb-duration">—</span></div><div>Status: <span id="sb-status">—</span></div></div></div></aside>
-    <main class="main">
-        <div class="kpi-grid"><div class="kpi-card blue"><div class="kpi-label">Total Events</div><div class="kpi-value" id="kpi-total">—</div><div class="kpi-sub">log entries</div></div>
-        <div class="kpi-card green"><div class="kpi-label">Files OK</div><div class="kpi-value" id="kpi-success">—</div><div class="kpi-sub">analyzed</div></div>
-        <div class="kpi-card red"><div class="kpi-label">Errors</div><div class="kpi-value" id="kpi-errors">—</div><div class="kpi-sub">failed files</div></div>
-        <div class="kpi-card purple"><div class="kpi-label">Total Rows</div><div class="kpi-value" id="kpi-rows">—</div><div class="kpi-sub">processed</div></div></div>
-        <div class="timeline-wrap"><div class="section-header"><div class="section-title">Event Timeline</div><span id="timeline-range" style="font-size:12px;"></span></div><div class="timeline-track" id="timeline-track"></div></div>
-        <div class="section-header"><div class="section-title">Event Log</div><div><button class="filter-btn" onclick="expandAll()">Expand All</button><button class="filter-btn" onclick="collapseAll()" style="margin-left:6px;">Collapse</button></div></div>
-        <div class="search-wrap"><span class="search-icon">⌕</span><input class="search-input" id="search-input" placeholder="Search events, files, columns..." oninput="applyFilters()"></div>
-        <div class="filters" id="filter-bar"></div>
-        <div class="event-table"><div class="event-table-header"><span>Timestamp</span><span>Event</span><span>Summary</span><span style="text-align:right">▶</span></div><div id="events-body"></div><div class="status-bar"><div class="status-dot green" id="status-dot"></div><span id="status-text">Ready</span><span style="margin-left:auto" id="status-count"></span></div></div>
-    </main>
-</div>
-<script>
-    const RAW_DATA = __LOG_DATA__ || [];
-    let currentView='all', currentFilter='all', searchQuery='', expandedRows=new Set();
-    function init(){
-        if(!RAW_DATA.length){ document.getElementById('events-body').innerHTML='<div class="empty-state">No log data</div>'; return; }
-        buildKPIs(); buildTimeline(); buildFilterBar(); renderEvents();
-        let execId = (RAW_DATA.find(e=>e.detalles?.execution_id)?.detalles?.execution_id) || 'unknown';
-        document.getElementById('exec-id').textContent=execId.slice(0,8)+'...';
-        let last=RAW_DATA[RAW_DATA.length-1];
-        document.getElementById('last-update').textContent=last?.timestamp?.split('T')[1]?.slice(0,8)||'';
-        document.getElementById('log-filename').textContent='pipeline.log';
-    }
-    function getPipelineSummary(){ return RAW_DATA.find(e=>e.evento==='pipeline_summary')?.detalles||null; }
-    function isError(e){ return ['analysis_error','file_not_found','critical_error'].includes(e.evento); }
-    function buildKPIs(){
-        let total=RAW_DATA.length, errors=RAW_DATA.filter(isError).length, summary=getPipelineSummary();
-        let totalRows=summary?.total_rows??RAW_DATA.filter(e=>e.evento==='file_analysis').reduce((s,e)=>s+(e.detalles?.rows||0),0);
-        let filesOk=summary?.files_ok??RAW_DATA.filter(e=>e.evento==='file_analysis').length;
-        document.getElementById('kpi-total').textContent=total.toLocaleString();
-        document.getElementById('kpi-success').textContent=filesOk.toLocaleString();
-        document.getElementById('kpi-errors').textContent=errors.toLocaleString();
-        let rowsDisplay=totalRows>999999?(totalRows/1e6).toFixed(1)+'M':totalRows>999?(totalRows/1e3).toFixed(1)+'K':totalRows.toString();
-        document.getElementById('kpi-rows').textContent=rowsDisplay;
-        let totalFiles=summary?.total_files??RAW_DATA.filter(e=>e.evento==='file_analysis').length;
-        document.getElementById('sb-files').textContent=`${filesOk} / ${totalFiles}`;
-        document.getElementById('sb-rows').textContent=totalRows.toLocaleString();
-        let hasErr=errors>0;
-        document.getElementById('sb-status').textContent=hasErr?'PARTIAL':'OK';
-        document.getElementById('sb-status').style.color=hasErr?'var(--error)':'var(--success)';
-        document.getElementById('nav-all').textContent=total;
-        document.getElementById('nav-pipeline').textContent=RAW_DATA.filter(e=>['pipeline_start','pipeline_init','pipeline_summary'].includes(e.evento)).length;
-        document.getElementById('nav-file_analysis').textContent=RAW_DATA.filter(e=>e.evento==='file_analysis').length;
-        document.getElementById('nav-errors').textContent=errors;
-        if(hasErr){ document.getElementById('status-dot').className='status-dot red'; document.getElementById('status-text').textContent=`${errors} error(s)`; }
-        else { document.getElementById('status-dot').className='status-dot green'; document.getElementById('status-text').textContent='All systems nominal'; }
-        if(summary?.duration_seconds!=null) document.getElementById('sb-duration').textContent=summary.duration_seconds+'s';
-        else if(RAW_DATA.length>=2){ let diff=(new Date(RAW_DATA[RAW_DATA.length-1].timestamp)-new Date(RAW_DATA[0].timestamp))/1000; document.getElementById('sb-duration').textContent=diff.toFixed(1)+'s';}
-    }
-    function buildTimeline(){
-        let track=document.getElementById('timeline-track'); track.innerHTML='';
-        RAW_DATA.forEach((e,i)=>{let dot=document.createElement('div'); dot.className='timeline-dot '+(isError(e)?'err':(e.evento==='file_analysis'?'ok':'info')); dot.title=`${e.timestamp.split('T')[1]?.slice(0,8)} — ${e.evento}`; dot.onclick=()=>scrollToEvent(i); track.appendChild(dot);});
-        if(RAW_DATA.length){ let first=RAW_DATA[0].timestamp.split('T')[1]?.slice(0,8), last=RAW_DATA[RAW_DATA.length-1].timestamp.split('T')[1]?.slice(0,8); document.getElementById('timeline-range').textContent=`${first} → ${last}`;}
-    }
-    function buildFilterBar(){
-        let events=[...new Set(RAW_DATA.map(e=>e.evento))];
-        let html='<button class="filter-btn active" onclick="setFilter(\'all\', this)">All</button>';
-        events.forEach(ev=>{let isErr=['analysis_error','file_not_found','critical_error'].includes(ev); html+=`<button class="filter-btn ${isErr?'error':''}" onclick="setFilter('${ev}', this)">${ev}</button>`;});
-        document.getElementById('filter-bar').innerHTML=html;
-    }
-    function getFilteredData(){ return RAW_DATA.filter(e=>{ if(currentView==='pipeline' && !['pipeline_start','pipeline_init','pipeline_summary'].includes(e.evento)) return false; if(currentView==='file_analysis' && e.evento!=='file_analysis') return false; if(currentView==='errors' && !isError(e)) return false; if(currentFilter!=='all' && e.evento!==currentFilter) return false; if(searchQuery && !JSON.stringify(e).toLowerCase().includes(searchQuery.toLowerCase())) return false; return true;});}
-    function renderEvents(){
-        let filtered=getFilteredData(); let body=document.getElementById('events-body');
-        document.getElementById('showing-count').textContent=`${filtered.length} of ${RAW_DATA.length}`;
-        document.getElementById('status-count').textContent=`${filtered.length} events`;
-        if(!filtered.length){ body.innerHTML='<div class="empty-state">No events match filters</div>'; return; }
-        body.innerHTML=filtered.map((e,idx)=>{ let originalIdx=RAW_DATA.indexOf(e); let time=e.timestamp.split('T')[1]?.slice(0,12)||e.timestamp; let badgeClass=(()=>{let m={'pipeline_start':'badge-pipeline_start','pipeline_init':'badge-pipeline_init','pipeline_summary':'badge-pipeline_summary','file_analysis':'badge-file_analysis','metadata':'badge-metadata','columns':'badge-columns','analysis_error':'badge-analysis_error','file_not_found':'badge-file_not_found','critical_error':'badge-critical_error'}; return m[e.evento]||'badge-default';})(); let summary=getSummary(e); let isExp=expandedRows.has(originalIdx);
-            return `<div class="event-row ${isExp?'expanded':''}" id="row-${originalIdx}" onclick="toggleRow(${originalIdx})"><span class="event-time">${time}</span><span><span class="event-badge ${badgeClass}">${e.evento}</span></span><span class="event-summary">${summary}</span><span class="event-expand">▶</span></div><div class="detail-panel ${isExp?'show':''}" id="detail-${originalIdx}">${buildDetail(e)}</div>`;
-        }).join('');
-    }
-     function getSummary(e) {
+
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="sidebar-section">
+                <div class="sidebar-label">Views</div>
+                <div class="nav-item active" onclick="setView('all', this)">
+                    <div class="nav-dot" style="background: var(--accent)"></div>
+                    All Events
+                    <span class="nav-count" id="nav-all">0</span>
+                </div>
+                <div class="nav-item" onclick="setView('pipeline', this)">
+                    <div class="nav-dot" style="background: var(--purple)"></div>
+                    Pipeline
+                    <span class="nav-count" id="nav-pipeline">0</span>
+                </div>
+                <div class="nav-item" onclick="setView('file_analysis', this)">
+                    <div class="nav-dot" style="background: var(--green)"></div>
+                    File Analysis
+                    <span class="nav-count" id="nav-file_analysis">0</span>
+                </div>
+                <div class="nav-item" onclick="setView('errors', this)">
+                    <div class="nav-dot" style="background: var(--red)"></div>
+                    Errors
+                    <span class="nav-count" id="nav-errors">0</span>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-label">Summary</div>
+                <div style="padding: 0 4px; font-size: 16px; color: var(--text-muted); line-height: 2;">
+                    <div>Files: <span id="sb-files" style="color: var(--text)">—</span></div>
+                    <div>Rows: <span id="sb-rows" style="color: var(--text)">—</span></div>
+                    <div>Duration: <span id="sb-duration" style="color: var(--text)">—</span></div>
+                    <div>Status: <span id="sb-status" style="color: var(--green)">—</span></div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main">
+            <div class="kpi-grid">
+                <div class="kpi-card blue">
+                    <div class="kpi-label">Total Events</div>
+                    <div class="kpi-value" id="kpi-total">—</div>
+                    <div class="kpi-sub">log entries</div>
+                </div>
+                <div class="kpi-card green">
+                    <div class="kpi-label">Files OK</div>
+                    <div class="kpi-value" id="kpi-success">—</div>
+                    <div class="kpi-sub">analyzed successfully</div>
+                </div>
+                <div class="kpi-card red">
+                    <div class="kpi-label">Errors</div>
+                    <div class="kpi-value" id="kpi-errors">—</div>
+                    <div class="kpi-sub">failed files</div>
+                </div>
+                <div class="kpi-card purple">
+                    <div class="kpi-label">Total Rows</div>
+                    <div class="kpi-value" id="kpi-rows">—</div>
+                    <div class="kpi-sub">analyzed</div>
+                </div>
+            </div>
+
+            <div class="timeline-wrap" id="timeline-wrap">
+                <div class="section-header">
+                    <div class="section-title">Event Timeline</div>
+                    <span style="font-size:16px; color: var(--text-dim)" id="timeline-range"></span>
+                </div>
+                <div class="timeline-track" id="timeline-track"></div>
+            </div>
+
+            <div class="section-header">
+                <div class="section-title">Event Log</div>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <span style="font-size:16px; color: var(--text-dim)" id="showing-count"></span>
+                    <button class="filter-btn" onclick="expandAll()">Expand All</button>
+                    <button class="filter-btn" onclick="collapseAll()">Collapse</button>
+                </div>
+            </div>
+
+            <div class="search-wrap">
+                <span class="search-icon">⌕</span>
+                <input class="search-input" type="text" placeholder="Search events, files, columns..." id="search-input"
+                    oninput="applyFilters()">
+            </div>
+
+            <div class="filters" id="filter-bar"></div>
+
+            <div class="event-table">
+                <div class="event-table-header">
+                    <span>Timestamp</span>
+                    <span>Event</span>
+                    <span>Summary</span>
+                    <span style="text-align:right">▶</span>
+                </div>
+                <div id="events-body"></div>
+                <div class="status-bar">
+                    <div class="status-dot green" id="status-dot"></div>
+                    <span id="status-text">Ready</span>
+                    <span style="margin-left: auto" id="status-count"></span>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const RAW_DATA = __LOG_DATA__;
+
+        let currentView = 'all';
+        let currentFilter = 'all';
+        let searchQuery = '';
+        let expandedRows = new Set();
+
+        function init() {
+            if (!RAW_DATA || RAW_DATA.length === 0) {
+                document.getElementById('events-body').innerHTML =
+                    '<div class="empty-state">No log data found</div>';
+                return;
+            }
+            buildKPIs();
+            buildTimeline();
+            buildFilterBar();
+            buildSidebar();
+            renderEvents();
+
+            const execId = findExecutionId();
+            document.getElementById('exec-id').textContent = execId ? execId.slice(0, 8) + '...' : 'unknown';
+            document.getElementById('log-filename').textContent = 'pipeline log';
+            const last = RAW_DATA[RAW_DATA.length - 1];
+            document.getElementById('last-update').textContent =
+                last?.timestamp?.split('T')[1]?.slice(0, 8) || '';
+        }
+
+        function findExecutionId() {
+            for (const e of RAW_DATA) {
+                if (e.detalles?.execution_id) return e.detalles.execution_id;
+            }
+            return null;
+        }
+
+        // ── Leer datos desde pipeline_summary ──
+        function getPipelineSummary() {
+            return RAW_DATA.find(e => e.evento === 'pipeline_summary')?.detalles || null;
+        }
+
+        function buildKPIs() {
+            const total = RAW_DATA.length;
+            const errors = RAW_DATA.filter(e => isError(e)).length;
+            const summary = getPipelineSummary();
+
+            // Filas totales — desde pipeline_summary si existe, sino sumar file_analysis
+            const totalRows = summary?.total_rows ??
+                RAW_DATA.filter(e => e.evento === 'file_analysis')
+                    .reduce((s, e) => s + (e.detalles?.rows || 0), 0);
+
+            // Archivos ok — desde pipeline_summary si existe
+            const filesOk = summary?.files_ok ??
+                RAW_DATA.filter(e => e.evento === 'file_analysis').length;
+
+            document.getElementById('kpi-total').textContent = total.toLocaleString();
+            document.getElementById('kpi-success').textContent = filesOk.toLocaleString();
+            document.getElementById('kpi-errors').textContent = errors.toLocaleString();
+            document.getElementById('kpi-rows').textContent =
+                totalRows > 999999 ? (totalRows / 1000000).toFixed(1) + 'M' :
+                    totalRows > 999 ? (totalRows / 1000).toFixed(1) + 'K' :
+                        totalRows.toString();
+
+            // Sidebar
+            const totalFiles = summary?.total_files ??
+                RAW_DATA.filter(e => e.evento === 'file_analysis').length;
+
+            document.getElementById('sb-files').textContent =
+                `${filesOk} / ${totalFiles}`;
+            document.getElementById('sb-rows').textContent = totalRows.toLocaleString();
+
+            const hasErrors = errors > 0;
+            document.getElementById('sb-status').textContent = hasErrors ? 'PARTIAL' : 'OK';
+            document.getElementById('sb-status').style.color = hasErrors ? 'var(--red)' : 'var(--green)';
+
+            // Nav counts
+            document.getElementById('nav-all').textContent = total;
+            document.getElementById('nav-pipeline').textContent =
+                RAW_DATA.filter(e => ['pipeline_start', 'pipeline_init', 'pipeline_summary'].includes(e.evento)).length;
+            document.getElementById('nav-file_analysis').textContent =
+                RAW_DATA.filter(e => e.evento === 'file_analysis').length;
+            document.getElementById('nav-errors').textContent = errors;
+
+            // Status bar
+            if (errors > 0) {
+                document.getElementById('status-dot').className = 'status-dot red';
+                document.getElementById('status-text').textContent = `${errors} error(s) detected`;
+            } else {
+                document.getElementById('status-text').textContent = 'All events processed successfully';
+            }
+        }
+
+        function isError(e) {
+            return ['analysis_error', 'file_not_found', 'critical_error'].includes(e.evento);
+        }
+
+        function buildSidebar() {
+            const summary = getPipelineSummary();
+
+            if (summary?.duration_seconds != null) {
+                // ← usar duration_seconds del log si existe
+                document.getElementById('sb-duration').textContent = summary.duration_seconds + 's';
+            } else if (RAW_DATA.length >= 2) {
+                // ← fallback: calcular desde timestamps
+                const t1 = new Date(RAW_DATA[0].timestamp);
+                const t2 = new Date(RAW_DATA[RAW_DATA.length - 1].timestamp);
+                const diff = ((t2 - t1) / 1000).toFixed(1);
+                document.getElementById('sb-duration').textContent = diff + 's';
+            }
+        }
+        function buildTimeline() {
+            const track = document.getElementById('timeline-track');
+            track.innerHTML = '';
+            RAW_DATA.forEach((e, i) => {
+                const dot = document.createElement('div');
+                dot.className = 'timeline-dot ' + getTimelineDotClass(e);
+                dot.title = `${e.timestamp.split('T')[1].slice(0, 8)} — ${e.evento}`;
+                dot.onclick = () => scrollToEvent(i);
+                track.appendChild(dot);
+            });
+            if (RAW_DATA.length > 0) {
+                const first = RAW_DATA[0].timestamp.split('T')[1].slice(0, 8);
+                const last = RAW_DATA[RAW_DATA.length - 1].timestamp.split('T')[1].slice(0, 8);
+                document.getElementById('timeline-range').textContent = `${first} → ${last}`;
+            }
+        }
+
+        function getTimelineDotClass(e) {
+            if (isError(e)) return 'err';
+            if (['pipeline_start', 'pipeline_init', 'pipeline_summary'].includes(e.evento)) return 'info';
+            if (e.evento === 'file_analysis') return 'ok';
+            return 'info';
+        }
+
+        function buildFilterBar() {
+            const events = [...new Set(RAW_DATA.map(e => e.evento))];
+            const bar = document.getElementById('filter-bar');
+            let html = '<button class="filter-btn active" onclick="setFilter(\'all\', this)">All</button>';
+            events.forEach(ev => {
+                const isErr = ['analysis_error', 'file_not_found', 'critical_error'].includes(ev);
+                html += `<button class="filter-btn ${isErr ? 'error' : ''}" onclick="setFilter('${ev}', this)">${ev}</button>`;
+            });
+            bar.innerHTML = html;
+        }
+
+        function getFilteredData() {
+            return RAW_DATA.filter(e => {
+                if (currentView === 'pipeline' && !['pipeline_start', 'pipeline_init', 'pipeline_summary'].includes(e.evento)) return false;
+                if (currentView === 'file_analysis' && e.evento !== 'file_analysis') return false;
+                if (currentView === 'errors' && !isError(e)) return false;
+                if (currentFilter !== 'all' && e.evento !== currentFilter) return false;
+                if (searchQuery) {
+                    const q = searchQuery.toLowerCase();
+                    if (!JSON.stringify(e).toLowerCase().includes(q)) return false;
+                }
+                return true;
+            });
+        }
+
+        function renderEvents() {
+            const filtered = getFilteredData();
+            const body = document.getElementById('events-body');
+
+            document.getElementById('showing-count').textContent = `${filtered.length} of ${RAW_DATA.length}`;
+            document.getElementById('status-count').textContent = `${filtered.length} events`;
+
+            if (filtered.length === 0) {
+                body.innerHTML = '<div class="empty-state">No events match your filters</div>';
+                return;
+            }
+
+            body.innerHTML = filtered.map((e, idx) => {
+                const originalIdx = RAW_DATA.indexOf(e);
+                const time = e.timestamp.split('T')[1]?.slice(0, 12) || e.timestamp;
+                const badgeClass = getBadgeClass(e.evento);
+                const summary = getSummary(e);
+                const isExp = expandedRows.has(originalIdx);
+
+                return `
+                <div class="event-row ${isExp ? 'expanded' : ''}"
+                     id="row-${originalIdx}"
+                     onclick="toggleRow(${originalIdx})"
+                     style="animation-delay: ${idx * 0.02}s">
+                    <span class="event-time">${time}</span>
+                    <span><span class="event-badge ${badgeClass}">${e.evento}</span></span>
+                    <span class="event-summary">${summary}</span>
+                    <span class="event-expand">▶</span>
+                </div>
+                <div class="detail-panel ${isExp ? 'show' : ''}" id="detail-${originalIdx}">
+                    ${buildDetail(e, originalIdx)}
+                </div>`;
+            }).join('');
+        }
+
+        function getBadgeClass(evento) {
+            const map = {
+                'pipeline_start': 'badge-pipeline_start',
+                'pipeline_init': 'badge-pipeline_init',
+                'pipeline_summary': 'badge-pipeline_summary',
+                'file_analysis': 'badge-file_analysis',
+                'metadata': 'badge-metadata',
+                'columns': 'badge-columns',
+                'analysis_error': 'badge-analysis_error',
+                'file_not_found': 'badge-file_not_found',
+                'critical_error': 'badge-critical_error',
+                'dashboard_generated': 'badge-dashboard_generated',
+            };
+            return map[evento] || 'badge-default';
+        }
+
+        function getSummary(e) {
             const d = e.detalles || {};
 
             if (e.evento === 'file_analysis') {
@@ -957,3 +1194,7 @@ body::before {
         }
 
         init();
+    </script>
+</body>
+
+</html>
