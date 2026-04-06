@@ -1,4 +1,4 @@
-"""DataBridge — HTML Dashboard Generator for JSON logs"""
+"""FlowELT — HTML Dashboard Generator for JSON logs"""
 import json
 import logging
 from pathlib import Path
