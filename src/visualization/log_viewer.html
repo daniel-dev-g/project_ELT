@@ -239,7 +239,7 @@ body::before {
 
 /* main area */
 .main {
-    padding: 32px 36px;
+    padding: 32px 24px;
     background: radial-gradient(ellipse at 20% 30%, rgba(59, 130, 246, 0.02), transparent);
 }
 
@@ -323,12 +323,24 @@ body::before {
     margin-bottom: 20px;
     padding-bottom: 8px;
 }
+/* Align Event Log header with content inside timeline-wrap */
+.main > .section-header {
+    padding-left: 24px;
+}
+.main > .search-wrap {
+    margin-left: 24px;
+    margin-right: 24px;
+}
+.main > .filters {
+    padding-left: 24px;
+    padding-right: 24px;
+}
 .section-title {
-    font-family: 'Outfit', sans-serif;
+    font-family: 'JetBrains Mono', monospace;
     font-size: 16px;
     font-weight: 700;
     letter-spacing: -0.2px;
-    color: var(--text-primary);
+    color: var(--text-secondary);
     padding-left: 14px;
     background: linear-gradient(to right, var(--accent-primary) 4px, transparent 4px);
     border-radius: 2px;
