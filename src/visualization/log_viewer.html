@@ -761,4 +761,199 @@ body::before {
             return `<div class="event-row ${isExp?'expanded':''}" id="row-${originalIdx}" onclick="toggleRow(${originalIdx})"><span class="event-time">${time}</span><span><span class="event-badge ${badgeClass}">${e.evento}</span></span><span class="event-summary">${summary}</span><span class="event-expand">▶</span></div><div class="detail-panel ${isExp?'show':''}" id="detail-${originalIdx}">${buildDetail(e)}</div>`;
         }).join('');
     }
-    function getSummary(e){ let d=e.detalles||{}; if(e.evento==='file_analysis'){ let rows=d.rows!=null?`${d.rows.toLocaleString()} rows`:''; return `<span class="summary-inline"><span class="summary-tag ok">✓</span><span>${d.file||''}</span> ${rows?`<span style="background:rgba(46,204,
+     function getSummary(e) {
+            const d = e.detalles || {};
+
+            if (e.evento === 'file_analysis') {
+                const rows = d.rows != null ? `${d.rows.toLocaleString()} rows` : '';
+                return `<span class="summary-inline">
+                    <span class="summary-tag ok">✓</span>
+                    <span class="summary-filename">${d.file || ''}</span>
+                    ${rows ? `<span class="summary-tag">${rows}</span>` : ''}
+                </span>`;
+            }
+
+            if (e.evento === 'pipeline_summary') {
+                const ok = d.files_ok ?? 0;
+                const err = d.files_error ?? 0;
+                const rows = d.total_rows != null ? `${d.total_rows.toLocaleString()} rows` : '';
+                return `<span class="summary-inline">
+                    <span class="summary-tag ok">${ok} ok</span>
+                    ${err > 0 ? `<span class="summary-tag err">${err} errors</span>` : ''}
+                    ${rows ? `<span class="summary-tag">${rows}</span>` : ''}
+                </span>`;
+            }
+
+            if (e.evento === 'pipeline_init') {
+                const count = d.cantidad || 0;
+                const files = d.archivos || [];
+                const rowId = `filelist-${Math.random().toString(36).slice(2, 7)}`;
+                return `<span class="summary-inline" style="overflow:visible; flex-wrap:wrap; gap:4px;">
+                    <span class="summary-tag">${count} files</span>
+                    <span class="file-list-toggle" onclick="toggleFileList(event,'${rowId}')">
+                        <span class="arrow">▶</span> show files
+                    </span>
+                    <span class="file-list-dropdown" id="${rowId}">
+                        ${files.map((f, i) =>
+                    `<span class="file-list-item">
+                                <span class="file-list-num">${i + 1}.</span>${f}
+                            </span>`
+                ).join('')}
+                    </span>
+                </span>`;
+            }
+
+            if (e.evento === 'file_not_found') {
+                const path = d.path || '';
+                const filename = path.split(/[\\/]/).pop();
+                return `<span class="summary-inline">
+                    <span class="summary-tag err">✗ not found</span>
+                    <span class="summary-filename" title="${path}">${filename}</span>
+                </span>`;
+            }
+
+            if (e.evento === 'analysis_error' || e.evento === 'critical_error') {
+                const msg = d.message || d.error || 'Error occurred';
+                return `<span class="summary-inline">
+                    <span class="summary-tag err">error</span>
+                    <span class="summary-filename">${msg}</span>
+                </span>`;
+            }
+
+            if (e.evento === 'dashboard_generated') {
+                return `<span class="summary-inline">
+                    <span class="summary-filename">${d.path || ''}</span>
+                </span>`;
+            }
+
+            const parts = Object.entries(d).slice(0, 2)
+                .map(([k, v]) => `<span class="summary-tag">${k}: ${String(v).slice(0, 20)}</span>`)
+                .join('');
+            return `<span class="summary-inline">${parts}</span>`;
+        }
+
+        function buildDetail(e, idx) {
+            const d = e.detalles || {};
+            let html = '<div class="detail-grid">';
+            const columns = d.columns;
+            const rest = Object.entries(d).filter(([k]) => k !== 'columns');
+
+            rest.forEach(([k, v]) => {
+                if (Array.isArray(v)) {
+                    html += `<div class="detail-field" style="grid-column: 1/-1">
+                        <div class="detail-key" style="margin-bottom:8px">${k} (${v.length})</div>
+                        <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                            ${v.map((item, i) =>
+                        `<span class="file-list-item" style="flex:1; min-width:160px;">
+                                    <span class="file-list-num">${i + 1}.</span>${item}
+                                </span>`
+                    ).join('')}
+                        </div>
+                    </div>`;
+                } else {
+                    const cls = k === 'success' ? (v ? 'ok' : 'err') :
+                        (typeof v === 'number' ? 'num' : '');
+                    const display = typeof v === 'number' ? v.toLocaleString() : String(v ?? '—');
+                    html += `<div class="detail-field">
+                        <div class="detail-key">${k}</div>
+                        <div class="detail-val ${cls}">${display}</div>
+                    </div>`;
+                }
+            });
+
+            html += '</div>';
+
+            if (Array.isArray(columns) && columns.length > 0) {
+                html += `<div class="cols-section">
+                    <div class="cols-toggle" onclick="toggleCols(event, ${idx})" id="cols-toggle-${idx}">
+                        <span class="cols-toggle-arrow">▶</span>
+                        <span>${columns.length} columns</span>
+                    </div>
+                    <div class="cols-grid" id="cols-${idx}">
+                        ${columns.map((c, i) =>
+                    `<div class="col-chip"><span class="col-idx">${i + 1}</span>${c}</div>`
+                ).join('')}
+                    </div>
+                </div>`;
+            }
+
+            return html;
+        }
+
+        function toggleRow(idx) {
+            const row = document.getElementById(`row-${idx}`);
+            const detail = document.getElementById(`detail-${idx}`);
+            if (!row || !detail) return;
+            const isExp = expandedRows.has(idx);
+            if (isExp) {
+                expandedRows.delete(idx);
+                row.classList.remove('expanded');
+                detail.classList.remove('show');
+            } else {
+                expandedRows.add(idx);
+                row.classList.add('expanded');
+                detail.classList.add('show');
+            }
+        }
+
+        function toggleCols(event, idx) {
+            event.stopPropagation();
+            document.getElementById(`cols-${idx}`).classList.toggle('show');
+            document.getElementById(`cols-toggle-${idx}`).classList.toggle('open');
+        }
+
+        function toggleFileList(event, id) {
+            event.stopPropagation();
+            const dropdown = document.getElementById(id);
+            const toggle = event.currentTarget;
+            dropdown.classList.toggle('show');
+            const isOpen = dropdown.classList.contains('show');
+            toggle.innerHTML = `<span class="arrow">${isOpen ? '▼' : '▶'}</span> ${isOpen ? 'hide files' : 'show files'}`;
+        }
+
+        function expandAll() {
+            RAW_DATA.forEach((_, i) => {
+                expandedRows.add(i);
+                document.getElementById(`row-${i}`)?.classList.add('expanded');
+                document.getElementById(`detail-${i}`)?.classList.add('show');
+            });
+        }
+
+        function collapseAll() {
+            expandedRows.clear();
+            document.querySelectorAll('.event-row').forEach(r => r.classList.remove('expanded'));
+            document.querySelectorAll('.detail-panel').forEach(d => d.classList.remove('show'));
+        }
+
+        function setView(view, el) {
+            currentView = view;
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            el.classList.add('active');
+            expandedRows.clear();
+            renderEvents();
+        }
+
+        function setFilter(filter, el) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            el.classList.add('active');
+            expandedRows.clear();
+            renderEvents();
+        }
+
+        function applyFilters() {
+            searchQuery = document.getElementById('search-input').value;
+            renderEvents();
+        }
+
+        function scrollToEvent(idx) {
+            const el = document.getElementById(`row-${idx}`);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                expandedRows.add(idx);
+                el.classList.add('expanded');
+                document.getElementById(`detail-${idx}`)?.classList.add('show');
+            }
+        }
+
+        init();
