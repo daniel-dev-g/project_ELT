@@ -136,6 +136,8 @@ class SqlServerAdapter(DatabaseAdapter):
         WITH (
             FIELDTERMINATOR = '{delimiter}',
             ROWTERMINATOR = '\\n',
+            TABLOCK, 
+            BATCHSIZE = 100000 
             FIRSTROW = 2
         )
         """
