@@ -11,7 +11,7 @@ def get_columns_file(file: str, delimiter: str) -> str:
     lf = pl.scan_csv(file, separator=delimiter)
     # covierte la lista en un string separado por coma para DDL
     columnas_str = ", ".join(
-        [f"[{col}] NVARCHAR(255)" for col in lf.collect_schema().names()])
+        [f"[{col}] VARCHAR(255)" for col in lf.collect_schema().names()])
     return columnas_str
 
 
