@@ -89,7 +89,12 @@ class PostgresAdapter(DatabaseAdapter):
             return False
 
     def bulk_load(self, task: dict) -> int:
-        """Upload CSV to Postgres using server-side COPY FROM"""
+        """Upload CSV to Postgres using server-side COPY FROM.
+
+        Postgres lee el archivo directo desde disco sin pasar por Python.
+        Requiere bulk_path_map en settings.yaml para mapear la ruta local
+        a la ruta dentro del contenedor (./data:/data).
+        """
 
         file = task['file']
         schema = task['schema']
@@ -99,27 +104,30 @@ class PostgresAdapter(DatabaseAdapter):
         if not pathlib.Path(file).is_absolute():
             file = str(pathlib.Path.cwd() / file)
 
-        if not pathlib.Path(file).exists():
-            logger.error("Error: File not found: %s", file)
-            raise FileNotFoundError(f"File not found: {file}")
+        path_map = self.config.get('bulk_path_map', {})
+        if path_map:
+            file = file.replace(path_map['host'], path_map['container'])
+        else:
+            if not pathlib.Path(file).exists():
+                logger.error("Error: File not found: %s", file)
+                raise FileNotFoundError(f"File not found: {file}")
 
         logger.info("Path: %s", file)
 
         copy_sql = (
             f'COPY "{schema}"."{table_destination}" '
-            f"FROM STDIN WITH (FORMAT csv, DELIMITER '{delimiter}', HEADER true)"
+            f"FROM '{file}' WITH (FORMAT csv, DELIMITER '{delimiter}', HEADER true)"
         )
 
-        logger.info("Executing COPY FROM STDIN...")
+        logger.info("Executing COPY FROM...")
 
         try:
             with self.get_db_cursor() as cursor:
-                with open(file, 'r', encoding='utf-8') as f:
-                    cursor.copy_expert(copy_sql, f)
+                cursor.execute(copy_sql)
                 rows_affected = cursor.rowcount
 
-            logger.info("COPY FROM STDIN successful - %d inserted rows", rows_affected)
+            logger.info("COPY FROM successful - %d inserted rows", rows_affected)
             return rows_affected
         except Exception as e:
-            logger.error("COPY FROM STDIN failed: %s", str(e))
+            logger.error("COPY FROM failed: %s", str(e))
             raise
