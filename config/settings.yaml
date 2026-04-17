@@ -6,38 +6,47 @@
 # ─────────────────────────────────────────────
 # SQL Server
 # ─────────────────────────────────────────────
-development:
-  db_engine: sqlserver
-  driver: "ODBC Driver 18 for SQL Server"
-  server: "${SQLSERVER_HOST},1433"
-  database: ${SQLSERVER_DB}
-  username: ${SQLSERVER_USER}
-  password: ${SQLSERVER_PASSWORD}
-  trusted_connection: "no"
-  encrypt: "no"
-  bulk_path_map:
-    host: "/app/data"      # path en el contenedor de la app (WORKDIR=/app)
-    # host: "C:\\ruta\\proyecto\\data"    # Windows
-    container: "/data"     # path en el contenedor de SQL Server (./data:/data)
-  log_level: "INFO"
+#development:
+#  db_engine: sqlserver
+#  default_schema: "dbo"
+#  driver: "ODBC Driver 18 for SQL Server"
+#  server: "${SQLSERVER_HOST},1433"
+#  database: ${SQLSERVER_DB}
+#  username: ${SQLSERVER_USER}
+#  password: ${SQLSERVER_PASSWORD}
+#  trusted_connection: "no"
+#  encrypt: "no"
+#  bulk_path_map:
+#    host: "/home/daniel/Documentos/ti/proyectos/project_ELT/data"  # path local del proyecto
+#    # host: "/app/data"                   # cuando la app corre en Docker
+#    # host: "C:\\ruta\\proyecto\\data"    # Windows
+#    container: "/data"     # path en el contenedor de SQL Server (./data:/data)
+#  log_level: "INFO"
 
 # ─────────────────────────────────────────────
 # PostgreSQL
 # ─────────────────────────────────────────────
-# development:
-#   db_engine: postgres
-#   host: "postgres"
-#   port: 5432
-#   database: ${POSTGRES_DB}
-#   username: ${POSTGRES_USER}
-#   password: ${POSTGRES_PASSWORD}
-#   log_level: "INFO"
+development:
+  db_engine: postgres
+  default_schema: "public"
+  host: "localhost"
+  port: 5433
+  database: ${POSTGRES_DB}
+  username: ${POSTGRES_USER}
+  password: ${POSTGRES_PASSWORD}
+  bulk_path_map:
+    host: "/home/daniel/Documentos/ti/proyectos/project_ELT/data"  # path local del proyecto
+    # host: "/app/data"                   # cuando la app corre en Docker
+    # host: "C:\\ruta\\proyecto\\data"    # Windows
+    container: "/data"     # path en el contenedor de Postgres (./data:/data)
+  log_level: "INFO"
 
 # ─────────────────────────────────────────────
 # MySQL
 # ─────────────────────────────────────────────
 # development:
 #   db_engine: mysql
+#   default_schema: ""          # MySQL no usa schema, se omite
 #   host: "mysql"
 #   port: 3306
 #   database: ${MYSQL_DB}
@@ -50,6 +59,7 @@ development:
 # ─────────────────────────────────────────────
 # development:
 #   db_engine: db2
+#   default_schema: ${DB2_USER}  # Db2 usa el usuario como schema por defecto
 #   host: "db2"
 #   port: 50000
 #   database: ${DB2_DB}
@@ -62,6 +72,7 @@ development:
 # ─────────────────────────────────────────────
 # development:
 #   db_engine: oracle
+#   default_schema: ${ORACLE_USER}  # Oracle usa el usuario como schema por defecto
 #   host: "oracle"
 #   port: 1521
 #   service_name: ${ORACLE_DB}

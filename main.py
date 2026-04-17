@@ -105,7 +105,7 @@ def process_task(task: dict, db_adapter, execution_id: str) -> tuple[bool, int]:
         return False, 0
 
 
-def _run_tasks(pipeline_cfg: dict, db_adapter, execution_id: str) -> dict:
+def _run_tasks(pipeline_cfg: dict, db_adapter, execution_id: str, db_cfg: dict) -> dict:
     """Executes all active tasks in the pipeline. Returns summary counters."""
     total_tasks = 0
     successful_tasks = 0
@@ -120,21 +120,23 @@ def _run_tasks(pipeline_cfg: dict, db_adapter, execution_id: str) -> dict:
         last_task = task
 
         total_tasks += 1
+        resolved_task = {**task, 'schema': db_cfg.get('default_schema') or task['schema']}
         try:
             table_creator_execute(
                 execution_id=execution_id,
                 engine=db_adapter.engine,
-                schema=task['schema'],
-                table_destino=task['table_destination'],
-                file=task['file'],
-                delimiter=task.get('delimiter', ';')
+                schema=resolved_task['schema'],
+                table_destino=resolved_task['table_destination'],
+                file=resolved_task['file'],
+                delimiter=resolved_task.get('delimiter', ';'),
+                db_engine=db_cfg['db_engine']
             )
         except Exception as e:  # pylint: disable=broad-exception-caught
             registrar_log("table_creation_error",
-                          {"table": task['table_destination'], "error": str(e)})
+                          {"table": resolved_task['table_destination'], "error": str(e)})
             failed_tasks += 1
             continue
-        success, rows = process_task(task=task, db_adapter=db_adapter, execution_id=execution_id)
+        success, rows = process_task(task=resolved_task, db_adapter=db_adapter, execution_id=execution_id)
 
         if success:
             successful_tasks += 1
@@ -171,10 +173,12 @@ def main():
 
         # PHASE 2: Database connection
         db_adapter = factory_db(db_cfg)
-        if not check_db_connection(db_adapter.engine):
+        connected, connection_error = check_db_connection(db_adapter.engine)
+        if not connected:
             registrar_log("process_failed", {
                 "execution_id": execution_id,
-                "error": "Could not connect to database"
+                "error": "Could not connect to database",
+                "detail": connection_error
             })
             sys.exit(1)
 
@@ -182,7 +186,7 @@ def main():
         with open("config/pipeline.yaml", "r", encoding="utf-8") as f:
             pipeline_cfg = yaml.safe_load(f)
 
-        summary = _run_tasks(pipeline_cfg, db_adapter, execution_id)
+        summary = _run_tasks(pipeline_cfg, db_adapter, execution_id, db_cfg)
 
         # PHASE 4: CSV analysis summary
         try:

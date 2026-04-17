@@ -10,17 +10,16 @@ from sqlalchemy.exc import OperationalError, ProgrammingError
 logger = logging.getLogger(__name__)
 
 
-def check_db_connection(engine) -> bool:
+def check_db_connection(engine) -> tuple[bool, str | None]:
     "Validates that the engine can connect and execute a basic query."
     try:
         with engine.connect() as conn:
-            # Ejecuta una consulta ligera para verificar el enlace
             conn.execute(text("SELECT 1"))
         logger.info("Database connection established successfully.")
-        return True
+        return True, None
     except OperationalError as e:
-        logger.critical(" Could not connect to the database. %s", e)
-        return False
+        logger.critical("Could not connect to the database. %s", e)
+        return False, str(e)
 
 
 def check_table_exists(engine_global: Engine, tabla: str, schema: str = "dbo") -> bool:
