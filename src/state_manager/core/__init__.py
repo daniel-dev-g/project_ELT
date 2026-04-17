@@ -1,7 +1,4 @@
-# src/state_manager/core/__init__.py
-from src.state_manager.core.manager import StateManager
-from src.state_manager.core.query_loader import QueryLoader, create_query_loader
-from src.state_manager.core.database import get_db_cursor, get_metadata_schema, get_queries
+"""state_manager.core — database adapters and factory."""
+from src.state_manager.core.adapter_db.factory_db import factory_db
 
-__all__ = ['StateManager', 'QueryLoader', 'create_query_loader', 
-           'get_db_cursor', 'get_metadata_schema', 'get_queries']
+__all__ = ['factory_db']

@@ -6,9 +6,19 @@ readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
     "charset-normalizer>=3.4.4",
-    "polars>=1.38.0",
+    "polars-lts-cpu==1.33.1",
     "pymssql>=2.3.11",
     "pyodbc>=5.3.0",
     "pyyaml>=6.0.3",
     "sqlalchemy>=2.0.46",
+    # Postgres
+    "psycopg2-binary>=2.9",
+    # IBM Db2
+    "ibm-db>=3.2",
+    # MySQL
+    "pymysql>=1.1",
+    # Oracle (requiere Oracle Instant Client para thick mode)
+    "oracledb>=2.0",
+    "python-dotenv>=1.2.2",
+    "debugpy>=1.8",
 ]

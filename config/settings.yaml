@@ -1,0 +1,82 @@
+# config/settings.yaml
+# Activa el motor deseado descomentando su bloque.
+# Solo un bloque development activo a la vez.
+# Completa username y password con tus credenciales.
+
+# ─────────────────────────────────────────────
+# SQL Server
+# ─────────────────────────────────────────────
+#development:
+#  db_engine: sqlserver
+#  default_schema: "dbo"
+#  driver: "ODBC Driver 18 for SQL Server"
+#  server: "${SQLSERVER_HOST},1433"
+#  database: ${SQLSERVER_DB}
+#  username: ${SQLSERVER_USER}
+#  password: ${SQLSERVER_PASSWORD}
+#  trusted_connection: "no"
+#  encrypt: "no"
+#  bulk_path_map:
+#    host: "/home/daniel/Documentos/ti/proyectos/project_ELT/data"  # path local del proyecto
+#    # host: "/app/data"                   # cuando la app corre en Docker
+#    # host: "C:\\ruta\\proyecto\\data"    # Windows
+#    container: "/data"     # path en el contenedor de SQL Server (./data:/data)
+#  log_level: "INFO"
+
+# ─────────────────────────────────────────────
+# PostgreSQL
+# ─────────────────────────────────────────────
+development:
+  db_engine: postgres
+  default_schema: "public"
+  host: "localhost"
+  port: 5433
+  database: ${POSTGRES_DB}
+  username: ${POSTGRES_USER}
+  password: ${POSTGRES_PASSWORD}
+  bulk_path_map:
+    host: "/home/daniel/Documentos/ti/proyectos/project_ELT/data"  # path local del proyecto
+    # host: "/app/data"                   # cuando la app corre en Docker
+    # host: "C:\\ruta\\proyecto\\data"    # Windows
+    container: "/data"     # path en el contenedor de Postgres (./data:/data)
+  log_level: "INFO"
+
+# ─────────────────────────────────────────────
+# MySQL
+# ─────────────────────────────────────────────
+# development:
+#   db_engine: mysql
+#   default_schema: ""          # MySQL no usa schema, se omite
+#   host: "mysql"
+#   port: 3306
+#   database: ${MYSQL_DB}
+#   username: ${MYSQL_USER}
+#   password: ${MYSQL_PASSWORD}
+#   log_level: "INFO"
+
+# ─────────────────────────────────────────────
+# IBM Db2
+# ─────────────────────────────────────────────
+# development:
+#   db_engine: db2
+#   default_schema: ${DB2_USER}  # Db2 usa el usuario como schema por defecto
+#   host: "db2"
+#   port: 50000
+#   database: ${DB2_DB}
+#   username: ${DB2_USER}
+#   password: ${DB2_PASSWORD}
+#   log_level: "INFO"
+
+# ─────────────────────────────────────────────
+# Oracle
+# ─────────────────────────────────────────────
+# development:
+#   db_engine: oracle
+#   default_schema: ${ORACLE_USER}  # Oracle usa el usuario como schema por defecto
+#   host: "oracle"
+#   port: 1521
+#   service_name: ${ORACLE_DB}
+#   username: ${ORACLE_USER}
+#   password: ${ORACLE_PASSWORD}
+#   # instant_client_dir: "/opt/oracle/instantclient"  # solo si usas thick mode
+#   log_level: "INFO"

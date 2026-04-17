@@ -1,0 +1,137 @@
+# docker-compose.yml
+# Uso: docker compose --profile <motor> up
+# Motores disponibles: sqlserver | postgres | mysql | db2 | oracle
+
+services:
+
+  # ─────────────────────────────────────────────
+  # FlowELT app (Python)
+  # Se levanta con cualquier profile de motor
+  # ─────────────────────────────────────────────
+  app:
+    profiles: [sqlserver, postgres, mysql, db2, oracle]
+    build: .
+    container_name: flowelt_app
+    env_file: .env
+    volumes:
+      - ./data:/app/data        # archivos CSV de entrada
+      - ./config:/app/config    # settings.yaml y pipeline.yaml
+      - ./logs:/app/logs        # logs de salida
+    depends_on:
+      sqlserver:
+        condition: service_started
+        required: false
+      postgres:
+        condition: service_started
+        required: false
+      mysql:
+        condition: service_started
+        required: false
+      db2:
+        condition: service_started
+        required: false
+      oracle:
+        condition: service_started
+        required: false
+
+  # ─────────────────────────────────────────────
+  # SQL Server 2022 Developer Edition
+  # ─────────────────────────────────────────────
+  sqlserver:
+    profiles: [sqlserver]
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: flowelt_sqlserver
+    security_opt:
+      - apparmor:unconfined
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${SQLSERVER_PASSWORD}
+      SQLSERVER_DB: ${SQLSERVER_DB}
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+      - ./data:/data
+      - ./init/sqlserver/init.sh:/init.sh
+    entrypoint: ["/bin/bash", "/init.sh"]
+    restart: unless-stopped
+
+  # ─────────────────────────────────────────────
+  # PostgreSQL 16
+  # ─────────────────────────────────────────────
+  postgres:
+    profiles: [postgres]
+    image: postgres:16
+    container_name: flowelt_postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./data:/data
+    restart: unless-stopped
+
+  # ─────────────────────────────────────────────
+  # MySQL 8 Community Edition
+  # ─────────────────────────────────────────────
+  mysql:
+    profiles: [mysql]
+    image: mysql:8
+    container_name: flowelt_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DB}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./data:/data
+    restart: unless-stopped
+
+  # ─────────────────────────────────────────────
+  # IBM Db2 Community Edition
+  # ─────────────────────────────────────────────
+  db2:
+    profiles: [db2]
+    image: ibmcom/db2
+    container_name: flowelt_db2
+    privileged: true   # requerido por ibmcom/db2 para configurar parámetros del kernel del sistema
+    environment:
+      LICENSE: accept
+      DB2INST1_PASSWORD: ${DB2_PASSWORD}
+      DBNAME: ${DB2_DB}
+    ports:
+      - "50000:50000"
+    volumes:
+      - db2_data:/database
+      - ./data:/data
+    restart: unless-stopped
+
+  # ─────────────────────────────────────────────
+  # Oracle 23c Free Edition
+  # ─────────────────────────────────────────────
+  oracle:
+    profiles: [oracle]
+    image: gvenzl/oracle-free:latest
+    container_name: flowelt_oracle
+    environment:
+      ORACLE_PASSWORD: ${ORACLE_PASSWORD}
+      ORACLE_DATABASE: ${ORACLE_DB}
+    ports:
+      - "1521:1521"
+    volumes:
+      - oracle_data:/opt/oracle/oradata
+      - ./data:/data
+    restart: unless-stopped
+
+volumes:
+  sqlserver_data:
+  postgres_data:
+  mysql_data:
+  db2_data:
+  oracle_data:

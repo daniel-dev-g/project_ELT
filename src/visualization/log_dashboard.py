@@ -1,4 +1,4 @@
-"""DataBridge — HTML Dashboard Generator for JSON logs"""
+"""FlowELT — HTML Dashboard Generator for JSON logs"""
 import json
 import logging
 from pathlib import Path
@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 _TEMPLATE = Path(__file__).parent / "log_viewer.html"
 
 
-def generate_dashboard(log_file: Path, output_file: Path = None) -> Path:
+def generate_dashboard(log_file: Path, output_file: Path | None = None) -> Path:
     """
     Generates an interactive HTML dashboard from a JSON log file.
 

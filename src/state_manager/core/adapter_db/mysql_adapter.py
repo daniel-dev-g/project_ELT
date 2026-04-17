@@ -1,0 +1,128 @@
+"""mysql_adapter.py"""
+import pathlib
+import logging
+import pymysql
+
+from sqlalchemy import create_engine
+from contextlib import contextmanager
+
+from src.state_manager.core.adapter_db.database_adapter import DatabaseAdapter
+
+logger = logging.getLogger(__name__)
+
+
+class MySQLAdapter(DatabaseAdapter):
+
+    def __init__(self, config: dict):
+        self.config = config
+        self.engine = self.get_engine(config)
+
+    def _get_connection_params(self, config=None) -> dict:
+        """Retorna parámetros de conexión para pymysql"""
+        if config is None:
+            config = self.config
+
+        return {
+            'host': config['host'],
+            'port': config.get('port', 3306),
+            'database': config['database'],
+            'user': config['username'],
+            'password': config['password'],
+            'local_infile': True,  # requerido para LOAD DATA LOCAL INFILE
+        }
+
+    def get_engine(self, config=None):
+        """Crea engine SQLAlchemy para MySQL"""
+        if config is None:
+            config = self.config
+
+        host = config['host']
+        port = config.get('port', 3306)
+        database = config['database']
+        username = config['username']
+        password = config['password']
+
+        connection_url = f"mysql+pymysql://{username}:{password}@{host}:{port}/{database}"
+        return create_engine(connection_url)
+
+    @contextmanager
+    def get_db_cursor(self):
+        """Context manager para conexiones pymysql"""
+        params = self._get_connection_params()
+        conn = pymysql.connect(**params)
+        cursor = conn.cursor()
+        try:
+            yield cursor
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            cursor.close()
+            conn.close()
+
+    def check_bulk_permission(self) -> bool:
+        """Verifica si el usuario tiene el privilegio FILE para LOAD DATA INFILE."""
+        query = "SELECT File_priv FROM mysql.user WHERE User = CURRENT_USER()"
+
+        try:
+            with self.get_db_cursor() as cursor:
+                cursor.execute(query)
+                result = cursor.fetchone()
+                has_permission = result is not None and result[0] == 'Y'
+
+                if has_permission:
+                    logger.info(
+                        "The user has FILE permissions on host: %s",
+                        self.config.get('host')
+                    )
+                else:
+                    logger.warning(
+                        "The user does NOT have FILE permissions on host: %s",
+                        self.config.get('host')
+                    )
+                return has_permission
+        except Exception as e:
+            logger.error(
+                "Technical error while verifying permissions on %s: %s",
+                self.config.get('host'), e
+            )
+            return False
+
+    def bulk_load(self, task: dict) -> int:
+        """Upload CSV to MySQL using LOAD DATA LOCAL INFILE"""
+
+        file = task['file']
+        schema = task['schema']
+        table_destination = task['table_destination']
+        delimiter = task.get('delimiter', ';')
+
+        if not pathlib.Path(file).is_absolute():
+            file = str(pathlib.Path.cwd() / file)
+
+        if not pathlib.Path(file).exists():
+            logger.error("Error: File not found: %s", file)
+            raise FileNotFoundError(f"File not found: {file}")
+
+        logger.info("Path: %s", file)
+
+        load_sql = f"""
+            LOAD DATA LOCAL INFILE '{file}'
+            INTO TABLE `{schema}`.`{table_destination}`
+            FIELDS TERMINATED BY '{delimiter}'
+            LINES TERMINATED BY '\\n'
+            IGNORE 1 ROWS
+        """
+
+        logger.info("Executing LOAD DATA LOCAL INFILE...")
+
+        try:
+            with self.get_db_cursor() as cursor:
+                cursor.execute(load_sql)
+                rows_affected = cursor.rowcount
+
+            logger.info("LOAD DATA successful - %d inserted rows", rows_affected)
+            return rows_affected
+        except Exception as e:
+            logger.error("LOAD DATA failed: %s", str(e))
+            raise
