@@ -9,6 +9,28 @@ Git es un sistema de control de versiones. Registra cada cambio en el código pa
 
 ---
 
+## ¿Qué es un commit?
+
+Un commit es una **fotografía del código en un momento específico**. Cada commit registra:
+
+| Campo | Descripción |
+|-------|-------------|
+| **qué cambió** | Los archivos modificados |
+| **cuándo** | Fecha y hora |
+| **quién** | Nombre y email del autor |
+| **por qué** | El mensaje que escribiste |
+
+```bash
+git log --oneline
+981b516 docs: agrega guia de referencia Git
+66d6305 postgres: cambia COPY FROM STDIN a COPY FROM directo en disco
+9950806 merge feature/docker-sqlserver: resuelve conflicto logs
+```
+
+Cada línea es un commit. El código nunca se sobreescribe — Git acumula esos registros y puede volver a cualquiera de ellos en cualquier momento.
+
+---
+
 ## Configuración inicial
 
 ```bash
