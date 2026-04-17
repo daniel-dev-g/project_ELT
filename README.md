@@ -1,148 +1,183 @@
 # FlowELT
 
-> Herramienta ETL en Python para carga masiva de archivos CSV hacia múltiples motores de base de datos.
-> Pipeline configurable por YAML, con log estructurado y dashboard de ejecución interactivo.
-> Alternativa ligera a SSIS y Airflow para analistas que necesitan cargas masivas sin infraestructura DevOps.
+![Python](https://img.shields.io/badge/Python-3.14-blue?logo=python)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker)
+![uv](https://img.shields.io/badge/uv-package%20manager-purple)
+![License](https://img.shields.io/badge/license-MIT-green)
+
+> Motor ELT ligero y de alto rendimiento para entornos on-premise.
+> Diseñado para simplicidad, observabilidad y flujos reales de ingeniería de datos.
 
 ---
 
-## ⚡ Rendimiento
+## ¿Qué es FlowELT?
 
-| Archivos | Filas   | Duración |
-| -------- | ------- | -------- |
-| 3        | 480.526 | 4.3s     |
+**FlowELT** es un motor ELT configurable que permite la carga masiva de archivos planos (CSV/TXT) hacia múltiples motores de bases de datos utilizando sus herramientas nativas de alto rendimiento.
 
-> Carga realizada con BULK INSERT sobre SQL Server en entorno local.
+> **Proveer una alternativa simple, reproducible y observable a herramientas de datos complejas.**
 
 ---
 
-## 🗄️ Bases de datos soportadas
+## ¿Por qué FlowELT?
 
-| Motor      | Herramienta de carga         | Imagen Docker                                |
-| ---------- | ---------------------------- | -------------------------------------------- |
-| SQL Server | `BULK INSERT`                | `mcr.microsoft.com/mssql/server:2022-latest` |
-| PostgreSQL | `COPY FROM STDIN`            | `postgres:16`                                |
-| MySQL      | `LOAD DATA LOCAL INFILE`     | `mysql:8`                                    |
-| IBM Db2    | `SYSPROC.ADMIN_CMD(LOAD)`    | `ibmcom/db2`                                 |
-| Oracle     | `sqlldr` + `.ctl` dinámico   | `gvenzl/oracle-free`                         |
+El patrón habitual en pipelines de datos con Python:
 
----
+```python
+# Lo que se ve en producción
+df = pd.read_csv("archivo.csv")          # carga todo a RAM
+df.to_sql("tabla", engine, chunksize=1000)  # inserta fila por fila
+```
 
-## 📊 Dashboard de ejecución
+Funciona para volúmenes pequeños. Cuando el archivo crece, el proceso pasa de minutos a horas.
 
-[**→ Ver Dashboard Interactivo ←**](https://htmlpreview.github.io/?https://github.com/daniel-dev-g/project_ELT/blob/main/logs/log_20260302_174109.html)
+**FlowELT propone un enfoque distinto:**
 
-<p align="center">
-  <img src="screenshot.png" alt="Dashboard de monitorización" width="800">
-</p>
-
----
-
-## 🚀 Instalación
-
-### Requisitos previos
-
-- [Git](https://git-scm.com/)
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (incluye Docker Compose)
-
-No se requiere instalar Python, uv ni drivers de base de datos — todo corre dentro del contenedor.
+- Carga masiva nativa por motor de base de datos (sin pasar datos por Python)
+- Configuración declarativa mediante YAML
+- Compatibilidad total con entornos on-premise
+- Observabilidad integrada — logs estructurados + dashboard HTML por ejecución
+- Sin dependencias de orquestadores pesados
 
 ---
 
-### Paso 1 — Clonar el repositorio
+## Rendimiento
+
+| Archivos | Volumen total | Filas      | Duración  | Motor      | Método |
+|----------|---------------|------------|-----------|------------|--------|
+| 3        | ~2 GB         | 12.787.201 | 2 min 44s | SQL Server | `BULK INSERT` |
+| 3        | ~2 GB         | 12.787.201 | 5 min 01s | PostgreSQL | `COPY FROM STDIN` |
+| 3        | < 10 MB       | 480.526    | 4.3 seg   | SQL Server | `BULK INSERT` |
+
+> Hardware: Intel Core i3-1005G1 / 11 GB RAM / Ubuntu Linux / SO en disco externo USB 2.0.
+> La diferencia entre motores se debe al método de carga: SQL Server lee directo desde disco, PostgreSQL recibe el stream desde Python.
+
+### Detalle — prueba con archivo de 2 GB
+
+| Parámetro  | SQL Server | PostgreSQL |
+|---|---|---|
+| OS | Ubuntu Linux | Ubuntu Linux |
+| Hardware | Intel Core i3-1005G1 @ 1.20GHz / 11 GB RAM | Intel Core i3-1005G1 @ 1.20GHz / 11 GB RAM |
+| Contenedor | `mcr.microsoft.com/mssql/server:2022-latest` | `postgres:16` |
+| Python | Local (fuera de Docker) | Local (fuera de Docker) |
+| Archivos | `tripdata_2015-01.csv` (2.0 GB) + 2 archivos pequeños | ídem |
+| Método | `BULK INSERT` con `TABLOCK` + `BATCHSIZE=100000` | `COPY FROM STDIN` vía psycopg2 |
+| Duración | 2 min 44 seg | 5 min 01 seg |
+
+> SQL Server no pasa los datos por Python — lee directamente desde disco vía bind mount `./data:/data`.
+> PostgreSQL recibe el stream desde Python vía socket, lo que agrega overhead pero evita dependencias de ruta en el contenedor.
+
+**Nota sobre los tiempos de PostgreSQL:** estas mediciones representan el **peor escenario posible** — SO corriendo desde disco externo USB 2.0 y PostgreSQL en Docker con overlay filesystem. En condiciones reales de producción (PostgreSQL en servidor dedicado o servicio gestionado como RDS/Cloud SQL), los tiempos serían significativamente menores y comparables a SQL Server, ya que `COPY FROM '/ruta/archivo.csv'` leería directo desde disco sin pasar por Python ni capas de virtualización.
+
+---
+
+## Bases de datos soportadas
+
+| Motor      | Método de carga nativa     |
+|------------|----------------------------|
+| SQL Server | `BULK INSERT`              |
+| PostgreSQL | `COPY FROM STDIN`          |
+| MySQL      | `LOAD DATA LOCAL INFILE`   |
+| IBM Db2    | `SYSPROC.ADMIN_CMD(LOAD)`  |
+| Oracle     | `sqlldr` + `.ctl` dinámico |
+
+---
+
+## Arquitectura
+
+```
+Archivos CSV / TXT
+        │
+        ▼
+┌───────────────────┐
+│  Capa validación  │  conexión, tablas, permisos BULK
+└────────┬──────────┘
+         │
+         ▼
+┌───────────────────┐
+│  Análisis Polars  │  metadata, tipos, estadísticas
+└────────┬──────────┘
+         │
+         ▼
+┌───────────────────┐
+│  Motor de carga   │  BULK INSERT / COPY / LOAD DATA
+│  (nativo por DB)  │
+└────────┬──────────┘
+         │
+         ▼
+┌───────────────────┐
+│  Observabilidad   │  JSON estructurado + Dashboard HTML
+└───────────────────┘
+```
+
+---
+
+## Características principales
+
+- Pipelines configurables con YAML
+- Carga masiva nativa por motor de base de datos
+- Análisis de archivos con Polars
+- Dashboard HTML interactivo por ejecución
+- Logging estructurado con `execution_id` único por ejecución
+- Soporte multi-base de datos (5 motores)
+- Infraestructura de bases de datos contenerizada con Docker
+
+---
+
+## Dashboard de ejecución
+
+Generado automáticamente al finalizar cada ejecución:
+
+- Timeline del pipeline
+- Eventos detallados por tarea
+- Seguimiento de errores
+- Métricas por archivo
+- Resumen de ejecución con `execution_id`
+
+---
+
+## Quickstart
+
+### Prerrequisitos
+
+- Python 3.14+
+- [uv](https://docs.astral.sh/uv/)
+- Docker + Docker Compose
+
+### 1. Clonar repositorio
 
 ```bash
 git clone https://github.com/daniel-dev-g/project_ELT.git
 cd project_ELT
 ```
 
----
+### 2. Instalar dependencias
 
-### Paso 2 — Configurar credenciales
+```bash
+uv sync
+```
 
-Copia el archivo de ejemplo y completa las credenciales del motor que usarás:
+### 3. Configurar variables de entorno
 
 ```bash
 cp .env.example .env
 ```
 
-Edita `.env` (es la única fuente de credenciales — `settings.yaml` las lee desde aquí):
+Editar `.env` con las credenciales del motor elegido.
 
-```env
-# SQL Server
-SQLSERVER_HOST=sqlserver
-SQLSERVER_USER=sa
-SQLSERVER_PASSWORD=TuPasswordSeguro123
-SQLSERVER_DB=demo_db
+### 4. Seleccionar motor de base de datos
 
-# PostgreSQL
-POSTGRES_USER=admin
-POSTGRES_PASSWORD=TuPassword
-POSTGRES_DB=demo_db
+Descomentar el bloque correspondiente en `config/settings.yaml`.
 
-# MySQL
-MYSQL_USER=admin
-MYSQL_ROOT_PASSWORD=TuPassword
-MYSQL_PASSWORD=TuPassword
-MYSQL_DB=demo_db
+### 5. Agregar archivos de entrada
 
-# IBM Db2
-DB2_USER=db2inst1
-DB2_PASSWORD=TuPassword
-DB2_DB=demo_db
-
-# Oracle
-ORACLE_USER=system
-ORACLE_PASSWORD=TuPassword
-ORACLE_DB=FREEPDB1
+```
+data/input/archivo.csv
 ```
 
-> `SQLSERVER_HOST=sqlserver` — cuando la app corre en Docker, usa el nombre del servicio definido en `docker-compose.yml`. Docker resuelve ese nombre automáticamente dentro de la red interna.
-
-> `.env` nunca se sube al repositorio (está en `.gitignore`).
-
----
-
-### Paso 3 — Elegir motor en settings.yaml
-
-Edita `config/settings.yaml`. El archivo ya viene con todos los bloques — activa el motor que usarás descomentándolo y deja los demás comentados. Las credenciales se toman automáticamente del `.env`:
+### 6. Configurar pipeline
 
 ```yaml
-development:
-  db_engine: sqlserver
-  driver: "ODBC Driver 18 for SQL Server"
-  server: "${SQLSERVER_HOST},1433"
-  database: ${SQLSERVER_DB}
-  username: ${SQLSERVER_USER}
-  password: ${SQLSERVER_PASSWORD}
-  ...
-```
-
-Todos los valores se leen desde `.env` — no es necesario editar `settings.yaml` directamente.
-
-Para usar otro motor, comenta el bloque activo y descomenta el correspondiente (postgres, mysql, db2 u oracle).
-
----
-
-### Paso 4 — Agregar archivos CSV
-
-Copia tus archivos CSV a la carpeta `data/input/`:
-
-```bash
-data/
-└── input/
-    ├── clientes.csv
-    ├── productos.csv
-    └── ventas.csv
-```
-
----
-
-### Paso 5 — Configurar el pipeline
-
-Edita `config/pipeline.yaml` para declarar qué archivos cargar y a qué tablas:
-
-```yaml
+# config/pipeline.yaml
 task:
   - name: "Carga de Clientes"
     file: "data/input/clientes.csv"
@@ -152,128 +187,113 @@ task:
     active: true
 ```
 
----
-
-### Paso 6 — Levantar el motor de base de datos
+### 7. Levantar base de datos
 
 ```bash
-docker compose --profile sqlserver up -d sqlserver
+docker compose --profile sqlserver up sqlserver -d
+# o postgres, mysql, db2, oracle
 ```
 
-Reemplaza `sqlserver` por el motor que configuraste: `postgres`, `mysql`, `db2` u `oracle`.
-
-**Solo para SQL Server** — crea la base de datos (espera ~30s a que el contenedor esté listo):
+### 8. Ejecutar
 
 ```bash
-docker exec flowelt_sqlserver /opt/mssql-tools18/bin/sqlcmd \
-  -S localhost -U sa -P "$SQLSERVER_PASSWORD" -No \
-  -Q "CREATE DATABASE demo_db"
-```
-
-Para los demás motores (postgres, mysql, db2, oracle) la base de datos se crea automáticamente desde el `docker-compose.yml`.
-
----
-
-### Paso 7 — Ejecutar la app
-
-```bash
-docker compose --profile sqlserver run --rm app
-```
-
-Al finalizar se generan en la carpeta `logs/`:
-
-- `log_TIMESTAMP.json` — log estructurado de la ejecución
-- `log_TIMESTAMP.html` — dashboard HTML interactivo
-- `technical.log` — log técnico interno
-
----
-
-## 📁 Estructura del proyecto
-
-```
-project_ELT/
-├── config/
-│   ├── settings.yaml          # Conexión y motor activo (editar username/password)
-│   └── pipeline.yaml          # Tareas de carga (qué archivos, a qué tablas)
-├── data/
-│   └── input/                 # Archivos CSV/TXT de entrada (agregar aquí)
-├── logs/                      # Logs JSON y dashboard HTML (generados en ejecución)
-├── src/
-│   ├── state_manager/
-│   │   └── core/
-│   │       └── adapter_db/    # Adapters por motor (sqlserver, postgres, mysql, db2, oracle)
-│   ├── csv_analisys.py        # Análisis de archivos con Polars
-│   ├── log_csv.py             # Registro de auditoría JSON
-│   ├── table_creator.py       # Creación automática de tablas
-│   └── validators/            # Validaciones de conexión y archivos
-├── Dockerfile                 # Imagen Python con dependencias y ODBC Driver
-├── docker-compose.yml         # Orquestación de motores con profiles
-├── main.py                    # Punto de entrada
-└── pyproject.toml             # Dependencias Python
+uv run main.py
 ```
 
 ---
 
-## 📊 Outputs
+## Outputs
 
-| Archivo                   | Descripción                                          |
-| ------------------------- | ---------------------------------------------------- |
-| `logs/log_*.json`         | Log de auditoría por ejecución con `execution_id`    |
-| `logs/log_*.html`         | Dashboard HTML interactivo                           |
-| `logs/technical.log`      | Log técnico interno (DEBUG/INFO/WARNING/ERROR)       |
-| `src/metadata.csv`        | Métricas por archivo (filas, encoding, tamaño)       |
-| `src/metadata_detail.csv` | Inventario de columnas por archivo                   |
+| Archivo         | Descripción                            |
+|-----------------|----------------------------------------|
+| `log_*.json`    | Log estructurado de ejecución          |
+| `log_*.html`    | Dashboard HTML interactivo             |
+| `technical.log` | Log técnico interno                    |
 
-Todos los outputs comparten `execution_id` para trazabilidad completa entre ejecuciones.
+Todos los outputs comparten el mismo `execution_id` para trazabilidad completa.
 
 ---
 
-## 🧠 Flujo del proceso
+## Flujo del proceso
 
 ```
-CSV/TXT → Validación → Análisis (Polars) → Bulk Load (motor nativo)
-                                                       ↓
-                                           JSON Log → Dashboard HTML
+1. Lectura de configuración YAML
+2. Validación de conexión y permisos BULK
+3. Creación de tabla (si no existe)
+4. Análisis de archivos con Polars
+5. Carga masiva nativa
+6. Generación de logs estructurados y dashboard HTML
 ```
 
-1. Lectura de `pipeline.yaml` y `settings.yaml`
-2. Validación de conexión al motor de base de datos
-3. Creación automática de tabla destino si no existe
-4. Análisis de archivos con Polars (encoding, columnas, filas)
-5. Carga masiva con la herramienta nativa del motor
-6. Generación de log JSON y dashboard HTML
+---
+
+## Tecnologías
+
+| Componente    | Tecnología       |
+|---------------|------------------|
+| Lenguaje      | Python 3.14      |
+| Análisis      | Polars           |
+| Configuración | YAML             |
+| Logging       | JSON estructurado|
+| Visualización | HTML Dashboard   |
+| Contenedores  | Docker + Compose |
+| Gestión deps  | uv               |
 
 ---
 
-## 🛠️ Tecnologías
+## Decisiones de diseño
 
-| Componente    | Tecnología                              |
-| ------------- | --------------------------------------- |
-| Lenguaje      | Python 3.14                             |
-| Carga masiva  | Herramienta nativa por motor            |
-| Análisis      | Polars                                  |
-| Configuración | YAML                                    |
-| Auditoría     | JSON + Dashboard HTML                   |
-| Contenedores  | Docker + Docker Compose (profiles)      |
-| Gestión deps  | uv                                      |
+| Decisión | Razón |
+|---|---|
+| Carga masiva nativa en lugar de ORM | Rendimiento — SQL Server/Postgres leen directo del disco |
+| Configuración YAML | Simplicidad y reproducibilidad sin tocar código |
+| `execution_id` por ejecución | Trazabilidad completa entre logs, dashboard y técnico |
+| Docker solo para bases de datos | El overhead de contenedorizar Python no aporta en desarrollo |
+| Polars en lugar de pandas | Velocidad y bajo consumo de memoria en análisis |
 
 ---
 
-## 🧭 Roadmap
+## Estado de pruebas por motor
 
-- [x] Soporte SQL Server via `BULK INSERT`
-- [x] Soporte PostgreSQL via `COPY FROM STDIN`
-- [x] Soporte IBM Db2 via `SYSPROC.ADMIN_CMD(LOAD)`
-- [x] Soporte MySQL via `LOAD DATA LOCAL INFILE`
-- [x] Soporte Oracle via `sqlldr` + `.ctl`
-- [x] Contenerización con Docker (docker-compose con profiles por motor)
+| Motor | Estado | Método |
+|---|---|---|
+| SQL Server | Probado | `BULK INSERT` |
+| PostgreSQL | Probado | `COPY FROM STDIN` |
+| MySQL | Pendiente | `LOAD DATA LOCAL INFILE` |
+| IBM Db2 | Pendiente | `SYSPROC.ADMIN_CMD(LOAD)` |
+| Oracle | Pendiente | `sqlldr` + `.ctl` dinámico |
 
 ---
 
-## 👨‍💻 Autor
+## Roadmap
+
+- [ ] Validar carga en MySQL
+- [ ] Validar carga en IBM Db2
+- [ ] Validar carga en Oracle
+- [ ] Módulo de profiling (nulos, cardinalidad, tipos)
+- [ ] Motor de reglas de calidad configurables en YAML
+- [ ] Historial de ejecuciones y lineage
+- [ ] Integración con Prefect (orquestación)
+- [ ] Análisis asistido por IA (opcional)
+
+---
+
+## Objetivo del proyecto
+
+FlowELT no busca ser un producto comercial.
+
+Su propósito es demostrar prácticas reales de ingeniería de datos, explorar patrones escalables de ELT y construir una alternativa ligera a herramientas complejas — evidenciando decisiones de ingeniería, no solo código.
+
+---
+
+## Autor
 
 **Daniel Guevara**
-Data Engineer | GCP | SQL | Python | Santiago, Chile
+Data Engineer | Python | SQL | GCP | Santiago, Chile
 
-- LinkedIn: [linkedin.com/in/daniel-guevara](https://www.linkedin.com/in/daniel-guevara-2a64a479/)
-- GitHub: [github.com/daniel-dev-g](https://github.com/daniel-dev-g)
+- GitHub: [daniel-dev-g](https://github.com/daniel-dev-g)
+- LinkedIn: [daniel-guevara](https://www.linkedin.com/in/daniel-guevara-2a64a479/)
+
+---
+
+> *Las herramientas de ingeniería de datos deberían ser simples, transparentes y eficientes — no complejas por defecto.*

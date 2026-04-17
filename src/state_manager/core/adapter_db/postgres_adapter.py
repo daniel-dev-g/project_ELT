@@ -24,7 +24,7 @@ class PostgresAdapter(DatabaseAdapter):
 
         return (
             f"host={config['host']} "
-            f"port={config.get('port', 5432)} "
+            f"port={config['port']} "
             f"dbname={config['database']} "
             f"user={config['username']} "
             f"password={config['password']}"
@@ -36,7 +36,7 @@ class PostgresAdapter(DatabaseAdapter):
             config = self.config
 
         host = config['host']
-        port = config.get('port', 5432)
+        port = config['port']
         database = config['database']
         username = config['username']
         password = config['password']
@@ -89,7 +89,7 @@ class PostgresAdapter(DatabaseAdapter):
             return False
 
     def bulk_load(self, task: dict) -> int:
-        """Upload CSV to Postgres using COPY"""
+        """Upload CSV to Postgres using server-side COPY FROM"""
 
         file = task['file']
         schema = task['schema']
@@ -106,11 +106,11 @@ class PostgresAdapter(DatabaseAdapter):
         logger.info("Path: %s", file)
 
         copy_sql = (
-            f"COPY {schema}.{table_destination} "
+            f'COPY "{schema}"."{table_destination}" '
             f"FROM STDIN WITH (FORMAT csv, DELIMITER '{delimiter}', HEADER true)"
         )
 
-        logger.info("Executing COPY...")
+        logger.info("Executing COPY FROM STDIN...")
 
         try:
             with self.get_db_cursor() as cursor:
@@ -118,8 +118,8 @@ class PostgresAdapter(DatabaseAdapter):
                     cursor.copy_expert(copy_sql, f)
                 rows_affected = cursor.rowcount
 
-            logger.info("COPY successful - %d inserted rows", rows_affected)
+            logger.info("COPY FROM STDIN successful - %d inserted rows", rows_affected)
             return rows_affected
         except Exception as e:
-            logger.error("COPY failed: %s", str(e))
+            logger.error("COPY FROM STDIN failed: %s", str(e))
             raise
