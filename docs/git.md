@@ -59,9 +59,20 @@ git branch -a               # Ver ramas locales y remotas
 git checkout -b nombre      # Crear y cambiar a una nueva rama
 git checkout nombre         # Cambiar a una rama existente
 git merge nombre            # Fusionar una rama en la actual
-git branch -d nombre        # Eliminar rama local (solo si ya fue mergeada)
+git branch -d nombre             # Eliminar rama local (solo si ya fue mergeada)
+git branch -D nombre             # Eliminar rama local forzado (aunque no esté mergeada)
 git push origin --delete nombre  # Eliminar rama remota
 ```
+
+### Eliminar ramas — detalle
+
+| Comando | Cuándo usarlo |
+|---------|---------------|
+| `git branch -d nombre` | La rama ya fue mergeada — Git lo verifica antes de borrar |
+| `git branch -D nombre` | Forzado — la rama no fue mergeada o Git se confunde con el remoto |
+| `git push origin --delete nombre` | Eliminar la rama en GitHub (el remoto) |
+
+> Eliminar una rama **no borra los commits** si ya fueron mergeados — siguen viviendo en la rama destino.
 
 ### Ver en qué rama estás
 
