@@ -10,7 +10,7 @@ task:
     encoding: "utf8"
     table_destination: "clientes"
     crear_tabla_si_no_existe: true # opcional, default false
-    schema: "dbo"
+    schema: ""   # SQL Server: "dbo" | PostgreSQL: "public" | MySQL: dejar vacío
     active: true
 
   - name: "Carga de Oficinas Mensuales"
@@ -19,7 +19,7 @@ task:
     encoding: "utf8"
     table_destination: "oficinas"
     crear_tabla_si_no_existe: true # opcional, default false
-    schema: "dbo"
+    schema: ""   # SQL Server: "dbo" | PostgreSQL: "public" | MySQL: dejar vacío
     active: true
 
   - name: "Carga datos USA"
@@ -28,5 +28,5 @@ task:
     encoding: "utf8"
     table_destination: "US_Taxi-Demand"
     crear_tabla_si_no_existe: true # opcional, default false
-    schema: "dbo"
+    schema: ""   # SQL Server: "dbo" | PostgreSQL: "public" | MySQL: dejar vacío
     active: true

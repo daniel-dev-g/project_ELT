@@ -106,9 +106,10 @@ class MySQLAdapter(DatabaseAdapter):
 
         logger.info("Path: %s", file)
 
+        table_ref = f"`{schema}`.`{table_destination}`" if schema else f"`{table_destination}`"
         load_sql = f"""
             LOAD DATA LOCAL INFILE '{file}'
-            INTO TABLE `{schema}`.`{table_destination}`
+            INTO TABLE {table_ref}
             FIELDS TERMINATED BY '{delimiter}'
             LINES TERMINATED BY '\\n'
             IGNORE 1 ROWS

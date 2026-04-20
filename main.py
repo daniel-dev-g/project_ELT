@@ -120,7 +120,9 @@ def _run_tasks(pipeline_cfg: dict, db_adapter, execution_id: str, db_cfg: dict) 
         last_task = task
 
         total_tasks += 1
-        resolved_task = {**task, 'schema': db_cfg.get('default_schema') or task['schema']}
+        default_schema = db_cfg.get('default_schema')
+        resolved_schema = task['schema'] if default_schema is None else default_schema
+        resolved_task = {**task, 'schema': resolved_schema}
         try:
             table_creator_execute(
                 execution_id=execution_id,

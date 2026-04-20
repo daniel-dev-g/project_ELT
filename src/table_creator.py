@@ -31,11 +31,11 @@ def table_creator(execution_id: str, engine, schema: str, table: str, columns: s
                       "execution_id": execution_id, "tabla": table, "schema": schema})
         return
 
-    schema_q = _quote(schema, db_engine)
     table_q = _quote(table, db_engine)
+    table_ref = f"{_quote(schema, db_engine)}.{table_q}" if schema else table_q
 
     with engine.begin() as conn:
-        conn.exec_driver_sql(f"CREATE TABLE {schema_q}.{table_q} ({columns})")
+        conn.exec_driver_sql(f"CREATE TABLE {table_ref} ({columns})")
 
     registrar_log("table_created", {"tabla": table, "schema": schema})
 

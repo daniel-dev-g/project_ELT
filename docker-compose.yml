@@ -41,6 +41,9 @@ services:
     profiles: [sqlserver]
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: flowelt_sqlserver
+    # apparmor:unconfined — necesario en Ubuntu/Debian con kernel moderno.
+    # Sin esto, "docker stop" falla con "permission denied" porque AppArmor
+    # bloquea la señal SIGTERM al proceso interno del contenedor.
     security_opt:
       - apparmor:unconfined
     environment:
@@ -79,15 +82,21 @@ services:
   # ─────────────────────────────────────────────
   mysql:
     profiles: [mysql]
-    image: mysql:8
+    image: mariadb:11
     container_name: flowelt_mysql
+    command: --local-infile=1  # habilita LOAD DATA LOCAL INFILE en el servidor
+    # apparmor:unconfined — mismo problema que SQL Server en Ubuntu/Debian.
+    # Sin esto, "docker stop" falla con "permission denied".
+    security_opt:
+      - apparmor:unconfined
+      - seccomp:unconfined
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DB}
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ./data:/data

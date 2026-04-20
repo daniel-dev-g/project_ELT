@@ -2,7 +2,6 @@
 existence of tables, and permissions. """
 
 import logging
-import re
 from sqlalchemy import inspect, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import OperationalError, ProgrammingError
@@ -26,13 +25,12 @@ def check_table_exists(engine_global: Engine, tabla: str, schema: str = "dbo") -
     "Check if the table exists in the database using SQLAlchemy Inspector."
     try:
         inspector = inspect(engine_global)
-        # has_table es el estándar de SQLAlchemy 2.0+
-        if inspector.has_table(tabla, schema=schema):
+        schema_arg = schema if schema else None
+        if inspector.has_table(tabla, schema=schema_arg):
             logger.info("Table [%s].[%s] exists.", schema, tabla)
             return True
-        else:
-            logger.info("The table [%s].[%s] was not found.", schema, tabla)
-            return False
+        logger.info("The table [%s].[%s] was not found.", schema, tabla)
+        return False
 
     except (OperationalError, ProgrammingError) as e:
         #  Es mejor lanzar el error o registrarlo en un log real

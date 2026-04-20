@@ -42,11 +42,12 @@ Funciona para volúmenes pequeños. Cuando el archivo crece, el proceso pasa de 
 
 ## Rendimiento
 
-| Archivos | Volumen total | Filas      | Duración  | Motor      | Método |
-|----------|---------------|------------|-----------|------------|--------|
-| 3        | ~2 GB         | 12.787.201 | 2 min 44s | SQL Server | `BULK INSERT` |
-| 3        | ~2 GB         | 12.787.201 | 5 min 01s | PostgreSQL | `COPY FROM STDIN` |
-| 3        | < 10 MB       | 480.526    | 4.3 seg   | SQL Server | `BULK INSERT` |
+| Archivos | Volumen total | Filas      | Duración   | Motor      | Método |
+|----------|---------------|------------|------------|------------|--------|
+| 3        | ~2 GB         | 12.787.201 | 2 min 44s  | SQL Server | `BULK INSERT` |
+| 3        | ~2 GB         | 12.787.201 | 5 min 01s  | PostgreSQL | `COPY FROM STDIN` |
+| 3        | ~2 GB         | 12.787.201 | 2 min 04s  | MySQL/MariaDB | `LOAD DATA LOCAL INFILE` |
+| 3        | < 10 MB       | 480.526    | 4.3 seg    | SQL Server | `BULK INSERT` |
 
 > Hardware: Intel Core i3-1005G1 / 11 GB RAM / Ubuntu Linux / SO en disco externo USB 2.0.
 > La diferencia entre motores se debe al método de carga: SQL Server lee directo desde disco, PostgreSQL recibe el stream desde Python.
@@ -75,7 +76,7 @@ Funciona para volúmenes pequeños. Cuando el archivo crece, el proceso pasa de 
 | Motor      | Método de carga nativa     |
 |------------|----------------------------|
 | SQL Server | `BULK INSERT`              |
-| PostgreSQL | `COPY FROM STDIN`          |
+| PostgreSQL | `COPY FROM` (server-side)  |
 | MySQL      | `LOAD DATA LOCAL INFILE`   |
 | IBM Db2    | `SYSPROC.ADMIN_CMD(LOAD)`  |
 | Oracle     | `sqlldr` + `.ctl` dinámico |
@@ -259,7 +260,7 @@ Todos los outputs comparten el mismo `execution_id` para trazabilidad completa.
 |---|---|---|
 | SQL Server | Probado | `BULK INSERT` |
 | PostgreSQL | Probado | `COPY FROM STDIN` |
-| MySQL | Pendiente | `LOAD DATA LOCAL INFILE` |
+| MySQL / MariaDB | Probado | `LOAD DATA LOCAL INFILE` |
 | IBM Db2 | Pendiente | `SYSPROC.ADMIN_CMD(LOAD)` |
 | Oracle | Pendiente | `sqlldr` + `.ctl` dinámico |
 
