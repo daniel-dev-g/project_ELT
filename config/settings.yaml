@@ -42,7 +42,7 @@
 #  log_level: "INFO"
 
 # ─────────────────────────────────────────────
-# MySQL
+# MariaDB (reemplaza MySQL 8)
 # ─────────────────────────────────────────────
 development:
   db_engine: mysql
@@ -52,6 +52,9 @@ development:
   database: ${MYSQL_DB}
   username: ${MYSQL_USER}
   password: ${MYSQL_PASSWORD}
+  bulk_path_map:
+    host: "/home/daniel/Documentos/ti/proyectos/project_ELT/data"
+    container: "/data"
   log_level: "INFO"
 
 # ─────────────────────────────────────────────

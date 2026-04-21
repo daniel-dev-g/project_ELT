@@ -85,6 +85,8 @@ Funciona para volúmenes pequeños. Cuando el archivo crece, el proceso pasa de 
 
 ## Arquitectura
 
+### Flujo actual
+
 ```
 Archivos CSV / TXT
         │
@@ -101,7 +103,7 @@ Archivos CSV / TXT
          ▼
 ┌───────────────────┐
 │  Motor de carga   │  BULK INSERT / COPY / LOAD DATA
-│  (nativo por DB)  │
+│  (nativo por BD)  │
 └────────┬──────────┘
          │
          ▼
@@ -109,6 +111,46 @@ Archivos CSV / TXT
 │  Observabilidad   │  JSON estructurado + Dashboard HTML
 └───────────────────┘
 ```
+
+### Arquitectura con lineage (roadmap)
+
+El lineage no puede inyectarse durante la carga nativa — el archivo se transfiere tal cual para preservar el rendimiento. Se agrega en un paso SQL posterior, dentro de la base de datos.
+
+```
+Archivos CSV / TXT
+        │
+        ▼
+┌─────────────────────────────────────────────────┐
+│                   LANDING                        │
+│                                                  │
+│  BULK INSERT / COPY / LOAD DATA                  │
+│                                                  │
+│  ┌──────────────────┐   ┌──────────────────────┐ │
+│  │ landing.clientes │   │ bd_logs              │ │
+│  │ (datos puros)    │   │ execution_id         │ │
+│  │                  │   │ task_id              │ │
+│  │ col_1, col_2 ... │   │ source_file          │ │
+│  └──────────────────┘   │ load_timestamp       │ │
+│                         │ rows_inserted        │ │
+│                         └──────────────────────┘ │
+└─────────────────────┬───────────────────────────┘
+                      │  SQL post-carga (JOIN)
+                      ▼
+┌─────────────────────────────────────────────────┐
+│                     RAW                          │
+│                                                  │
+│  ┌─────────────────────────────────────────────┐ │
+│  │ raw.clientes                                │ │
+│  │                                             │ │
+│  │ col_1, col_2 ...   ← datos originales       │ │
+│  │ _execution_id      ← trazabilidad           │ │
+│  │ _source_file       ← origen del archivo     │ │
+│  │ _load_timestamp    ← momento de carga       │ │
+│  └─────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────┘
+```
+
+Cada fila en `raw` puede responder: *¿de qué archivo viene? ¿cuándo se cargó? ¿en qué ejecución?*
 
 ---
 
@@ -273,9 +315,49 @@ Todos los outputs comparten el mismo `execution_id` para trazabilidad completa.
 - [ ] Validar carga en Oracle
 - [ ] Módulo de profiling (nulos, cardinalidad, tipos)
 - [ ] Motor de reglas de calidad configurables en YAML
-- [ ] Historial de ejecuciones y lineage
+- [ ] **Lineage a nivel de fila** — escritura de logs en tabla BD + paso SQL post-carga que adjunta columnas `_execution_id`, `_source_file` y `_load_timestamp` a los datos en capa raw (ver diseño abajo)
 - [ ] Integración con Prefect (orquestación)
 - [ ] Análisis asistido por IA (opcional)
+
+### Diseño: Lineage a nivel de fila
+
+La carga nativa (BULK INSERT / COPY / LOAD DATA) no permite inyectar columnas adicionales durante la transferencia — el archivo se lee tal cual. El lineage se agrega en un paso SQL posterior, dentro de la base de datos, sin pasar datos por Python.
+
+**Flujo propuesto:**
+
+```
+PASO 1 — Carga nativa (sin cambios)
+CSV ──► BULK INSERT / COPY ──► landing.clientes   ← datos puros
+                             ──► bd_logs           ← execution_id, task_id, source_file, timestamp, rows
+
+PASO 2 — SQL post-carga (dentro de la BD)
+INSERT INTO raw.clientes
+SELECT
+    c.*,
+    l.execution_id      AS _execution_id,
+    l.source_file       AS _source_file,
+    l.load_timestamp    AS _load_timestamp
+FROM landing.clientes c
+JOIN bd_logs l ON l.task_id = '<task_id_actual>'
+```
+
+**Configuración propuesta en `pipeline.yaml`:**
+
+```yaml
+task:
+  - name: "Carga clientes"
+    file: "data/input/clientes.csv"
+    table_destination: "landing.clientes"
+    log_to_db: true              # escribe execution_id en tabla bd_logs dentro de la BD
+    raw_destination: "raw.clientes"  # ejecuta el paso SQL de lineage automáticamente
+    active: true
+```
+
+Esto permite responder en cualquier momento:
+```sql
+-- ¿De qué archivo viene esta fila?
+SELECT _source_file, _load_timestamp FROM raw.clientes WHERE id = 123
+```
 
 ---
 
