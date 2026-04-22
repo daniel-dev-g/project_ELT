@@ -44,31 +44,29 @@ Funciona para volúmenes pequeños. Cuando el archivo crece, el proceso pasa de 
 
 | Archivos | Volumen total | Filas      | Duración  | Motor      | Método | Disco |
 |----------|---------------|------------|-----------|------------|--------|-------|
-| 3        | ~2 GB         | 13.229.475 | 1 min 22s | MariaDB    | `LOAD DATA LOCAL INFILE` | NVMe interno |
-| 3        | ~2 GB         | 12.787.201 | 2 min 44s | SQL Server | `BULK INSERT` | USB 2.0 externo |
-| 3        | ~2 GB         | 12.787.201 | 5 min 01s | PostgreSQL | `COPY FROM STDIN` | USB 2.0 externo |
-| 3        | < 10 MB       | 480.526    | 4.3 seg   | SQL Server | `BULK INSERT` | USB 2.0 externo |
+| 3        | ~2 GB         | 13.229.475 | 31.2s     | PostgreSQL | `COPY FROM` | NVMe interno |
+| 3        | ~2 GB         | 13.229.475 | 40.05s    | SQL Server | `BULK INSERT` | NVMe interno |
+| 3        | ~2 GB         | 13.229.475 | 76.24s    | MariaDB    | `LOAD DATA INFILE` | NVMe interno |
 
-> Hardware: Intel Core i3-1005G1 @ 1.20GHz / 11 GB RAM / Ubuntu Linux.
-> Los benchmarks de SQL Server y PostgreSQL se realizaron con el SO en disco externo USB 2.0. MariaDB se midió con disco NVMe interno — la diferencia de hardware es significativa y los tiempos no son comparables directamente.
+> Hardware: Intel Core i3-1005G1 @ 1.20GHz / 11 GB RAM / Ubuntu Linux / NVMe interno.
+> Todos los motores medidos en las mismas condiciones de hardware.
 
-### Detalle — prueba con ~2 GB / 13 millones de filas
+### Detalle — prueba con ~2 GB / 13 millones de filas (NVMe)
 
-| Parámetro  | MariaDB | SQL Server | PostgreSQL |
+| Parámetro  | PostgreSQL | SQL Server | MariaDB |
 |---|---|---|---|
 | OS | Ubuntu Linux | Ubuntu Linux | Ubuntu Linux |
 | Hardware | i3-1005G1 / 11 GB RAM | i3-1005G1 / 11 GB RAM | i3-1005G1 / 11 GB RAM |
-| Disco | NVMe interno | USB 2.0 externo | USB 2.0 externo |
-| Contenedor | `mariadb:latest` | `mcr.microsoft.com/mssql/server:2022-latest` | `postgres:16` |
+| Disco | NVMe interno | NVMe interno | NVMe interno |
+| Contenedor | `postgres:16` | `mcr.microsoft.com/mssql/server:2022-latest` | `mariadb:11` |
 | Python | Local (fuera de Docker) | Local (fuera de Docker) | Local (fuera de Docker) |
-| Método | `LOAD DATA LOCAL INFILE` vía pymysql | `BULK INSERT` con `TABLOCK` + `BATCHSIZE=100000` | `COPY FROM STDIN` vía psycopg2 |
-| Filas | 13.229.475 | 12.787.201 | 12.787.201 |
-| Duración | 1 min 22 seg | 2 min 44 seg | 5 min 01 seg |
-| Throughput | ~161.000 filas/seg | ~78.000 filas/seg | ~42.500 filas/seg |
+| Método | `COPY FROM` server-side | `BULK INSERT` con `TABLOCK` + `BATCHSIZE=100000` | `LOAD DATA INFILE` server-side |
+| Filas | 13.229.475 | 13.229.475 | 13.229.475 |
+| Duración | **31.2 seg** | 40.05 seg | 76.24 seg |
+| Throughput | **~424.000 filas/seg** | ~330.000 filas/seg | ~173.000 filas/seg |
 
-> SQL Server lee directamente desde disco vía bind mount — no pasa datos por Python.
-> MariaDB y PostgreSQL reciben el stream desde Python vía socket.
-> Los benchmarks de SQL Server y PostgreSQL serán actualizados con disco NVMe para comparación justa.
+> Todos los motores leen directo desde disco vía bind mount `./data:/data` — sin pasar datos por Python.
+> La diferencia entre motores refleja la eficiencia interna de cada motor para ingesta masiva.
 
 ---
 

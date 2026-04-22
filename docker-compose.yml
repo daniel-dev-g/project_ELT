@@ -9,7 +9,7 @@ services:
   # Se levanta con cualquier profile de motor
   # ─────────────────────────────────────────────
   app:
-    profiles: [sqlserver, postgres, mariadb, db2, oracle]
+    profiles: [sqlserver, postgres, mysql, db2, oracle]
     build: .
     container_name: flowelt_app
     env_file: .env
@@ -24,7 +24,7 @@ services:
       postgres:
         condition: service_started
         required: false
-      mariadb:
+      mysql:
         condition: service_started
         required: false
       db2:
