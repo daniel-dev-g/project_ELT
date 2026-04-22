@@ -179,13 +179,66 @@ Generado automáticamente al finalizar cada ejecución:
 
 ---
 
+## Escenarios de despliegue
+
+FlowELT está diseñado para entornos **on-premise**. Docker se usa solo para desarrollo — en producción la base de datos ya existe instalada en un servidor o PC local.
+
+### Desarrollo (este repositorio)
+
+```
+Tu PC
+├── Python local  ──────────────────► ejecuta FlowELT
+├── Archivos CSV en ./data/
+└── BD en Docker  ◄── bind mount ./data:/data ── BD lee el archivo
+```
+
+Docker sirve para levantar cualquier motor sin instalarlo. Python corre fuera del contenedor.
+
+### Producción — BD y Python en el mismo servidor
+
+```
+Servidor on-premise
+├── Python (local o en Docker)  ────► ejecuta FlowELT
+├── Archivos CSV en /data/
+└── BD instalada (SQL Server, PostgreSQL, MariaDB...)
+         ↓
+BULK INSERT '/data/clientes.csv'      ← SQL Server lee directo
+COPY FROM '/data/clientes.csv'        ← PostgreSQL lee directo
+LOAD DATA INFILE '/data/clientes.csv' ← MariaDB lee directo
+```
+
+### Producción — BD en servidor de red, Python en otro equipo
+
+```
+PC del usuario
+├── Python  ────────────────────────► ejecuta FlowELT
+└── Archivos CSV en C:\datos\ o /mnt/share/
+
+Servidor BD (accesible por red)
+└── BD instalada
+         ↓
+BULK INSERT '\\servidor\share\clientes.csv'    ← SQL Server con UNC path
+COPY FROM '/mnt/share/clientes.csv'            ← PostgreSQL con mount de red
+LOAD DATA INFILE '/mnt/share/clientes.csv'     ← MariaDB con mount de red
+```
+
+El parámetro `bulk_path_map` en `settings.yaml` permite indicar la ruta del archivo desde el punto de vista de la base de datos — no de Python:
+
+```yaml
+bulk_path_map:
+  host: "/home/usuario/proyecto/data"   # donde Python ve el archivo
+  container: "/data"                     # donde la BD ve el mismo archivo
+```
+
+---
+
 ## Quickstart
 
 ### Prerrequisitos
 
 - Python 3.14+
 - [uv](https://docs.astral.sh/uv/)
-- Docker + Docker Compose
+- Docker + Docker Compose (solo para desarrollo)
 
 ### 1. Clonar repositorio
 
@@ -289,23 +342,24 @@ Todos los outputs comparten el mismo `execution_id` para trazabilidad completa.
 
 | Decisión | Razón |
 |---|---|
-| Carga masiva nativa en lugar de ORM | Rendimiento — SQL Server/Postgres leen directo del disco |
+| Carga masiva nativa en lugar de ORM | Rendimiento — la BD lee directo del disco sin pasar datos por Python |
 | Configuración YAML | Simplicidad y reproducibilidad sin tocar código |
 | `execution_id` por ejecución | Trazabilidad completa entre logs, dashboard y técnico |
-| Docker solo para bases de datos | El overhead de contenedorizar Python no aporta en desarrollo |
-| Polars en lugar de pandas | Velocidad y bajo consumo de memoria en análisis |
+| Docker solo para desarrollo | En producción la BD ya existe instalada — Docker es solo para poder probar los 5 motores sin instalarlos |
+| `bulk_path_map` en configuración | Desacopla la ruta de Python de la ruta de la BD — funciona igual en desarrollo (Docker), servidor único o red de empresa |
+| Polars en lugar de pandas | Velocidad y bajo consumo de memoria en análisis de metadatos |
 
 ---
 
 ## Estado de pruebas por motor
 
-| Motor | Estado | Método |
-|---|---|---|
-| SQL Server | Probado | `BULK INSERT` |
-| PostgreSQL | Probado | `COPY FROM STDIN` |
-| MySQL | Pendiente | `LOAD DATA LOCAL INFILE` |
-| IBM Db2 | Pendiente | `SYSPROC.ADMIN_CMD(LOAD)` |
-| Oracle | Pendiente | `sqlldr` + `.ctl` dinámico |
+| Motor | Estado | Método | Lee directo del disco |
+|---|---|---|---|
+| SQL Server | Probado | `BULK INSERT` | Sí |
+| PostgreSQL | Probado | `COPY FROM` | Sí |
+| MariaDB | Probado | `LOAD DATA INFILE` | Sí |
+| IBM Db2 | Pendiente | `SYSPROC.ADMIN_CMD(LOAD)` | Sí |
+| Oracle | Pendiente | `sqlldr` + `.ctl` dinámico | Sí |
 
 ---
 

@@ -26,20 +26,20 @@
 # ─────────────────────────────────────────────
 # PostgreSQL
 # ─────────────────────────────────────────────
-#development:
-#  db_engine: postgres
-#  default_schema: "public"
-#  host: "localhost"
-#  port: 5433
-#  database: ${POSTGRES_DB}
-#  username: ${POSTGRES_USER}
-#  password: ${POSTGRES_PASSWORD}
-#  bulk_path_map:
-#    host: "/home/daniel/Documentos/ti/proyectos/project_ELT/data"  # path local del proyecto
-#    # host: "/app/data"                   # cuando la app corre en Docker
-#    # host: "C:\\ruta\\proyecto\\data"    # Windows
-#    container: "/data"     # path en el contenedor de Postgres (./data:/data)
-#  log_level: "INFO"
+development:
+  db_engine: postgres
+  default_schema: "public"
+  host: "localhost"
+  port: 5433
+  database: ${POSTGRES_DB}
+  username: ${POSTGRES_USER}
+  password: ${POSTGRES_PASSWORD}
+  bulk_path_map:
+    host: "/home/daniel/Documentos/ti/proyectos/project_ELT/data"  # path local del proyecto
+    # host: "/app/data"                   # cuando la app corre en Docker
+    # host: "C:\\ruta\\proyecto\\data"    # Windows
+    container: "/data"     # path en el contenedor de Postgres (./data:/data)
+  log_level: "INFO"
 
 # ─────────────────────────────────────────────
 # MariaDB (reemplaza MySQL 8)

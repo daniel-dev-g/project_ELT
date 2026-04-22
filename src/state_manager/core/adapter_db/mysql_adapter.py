@@ -28,7 +28,6 @@ class MySQLAdapter(DatabaseAdapter):
             'database': config['database'],
             'user': config['username'],
             'password': config['password'],
-            'local_infile': True,  # requerido para LOAD DATA LOCAL INFILE
         }
 
     def get_engine(self, config=None):
@@ -64,8 +63,10 @@ class MySQLAdapter(DatabaseAdapter):
             conn.close()
 
     def check_bulk_permission(self) -> bool:
-        """Verifica si el usuario tiene privilegio FILE para LOAD DATA INFILE."""
-        query = "SELECT File_priv FROM mysql.user WHERE User = CURRENT_USER()"
+        """Verifica privilegio FILE para LOAD DATA INFILE."""
+        query = (
+            "SELECT File_priv FROM mysql.user WHERE User = CURRENT_USER()"
+        )
 
         try:
             with self.get_db_cursor() as cursor:
@@ -92,7 +93,12 @@ class MySQLAdapter(DatabaseAdapter):
             return False
 
     def bulk_load(self, task: dict) -> int:
-        """Upload CSV to MySQL using LOAD DATA LOCAL INFILE"""
+        """Upload CSV to MariaDB using server-side LOAD DATA INFILE.
+
+        MariaDB lee el archivo directo desde disco sin pasar por Python.
+        Requiere bulk_path_map en settings.yaml para mapear la ruta local
+        a la ruta dentro del contenedor (./data:/data).
+        """
 
         file = task['file']
         schema = task['schema']
@@ -102,9 +108,15 @@ class MySQLAdapter(DatabaseAdapter):
         if not pathlib.Path(file).is_absolute():
             file = str(pathlib.Path.cwd() / file)
 
-        if not pathlib.Path(file).exists():
-            logger.error("Error: File not found: %s", file)
-            raise FileNotFoundError(f"File not found: {file}")
+        path_map = self.config.get('bulk_path_map', {})
+        if path_map:
+            file = file.replace(
+                path_map['host'], path_map['container']
+            )
+        else:
+            if not pathlib.Path(file).exists():
+                logger.error("Error: File not found: %s", file)
+                raise FileNotFoundError(f"File not found: {file}")
 
         logger.info("Path: %s", file)
 
@@ -113,14 +125,14 @@ class MySQLAdapter(DatabaseAdapter):
         )
 
         load_sql = f"""
-            LOAD DATA LOCAL INFILE '{file}'
+            LOAD DATA INFILE '{file}'
             INTO TABLE {table_ref}
             FIELDS TERMINATED BY '{delimiter}'
             LINES TERMINATED BY '\\n'
             IGNORE 1 ROWS
         """
 
-        logger.info("Executing LOAD DATA LOCAL INFILE...")
+        logger.info("Executing LOAD DATA INFILE...")
 
         try:
             with self.get_db_cursor() as cursor:
