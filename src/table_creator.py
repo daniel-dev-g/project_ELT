@@ -12,7 +12,9 @@ def _quote(name: str, db_engine: str) -> str:
         return f"[{name}]"
     elif db_engine in ('mysql', 'mariadb'):
         return f"`{name}`"
-    else:  # postgres, db2, oracle — estándar ANSI SQL
+    elif db_engine == 'oracle':
+        return f'"{name.upper()}"'  # Oracle almacena identificadores en mayúsculas
+    else:  # postgres, db2
         return f'"{name}"'
 
 

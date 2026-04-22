@@ -10,7 +10,7 @@ task:
     encoding: "utf8"
     table_destination: "clientes"
     crear_tabla_si_no_existe: true
-    schema: "dbo"
+    schema: "SYSTEM"
     active: true
 
   - name: "Carga de Oficinas Mensuales"
@@ -19,14 +19,14 @@ task:
     encoding: "utf8"
     table_destination: "oficinas"
     crear_tabla_si_no_existe: true
-    schema: "dbo"
+    schema: "SYSTEM"
     active: true
 
   - name: "Carga datos USA"
     file: "data/input/tripdata_2015-01.csv"
     delimiter: ","
     encoding: "utf8"
-    table_destination: "US_Taxi-Demand"
+    table_destination: "US_TAXI_DEMAND"
     crear_tabla_si_no_existe: true
-    schema: "dbo"
+    schema: "SYSTEM"
     active: true

@@ -6,20 +6,20 @@
 # ─────────────────────────────────────────────
 # SQL Server
 # ─────────────────────────────────────────────
-development:
-  db_engine: sqlserver
-  default_schema: "dbo"
-  driver: "ODBC Driver 18 for SQL Server"
-  server: "${SQLSERVER_HOST},1433"
-  database: ${SQLSERVER_DB}
-  username: ${SQLSERVER_USER}
-  password: ${SQLSERVER_PASSWORD}
-  trusted_connection: "no"
-  encrypt: "no"
-  bulk_path_map:
-    host: "/home/daniel/Documentos/ti/proyectos/project_ELT/data"
-    container: "/data"
-  log_level: "INFO"
+# development:
+#   db_engine: sqlserver
+#   default_schema: "dbo"
+#   driver: "ODBC Driver 18 for SQL Server"
+#   server: "${SQLSERVER_HOST},1433"
+#   database: ${SQLSERVER_DB}
+#   username: ${SQLSERVER_USER}
+#   password: ${SQLSERVER_PASSWORD}
+#   trusted_connection: "no"
+#   encrypt: "no"
+#   bulk_path_map:
+#     host: "/home/daniel/Documentos/ti/proyectos/project_ELT/data"
+#     container: "/data"
+#   log_level: "INFO"
 
 # ─────────────────────────────────────────────
 # PostgreSQL
@@ -69,13 +69,18 @@ development:
 # ─────────────────────────────────────────────
 # Oracle
 # ─────────────────────────────────────────────
-# development:
-#   db_engine: oracle
-#   default_schema: ${ORACLE_USER}  # Oracle usa el usuario como schema por defecto
-#   host: "oracle"
-#   port: 1521
-#   service_name: ${ORACLE_DB}
-#   username: ${ORACLE_USER}
-#   password: ${ORACLE_PASSWORD}
-#   # instant_client_dir: "/opt/oracle/instantclient"  # solo si usas thick mode
-#   log_level: "INFO"
+development:
+  db_engine: oracle
+  default_schema: ${ORACLE_USER}
+  host: "localhost"
+  port: 1521
+  service_name: ${ORACLE_DB}
+  username: ${ORACLE_USER}
+  password: ${ORACLE_PASSWORD}
+  bulk_path_map:
+    host: "/home/daniel/Documentos/ti/proyectos/project_ELT/data"
+    container: "/data"
+  sqlldr_via_docker: true
+  container_name: "flowelt_oracle"
+  sqlldr_path: "/opt/oracle/product/26ai/dbhomeFree/bin/sqlldr"
+  log_level: "INFO"

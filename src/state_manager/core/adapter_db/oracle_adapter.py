@@ -10,15 +10,16 @@ Modos de conexión:
                 Ejemplo:
                   instant_client_dir: "/opt/oracle/instantclient_21_13"
 """
+import csv
 import pathlib
 import logging
 import subprocess
 import tempfile
 import re
-import oracledb
-
-from sqlalchemy import create_engine
 from contextlib import contextmanager
+
+import oracledb
+from sqlalchemy import create_engine
 
 from src.state_manager.core.adapter_db.database_adapter import DatabaseAdapter
 
@@ -37,7 +38,9 @@ class OracleAdapter(DatabaseAdapter):
         instant_client_dir = config.get('instant_client_dir')
         if instant_client_dir:
             oracledb.init_oracle_client(lib_dir=instant_client_dir)
-            logger.info("Oracle thick mode activado desde: %s", instant_client_dir)
+            logger.info(
+                "Oracle thick mode activado desde: %s", instant_client_dir
+            )
         else:
             logger.info("Oracle thin mode activado (sin Instant Client)")
 
@@ -125,18 +128,30 @@ class OracleAdapter(DatabaseAdapter):
     def _build_ctl(self, ctl_path: str, data_path: str, schema: str,
                    table: str, delimiter: str):
         """Genera el archivo .ctl de control para SQL*Loader."""
+        with open(data_path, 'r', encoding='utf-8-sig') as f:
+            columns = next(csv.reader(f, delimiter=delimiter))
+        columns = [col.strip() for col in columns]
+        cols_block = ',\n  '.join(f'"{col}"' for col in columns)
+
+        table_ref = (f'"{schema.upper()}"."{table.upper()}"'
+                     if schema else f'"{table.upper()}"')
         ctl_content = (
             f"LOAD DATA\n"
             f"INFILE '{data_path}'\n"
-            f"APPEND INTO TABLE {schema}.{table}\n"
+            f"APPEND INTO TABLE {table_ref}\n"
             f"FIELDS TERMINATED BY '{delimiter}'\n"
             f"OPTIONALLY ENCLOSED BY '\"'\n"
             f"TRAILING NULLCOLS\n"
             f"(\n"
-            f"  FILLER_ROW FILLER  -- omite encabezado\n"
+            f"  {cols_block}\n"
             f")\n"
         )
         pathlib.Path(ctl_path).write_text(ctl_content, encoding='utf-8')
+
+    def _sqlldr_cmd(self, sqlldr_bin: str, userid: str, ctl: str,
+                    log: str, bad: str) -> list:
+        return [sqlldr_bin, f"userid={userid}", f"control={ctl}",
+                f"log={log}", f"bad={bad}", "skip=1", "direct=true"]
 
     def bulk_load(self, task: dict) -> int:
         """Upload CSV to Oracle using SQL*Loader (sqlldr)"""
@@ -156,44 +171,84 @@ class OracleAdapter(DatabaseAdapter):
         logger.info("Path: %s", file)
 
         config = self.config
+        path_map = config.get('bulk_path_map', {})
+        file_for_db = file
+        if path_map:
+            file_for_db = file.replace(path_map['host'], path_map['container'])
+
         username = config['username']
         password = config['password']
-        host = config['host']
         port = config.get('port', 1521)
         service_name = config['service_name']
-        userid = f"{username}/{password}@{host}:{port}/{service_name}"
 
-        with tempfile.TemporaryDirectory() as tmpdir:
-            ctl_path = str(pathlib.Path(tmpdir) / "load.ctl")
-            log_path = str(pathlib.Path(tmpdir) / "load.log")
-            bad_path = str(pathlib.Path(tmpdir) / "load.bad")
+        via_docker = config.get('sqlldr_via_docker', False)
 
-            self._build_ctl(ctl_path, file, schema, table_destination, delimiter)
+        if via_docker:
+            container = config.get('container_name', 'flowelt_oracle')
+            sqlldr_bin = config.get(
+                'sqlldr_path',
+                '/opt/oracle/product/26ai/dbhomeFree/bin/sqlldr'
+            )
+            # sqlldr runs inside the container → Oracle host is localhost
+            userid = f"{username}/{password}@localhost:{port}/{service_name}"
 
-            cmd = [
-                "sqlldr",
-                f"userid={userid}",
-                f"control={ctl_path}",
-                f"log={log_path}",
-                f"bad={bad_path}",
-                "skip=1",           # omite fila de encabezado
-                "direct=true",      # direct path para mejor rendimiento
-            ]
+            # Write CTL into the mounted data dir so the container can read it
+            data_host_dir = pathlib.Path(
+                path_map.get('host', str(pathlib.Path.cwd()))
+            )
+            data_container_dir = path_map.get('container', '/data')
+            ctl_host = str(data_host_dir / '.sqlldr_load.ctl')
+            ctl_container = f"{data_container_dir}/.sqlldr_load.ctl"
+            log_container = '/tmp/sqlldr_load.log'
+            bad_container = '/tmp/sqlldr_load.bad'
 
-            logger.info("Executing SQL*Loader...")
+            self._build_ctl(
+                ctl_host, file_for_db, schema, table_destination, delimiter
+            )
+            try:
+                cmd = ['docker', 'exec', container] + self._sqlldr_cmd(
+                    sqlldr_bin, userid, ctl_container, log_container, bad_container
+                )
+                logger.info("Executing SQL*Loader via docker exec...")
+                result = subprocess.run(cmd, capture_output=True, text=True)
 
-            result = subprocess.run(cmd, capture_output=True, text=True)
+                log_result = subprocess.run(
+                    ['docker', 'exec', container, 'cat', log_container],
+                    capture_output=True, text=True
+                )
+                log_text = log_result.stdout
+            finally:
+                pathlib.Path(ctl_host).unlink(missing_ok=True)
+        else:
+            host = config['host']
+            userid = f"{username}/{password}@{host}:{port}/{service_name}"
+            with tempfile.TemporaryDirectory() as tmpdir:
+                ctl_path = str(pathlib.Path(tmpdir) / "load.ctl")
+                log_path = str(pathlib.Path(tmpdir) / "load.log")
+                bad_path = str(pathlib.Path(tmpdir) / "load.bad")
 
-            if result.returncode not in (0, 2):  # 2 = warnings aceptables
-                logger.error("SQL*Loader failed (code %d): %s", result.returncode, result.stdout)
-                raise RuntimeError(f"SQL*Loader failed with code {result.returncode}")
+                self._build_ctl(
+                    ctl_path, file_for_db, schema, table_destination, delimiter
+                )
+                cmd = self._sqlldr_cmd(
+                    'sqlldr', userid, ctl_path, log_path, bad_path
+                )
+                logger.info("Executing SQL*Loader...")
+                result = subprocess.run(cmd, capture_output=True, text=True)
+                log_text = (
+                    pathlib.Path(log_path).read_text(encoding='utf-8', errors='replace')
+                    if pathlib.Path(log_path).exists() else ''
+                )
 
-            # Extraer filas cargadas desde el log
-            rows_affected = 0
-            log_text = pathlib.Path(log_path).read_text(encoding='utf-8', errors='replace')
-            match = re.search(r'(\d+) Rows successfully loaded', log_text)
-            if match:
-                rows_affected = int(match.group(1))
+        if result.returncode not in (0, 2):  # 2 = warnings aceptables
+            logger.error("SQL*Loader failed (code %d):\n%s\n%s",
+                         result.returncode, result.stdout, log_text)
+            raise RuntimeError(f"SQL*Loader failed with code {result.returncode}")
 
-            logger.info("SQL*Loader successful - %d inserted rows", rows_affected)
-            return rows_affected
+        rows_affected = 0
+        match = re.search(r'(\d+) Rows successfully loaded', log_text)
+        if match:
+            rows_affected = int(match.group(1))
+
+        logger.info("SQL*Loader successful - %d inserted rows", rows_affected)
+        return rows_affected
