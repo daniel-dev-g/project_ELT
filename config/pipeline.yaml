@@ -9,7 +9,6 @@ task:
     delimiter: ";"
     encoding: "utf8"
     table_destination: "clientes"
-<<<<<<< HEAD
     crear_tabla_si_no_existe: true
     schema: ""   # SQL Server: "dbo" | PostgreSQL: "public" | MySQL/MariaDB: dejar vacío
     active: true
