@@ -42,7 +42,9 @@ class MySQLAdapter(DatabaseAdapter):
         username = config['username']
         password = config['password']
 
-        connection_url = f"mysql+pymysql://{username}:{password}@{host}:{port}/{database}"
+        connection_url = (
+            f"mysql+pymysql://{username}:{password}@{host}:{port}/{database}"
+        )
         return create_engine(connection_url)
 
     @contextmanager
@@ -62,7 +64,7 @@ class MySQLAdapter(DatabaseAdapter):
             conn.close()
 
     def check_bulk_permission(self) -> bool:
-        """Verifica si el usuario tiene el privilegio FILE para LOAD DATA INFILE."""
+        """Verifica si el usuario tiene privilegio FILE para LOAD DATA INFILE."""
         query = "SELECT File_priv FROM mysql.user WHERE User = CURRENT_USER()"
 
         try:
@@ -106,7 +108,10 @@ class MySQLAdapter(DatabaseAdapter):
 
         logger.info("Path: %s", file)
 
-        table_ref = f"`{schema}`.`{table_destination}`" if schema else f"`{table_destination}`"
+        table_ref = (
+            f"`{schema}`.`{table_destination}`" if schema else f"`{table_destination}`"
+        )
+
         load_sql = f"""
             LOAD DATA LOCAL INFILE '{file}'
             INTO TABLE {table_ref}

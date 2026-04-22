@@ -42,32 +42,33 @@ Funciona para volúmenes pequeños. Cuando el archivo crece, el proceso pasa de 
 
 ## Rendimiento
 
-| Archivos | Volumen total | Filas      | Duración   | Motor      | Método |
-|----------|---------------|------------|------------|------------|--------|
-| 3        | ~2 GB         | 12.787.201 | 2 min 44s  | SQL Server | `BULK INSERT` |
-| 3        | ~2 GB         | 12.787.201 | 5 min 01s  | PostgreSQL | `COPY FROM STDIN` |
-| 3        | ~2 GB         | 12.787.201 | 2 min 04s  | MySQL/MariaDB | `LOAD DATA LOCAL INFILE` |
-| 3        | < 10 MB       | 480.526    | 4.3 seg    | SQL Server | `BULK INSERT` |
+| Archivos | Volumen total | Filas      | Duración  | Motor      | Método | Disco |
+|----------|---------------|------------|-----------|------------|--------|-------|
+| 3        | ~2 GB         | 13.229.475 | 1 min 22s | MariaDB    | `LOAD DATA LOCAL INFILE` | NVMe interno |
+| 3        | ~2 GB         | 12.787.201 | 2 min 44s | SQL Server | `BULK INSERT` | USB 2.0 externo |
+| 3        | ~2 GB         | 12.787.201 | 5 min 01s | PostgreSQL | `COPY FROM STDIN` | USB 2.0 externo |
+| 3        | < 10 MB       | 480.526    | 4.3 seg   | SQL Server | `BULK INSERT` | USB 2.0 externo |
 
-> Hardware: Intel Core i3-1005G1 / 11 GB RAM / Ubuntu Linux / SO en disco externo USB 2.0.
-> La diferencia entre motores se debe al método de carga: SQL Server lee directo desde disco, PostgreSQL recibe el stream desde Python.
+> Hardware: Intel Core i3-1005G1 @ 1.20GHz / 11 GB RAM / Ubuntu Linux.
+> Los benchmarks de SQL Server y PostgreSQL se realizaron con el SO en disco externo USB 2.0. MariaDB se midió con disco NVMe interno — la diferencia de hardware es significativa y los tiempos no son comparables directamente.
 
-### Detalle — prueba con archivo de 2 GB
+### Detalle — prueba con ~2 GB / 13 millones de filas
 
-| Parámetro  | SQL Server | PostgreSQL |
-|---|---|---|
-| OS | Ubuntu Linux | Ubuntu Linux |
-| Hardware | Intel Core i3-1005G1 @ 1.20GHz / 11 GB RAM | Intel Core i3-1005G1 @ 1.20GHz / 11 GB RAM |
-| Contenedor | `mcr.microsoft.com/mssql/server:2022-latest` | `postgres:16` |
-| Python | Local (fuera de Docker) | Local (fuera de Docker) |
-| Archivos | `tripdata_2015-01.csv` (2.0 GB) + 2 archivos pequeños | ídem |
-| Método | `BULK INSERT` con `TABLOCK` + `BATCHSIZE=100000` | `COPY FROM STDIN` vía psycopg2 |
-| Duración | 2 min 44 seg | 5 min 01 seg |
+| Parámetro  | MariaDB | SQL Server | PostgreSQL |
+|---|---|---|---|
+| OS | Ubuntu Linux | Ubuntu Linux | Ubuntu Linux |
+| Hardware | i3-1005G1 / 11 GB RAM | i3-1005G1 / 11 GB RAM | i3-1005G1 / 11 GB RAM |
+| Disco | NVMe interno | USB 2.0 externo | USB 2.0 externo |
+| Contenedor | `mariadb:latest` | `mcr.microsoft.com/mssql/server:2022-latest` | `postgres:16` |
+| Python | Local (fuera de Docker) | Local (fuera de Docker) | Local (fuera de Docker) |
+| Método | `LOAD DATA LOCAL INFILE` vía pymysql | `BULK INSERT` con `TABLOCK` + `BATCHSIZE=100000` | `COPY FROM STDIN` vía psycopg2 |
+| Filas | 13.229.475 | 12.787.201 | 12.787.201 |
+| Duración | 1 min 22 seg | 2 min 44 seg | 5 min 01 seg |
+| Throughput | ~161.000 filas/seg | ~78.000 filas/seg | ~42.500 filas/seg |
 
-> SQL Server no pasa los datos por Python — lee directamente desde disco vía bind mount `./data:/data`.
-> PostgreSQL recibe el stream desde Python vía socket, lo que agrega overhead pero evita dependencias de ruta en el contenedor.
-
-**Nota sobre los tiempos de PostgreSQL:** estas mediciones representan el **peor escenario posible** — SO corriendo desde disco externo USB 2.0 y PostgreSQL en Docker con overlay filesystem. En condiciones reales de producción (PostgreSQL en servidor dedicado o servicio gestionado como RDS/Cloud SQL), los tiempos serían significativamente menores y comparables a SQL Server, ya que `COPY FROM '/ruta/archivo.csv'` leería directo desde disco sin pasar por Python ni capas de virtualización.
+> SQL Server lee directamente desde disco vía bind mount — no pasa datos por Python.
+> MariaDB y PostgreSQL reciben el stream desde Python vía socket.
+> Los benchmarks de SQL Server y PostgreSQL serán actualizados con disco NVMe para comparación justa.
 
 ---
 
@@ -76,7 +77,7 @@ Funciona para volúmenes pequeños. Cuando el archivo crece, el proceso pasa de 
 | Motor      | Método de carga nativa     |
 |------------|----------------------------|
 | SQL Server | `BULK INSERT`              |
-| PostgreSQL | `COPY FROM` (server-side)  |
+| PostgreSQL | `COPY FROM STDIN`          |
 | MySQL      | `LOAD DATA LOCAL INFILE`   |
 | IBM Db2    | `SYSPROC.ADMIN_CMD(LOAD)`  |
 | Oracle     | `sqlldr` + `.ctl` dinámico |
@@ -302,7 +303,7 @@ Todos los outputs comparten el mismo `execution_id` para trazabilidad completa.
 |---|---|---|
 | SQL Server | Probado | `BULK INSERT` |
 | PostgreSQL | Probado | `COPY FROM STDIN` |
-| MySQL / MariaDB | Probado | `LOAD DATA LOCAL INFILE` |
+| MySQL | Pendiente | `LOAD DATA LOCAL INFILE` |
 | IBM Db2 | Pendiente | `SYSPROC.ADMIN_CMD(LOAD)` |
 | Oracle | Pendiente | `sqlldr` + `.ctl` dinámico |
 

@@ -10,7 +10,7 @@ def _quote(name: str, db_engine: str) -> str:
     """Retorna el identificador con el quoting correcto según el motor."""
     if db_engine == 'sqlserver':
         return f"[{name}]"
-    elif db_engine == 'mysql':
+    elif db_engine in ('mysql', 'mariadb'):
         return f"`{name}`"
     else:  # postgres, db2, oracle — estándar ANSI SQL
         return f'"{name}"'
@@ -32,7 +32,9 @@ def table_creator(execution_id: str, engine, schema: str, table: str, columns: s
         return
 
     table_q = _quote(table, db_engine)
-    table_ref = f"{_quote(schema, db_engine)}.{table_q}" if schema else table_q
+    table_ref = (
+        f"{_quote(schema, db_engine)}.{table_q}" if schema else table_q
+    )
 
     with engine.begin() as conn:
         conn.exec_driver_sql(f"CREATE TABLE {table_ref} ({columns})")
