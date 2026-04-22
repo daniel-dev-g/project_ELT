@@ -24,18 +24,18 @@
 # ─────────────────────────────────────────────
 # PostgreSQL
 # ─────────────────────────────────────────────
-# development:
-#   db_engine: postgres
-#   default_schema: "public"
-#   host: "localhost"
-#   port: 5433
-#   database: ${POSTGRES_DB}
-#   username: ${POSTGRES_USER}
-#   password: ${POSTGRES_PASSWORD}
-#   bulk_path_map:
-#     host: "/home/daniel/Documentos/ti/proyectos/project_ELT/data"
-#     container: "/data"
-#   log_level: "INFO"
+development:
+  db_engine: postgres
+  default_schema: "public"
+  host: "localhost"
+  port: 5433
+  database: ${POSTGRES_DB}
+  username: ${POSTGRES_USER}
+  password: ${POSTGRES_PASSWORD}
+  bulk_path_map:
+    host: "/home/daniel/Documentos/ti/proyectos/project_ELT/data"
+    container: "/data"
+  log_level: "INFO"
 
 # ─────────────────────────────────────────────
 # MariaDB (reemplaza MySQL 8)
@@ -53,34 +53,3 @@
 #     container: "/data"
 #   log_level: "INFO"
 
-# ─────────────────────────────────────────────
-# IBM Db2
-# ─────────────────────────────────────────────
-# development:
-#   db_engine: db2
-#   default_schema: ${DB2_USER}  # Db2 usa el usuario como schema por defecto
-#   host: "db2"
-#   port: 50000
-#   database: ${DB2_DB}
-#   username: ${DB2_USER}
-#   password: ${DB2_PASSWORD}
-#   log_level: "INFO"
-
-# ─────────────────────────────────────────────
-# Oracle
-# ─────────────────────────────────────────────
-development:
-  db_engine: oracle
-  default_schema: ${ORACLE_USER}
-  host: "localhost"
-  port: 1521
-  service_name: ${ORACLE_DB}
-  username: ${ORACLE_USER}
-  password: ${ORACLE_PASSWORD}
-  bulk_path_map:
-    host: "/home/daniel/Documentos/ti/proyectos/project_ELT/data"
-    container: "/data"
-  sqlldr_via_docker: true
-  container_name: "flowelt_oracle"
-  sqlldr_path: "/opt/oracle/product/26ai/dbhomeFree/bin/sqlldr"
-  log_level: "INFO"

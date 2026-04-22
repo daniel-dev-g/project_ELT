@@ -13,12 +13,8 @@ dependencies = [
     "sqlalchemy>=2.0.46",
     # Postgres
     "psycopg2-binary>=2.9",
-    # IBM Db2
-    "ibm-db>=3.2",
     # MySQL
     "pymysql>=1.1",
-    # Oracle (requiere Oracle Instant Client para thick mode)
-    "oracledb>=2.0",
     "python-dotenv>=1.2.2",
     "debugpy>=1.8",
 ]

@@ -6,11 +6,11 @@ class DatabaseAdapter(ABC):
     engine: Engine
 
     @abstractmethod
-    def get_engine(self, config: dict):
+    def get_engine(self, config: dict) -> Engine:
         pass
 
     @abstractmethod
-    def check_bulk_permission(self, engine) -> bool:
+    def check_bulk_permission(self) -> bool:
         pass
 
     @abstractmethod

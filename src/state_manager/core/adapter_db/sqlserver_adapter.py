@@ -123,11 +123,11 @@ class SqlServerAdapter(DatabaseAdapter):
         else:
             # solo verificar si no hay mapeo (archivo local)
             if not pathlib.Path(file).exists():
-                logging.error("Error: File not found: %s", file)
+                logger.error("Error: File not found: %s", file)
                 raise FileNotFoundError(f"File not found: {file}")
 
         file = str(file)
-        logging.info("Path: %s", file)
+        logger.info("Path: %s", file)
 
         # Usar BULK INSERT desde T-SQL (mejor manejo de caracteres especiales)
         sql_query = f"""
@@ -136,22 +136,22 @@ class SqlServerAdapter(DatabaseAdapter):
         WITH (
             FIELDTERMINATOR = '{delimiter}',
             ROWTERMINATOR = '\\n',
-            TABLOCK, 
+            TABLOCK,
             BATCHSIZE = 100000,
             FIRSTROW = 2
         )
         """
 
-        logging.info("Executing BULK INSERT...")
+        logger.info("Executing BULK INSERT...")
 
         try:
             with self.get_db_cursor() as cursor:
                 cursor.execute(sql_query)
                 rows_affected = cursor.rowcount
 
-            logging.info(
+            logger.info(
                 "BULK INSERT successful - %d inserted rows", rows_affected)
             return rows_affected
         except Exception as e:
-            logging.error("BULK INSERT failed: %s", str(e))
+            logger.error("BULK INSERT failed: %s", str(e))
             raise

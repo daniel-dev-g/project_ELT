@@ -4,7 +4,6 @@ from src.state_manager.core.adapter_db.database_adapter import DatabaseAdapter
 from src.state_manager.core.adapter_db.sqlserver_adapter import SqlServerAdapter
 from src.state_manager.core.adapter_db.postgres_adapter import PostgresAdapter
 from src.state_manager.core.adapter_db.mysql_adapter import MySQLAdapter
-from src.state_manager.core.adapter_db.oracle_adapter import OracleAdapter
 
 def factory_db(config: dict) -> DatabaseAdapter:
     """Retorna el adapter de base de datos según db_engine en config."""
@@ -16,8 +15,6 @@ def factory_db(config: dict) -> DatabaseAdapter:
             return PostgresAdapter(config)
         case 'mysql' | 'mariadb':
             return MySQLAdapter(config)
-        case 'oracle':
-            return OracleAdapter(config)
         case _:
             raise ValueError(
                 f"db_engine '{config['db_engine']}' not supported")
