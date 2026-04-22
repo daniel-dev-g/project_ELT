@@ -4,7 +4,7 @@ from pathlib import Path
 
 
 import polars as pl
-from charset_normalizer import from_path
+from charset_normalizer import from_bytes
 
 # Nota: log_csv.registrar es el módulo personalizado
 from src.log_csv import registrar_log
@@ -38,8 +38,10 @@ class CSVUtils:
 
 
     def get_encoding(self):
-        """Detecta el encoding del archivo."""
-        resultado = from_path(self.file_path).best()
+        """Detecta el encoding usando solo los primeros 256 KB del archivo."""
+        with open(self.file_path, 'rb') as f:
+            sample = f.read(256_000)
+        resultado = from_bytes(sample).best()
         if resultado is None or resultado.encoding is None:
             return "utf8"
         if resultado.encoding.lower() in ("utf_8", "utf-8"):

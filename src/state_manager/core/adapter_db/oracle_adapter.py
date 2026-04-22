@@ -125,12 +125,16 @@ class OracleAdapter(DatabaseAdapter):
             )
             return False
 
-    def _build_ctl(self, ctl_path: str, data_path: str, schema: str,
-                   table: str, delimiter: str):
-        """Genera el archivo .ctl de control para SQL*Loader."""
-        with open(data_path, 'r', encoding='utf-8-sig') as f:
+    def _build_ctl(self, ctl_path: str, data_path: str, header_file: str,
+                   schema: str, table: str, delimiter: str):
+        """Genera el archivo .ctl de control para SQL*Loader.
+
+        data_path   — ruta del archivo visible para sqlldr (contenedor).
+        header_file — ruta en el host, para leer los nombres de columnas.
+        """
+        with open(header_file, 'r', encoding='utf-8-sig') as f:
             columns = next(csv.reader(f, delimiter=delimiter))
-        columns = [col.strip() for col in columns]
+        columns = [col.strip().upper() for col in columns]
         cols_block = ',\n  '.join(f'"{col}"' for col in columns)
 
         table_ref = (f'"{schema.upper()}"."{table.upper()}"'
@@ -203,11 +207,13 @@ class OracleAdapter(DatabaseAdapter):
             bad_container = '/tmp/sqlldr_load.bad'
 
             self._build_ctl(
-                ctl_host, file_for_db, schema, table_destination, delimiter
+                ctl_host, file_for_db, file,
+                schema, table_destination, delimiter
             )
             try:
                 cmd = ['docker', 'exec', container] + self._sqlldr_cmd(
-                    sqlldr_bin, userid, ctl_container, log_container, bad_container
+                    sqlldr_bin, userid,
+                    ctl_container, log_container, bad_container
                 )
                 logger.info("Executing SQL*Loader via docker exec...")
                 result = subprocess.run(cmd, capture_output=True, text=True)
@@ -228,7 +234,8 @@ class OracleAdapter(DatabaseAdapter):
                 bad_path = str(pathlib.Path(tmpdir) / "load.bad")
 
                 self._build_ctl(
-                    ctl_path, file_for_db, schema, table_destination, delimiter
+                    ctl_path, file_for_db, file,
+                    schema, table_destination, delimiter
                 )
                 cmd = self._sqlldr_cmd(
                     'sqlldr', userid, ctl_path, log_path, bad_path
@@ -236,14 +243,17 @@ class OracleAdapter(DatabaseAdapter):
                 logger.info("Executing SQL*Loader...")
                 result = subprocess.run(cmd, capture_output=True, text=True)
                 log_text = (
-                    pathlib.Path(log_path).read_text(encoding='utf-8', errors='replace')
-                    if pathlib.Path(log_path).exists() else ''
+                    pathlib.Path(log_path).read_text(
+                        encoding='utf-8', errors='replace'
+                    ) if pathlib.Path(log_path).exists() else ''
                 )
 
         if result.returncode not in (0, 2):  # 2 = warnings aceptables
             logger.error("SQL*Loader failed (code %d):\n%s\n%s",
                          result.returncode, result.stdout, log_text)
-            raise RuntimeError(f"SQL*Loader failed with code {result.returncode}")
+            raise RuntimeError(
+                f"SQL*Loader failed with code {result.returncode}"
+            )
 
         rows_affected = 0
         match = re.search(r'(\d+) Rows successfully loaded', log_text)

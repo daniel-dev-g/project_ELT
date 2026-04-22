@@ -44,9 +44,9 @@ Funciona para volúmenes pequeños. Cuando el archivo crece, el proceso pasa de 
 
 | Archivos | Volumen total | Filas      | Duración   | Motor      | Método | Disco |
 |----------|---------------|------------|------------|------------|--------|-------|
-| 3        | ~2 GB         | 13.229.475 | **7.14s**  | Oracle     | `sqlldr direct=true` | NVMe interno |
 | 3        | ~2 GB         | 13.229.475 | 31.2s      | PostgreSQL | `COPY FROM` | NVMe interno |
 | 3        | ~2 GB         | 13.229.475 | 40.05s     | SQL Server | `BULK INSERT` | NVMe interno |
+| 3        | ~2 GB         | 13.229.475 | **43.4s**  | Oracle     | `sqlldr direct=true` vía docker exec | NVMe interno |
 | 3        | ~2 GB         | 13.229.475 | 76.24s     | MariaDB    | `LOAD DATA INFILE` | NVMe interno |
 
 > Hardware: Intel Core i3-1005G1 @ 1.20GHz / 11 GB RAM / Ubuntu Linux / NVMe interno.
@@ -54,17 +54,17 @@ Funciona para volúmenes pequeños. Cuando el archivo crece, el proceso pasa de 
 
 ### Detalle — prueba con ~2 GB / 13 millones de filas (NVMe)
 
-| Parámetro  | Oracle | PostgreSQL | SQL Server | MariaDB |
+| Parámetro  | PostgreSQL | SQL Server | Oracle | MariaDB |
 |---|---|---|---|---|
 | OS | Ubuntu Linux | Ubuntu Linux | Ubuntu Linux | Ubuntu Linux |
 | Hardware | i3-1005G1 / 11 GB RAM | i3-1005G1 / 11 GB RAM | i3-1005G1 / 11 GB RAM | i3-1005G1 / 11 GB RAM |
 | Disco | NVMe interno | NVMe interno | NVMe interno | NVMe interno |
-| Contenedor | `gvenzl/oracle-free:latest` | `postgres:16` | `mcr.microsoft.com/mssql/server:2022-latest` | `mariadb:11` |
+| Contenedor | `postgres:16` | `mcr.microsoft.com/mssql/server:2022-latest` | `gvenzl/oracle-free:latest` | `mariadb:11` |
 | Python | Local (fuera de Docker) | Local (fuera de Docker) | Local (fuera de Docker) | Local (fuera de Docker) |
-| Método | `sqlldr direct=true` vía `docker exec` | `COPY FROM` server-side | `BULK INSERT` con `TABLOCK` + `BATCHSIZE=100000` | `LOAD DATA INFILE` server-side |
+| Método | `COPY FROM` server-side | `BULK INSERT` con `TABLOCK` + `BATCHSIZE=100000` | `sqlldr direct=true` vía `docker exec` | `LOAD DATA INFILE` server-side |
 | Filas | 13.229.475 | 13.229.475 | 13.229.475 | 13.229.475 |
-| Duración | **7.14 seg** | 31.2 seg | 40.05 seg | 76.24 seg |
-| Throughput | **~1.852.000 filas/seg** | ~424.000 filas/seg | ~330.000 filas/seg | ~173.000 filas/seg |
+| Duración | **31.2 seg** | 40.05 seg | 43.4 seg | 76.24 seg |
+| Throughput | **~424.000 filas/seg** | ~330.000 filas/seg | ~305.000 filas/seg | ~173.000 filas/seg |
 
 > Todos los motores leen directo desde disco vía bind mount `./data:/data` — sin pasar datos por Python.
 > La diferencia entre motores refleja la eficiencia interna de cada motor para ingesta masiva.
