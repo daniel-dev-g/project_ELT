@@ -44,9 +44,9 @@ Funciona para volúmenes pequeños. Cuando el archivo crece, el proceso pasa de 
 
 | Archivos | Volumen total | Filas      | Duración   | Motor      | Método | Disco |
 |----------|---------------|------------|------------|------------|--------|-------|
-| 3        | ~2 GB         | 13.229.475 | 31.2s      | PostgreSQL | `COPY FROM` | NVMe interno |
-| 3        | ~2 GB         | 13.229.475 | 40.05s     | SQL Server | `BULK INSERT` | NVMe interno |
-| 3        | ~2 GB         | 13.229.475 | 76.24s     | MariaDB    | `LOAD DATA INFILE` | NVMe interno |
+| 4        | ~2 GB         | 13.229.516 | 31.2s      | PostgreSQL | `COPY FROM` | NVMe interno |
+| 4        | ~2 GB         | 13.229.516 | 31.73s     | SQL Server | `BULK INSERT` | NVMe interno |
+| 4        | ~2 GB         | 13.229.516 | 70.16s     | MariaDB    | `LOAD DATA INFILE` | NVMe interno |
 
 > Hardware: Intel Core i3-1005G1 @ 1.20GHz / 11 GB RAM / Ubuntu Linux / NVMe interno.
 > Todos los motores medidos en las mismas condiciones de hardware.
@@ -59,14 +59,14 @@ Funciona para volúmenes pequeños. Cuando el archivo crece, el proceso pasa de 
 | Hardware | i3-1005G1 / 11 GB RAM | i3-1005G1 / 11 GB RAM | i3-1005G1 / 11 GB RAM |
 | Disco | NVMe interno | NVMe interno | NVMe interno |
 | Contenedor | `postgres:16` | `mcr.microsoft.com/mssql/server:2022-latest` | `mariadb:11` |
-| Python | Local (fuera de Docker) | Local (fuera de Docker) | Local (fuera de Docker) |
+| Python | Docker (contenedor) | Docker (contenedor) | Docker (contenedor) |
 | Método | `COPY FROM` server-side | `BULK INSERT` con `TABLOCK` + `BATCHSIZE=100000` | `LOAD DATA INFILE` server-side |
-| Filas | 13.229.475 | 13.229.475 | 13.229.475 |
-| Duración | **31.2 seg** | 40.05 seg | 76.24 seg |
-| Throughput | **~424.000 filas/seg** | ~330.000 filas/seg | ~173.000 filas/seg |
+| Filas | 13.229.516 | 13.229.516 | 13.229.516 |
+| Duración | **31.2 seg** | **31.73 seg** | 70.16 seg |
+| Throughput | **~424.000 filas/seg** | **~417.000 filas/seg** | ~188.000 filas/seg |
 
 > Todos los motores leen directo desde disco vía bind mount `./data:/data` — sin pasar datos por Python.
-> La diferencia entre motores refleja la eficiencia interna de cada motor para ingesta masiva.
+> Con Python en Docker, PostgreSQL y SQL Server alcanzan rendimiento equivalente (~424k y ~417k filas/seg).
 > Las pruebas se realizaron con configuración por defecto de cada motor, sin tuning adicional. Los resultados pueden mejorar con ajustes de memoria, paralelismo o parámetros de escritura propios de cada BD.
 
 ---
