@@ -36,7 +36,7 @@ class PostgresAdapter(DatabaseAdapter):
             config = self.config
 
         host = config['host']
-        port = config['port']
+        port = int(config['port'])
         database = config['database']
         username = config['username']
         password = config['password']

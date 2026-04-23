@@ -2,6 +2,13 @@
 # Activa el motor deseado descomentando su bloque.
 # Solo un bloque development activo a la vez.
 # Completa username y password con tus credenciales.
+#
+# bulk_path_map:
+#   host      → ruta que ve el contenedor Python (BULK_PATH_HOST en .env)
+#   container → ruta que ve la BD (BULK_PATH_CONTAINER en .env)
+#
+# Escenario A (Docker completo): docker-compose sobreescribe ambos automáticamente
+# Escenario B (BD externa):      el usuario configura ambos en .env según su entorno
 
 # ─────────────────────────────────────────────
 # SQL Server
@@ -10,15 +17,15 @@
 #   db_engine: sqlserver
 #   default_schema: "dbo"
 #   driver: "ODBC Driver 18 for SQL Server"
-#   server: "${SQLSERVER_HOST},1433"
+#   server: "${SQLSERVER_HOST},${SQLSERVER_PORT}"
 #   database: ${SQLSERVER_DB}
 #   username: ${SQLSERVER_USER}
 #   password: ${SQLSERVER_PASSWORD}
 #   trusted_connection: "no"
 #   encrypt: "no"
 #   bulk_path_map:
-#     host: "/home/daniel/Documentos/ti/proyectos/project_ELT/data"
-#     container: "/data"
+#     host: "${BULK_PATH_HOST}"
+#     container: "${BULK_PATH_CONTAINER}"
 #   log_level: "INFO"
 
 # ─────────────────────────────────────────────
@@ -27,14 +34,14 @@
 development:
   db_engine: postgres
   default_schema: "public"
-  host: "localhost"
-  port: 5433
+  host: "${POSTGRES_HOST}"
+  port: "${POSTGRES_PORT}"
   database: ${POSTGRES_DB}
   username: ${POSTGRES_USER}
   password: ${POSTGRES_PASSWORD}
   bulk_path_map:
-    host: "/home/daniel/Documentos/ti/proyectos/project_ELT/data"
-    container: "/data"
+    host: "${BULK_PATH_HOST}"
+    container: "${BULK_PATH_CONTAINER}"
   log_level: "INFO"
 
 # ─────────────────────────────────────────────
@@ -43,13 +50,12 @@ development:
 # development:
 #   db_engine: mysql
 #   default_schema: ""
-#   host: "localhost"
-#   port: 3307
-#   database: ${MYSQL_DB}
-#   username: ${MYSQL_USER}
-#   password: ${MYSQL_PASSWORD}
+#   host: "${MARIADB_HOST}"
+#   port: "${MARIADB_PORT}"
+#   database: ${MARIADB_DB}
+#   username: ${MARIADB_USER}
+#   password: ${MARIADB_PASSWORD}
 #   bulk_path_map:
-#     host: "/home/daniel/Documentos/ti/proyectos/project_ELT/data"
-#     container: "/data"
+#     host: "${BULK_PATH_HOST}"
+#     container: "${BULK_PATH_CONTAINER}"
 #   log_level: "INFO"
-

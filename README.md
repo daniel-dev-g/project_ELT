@@ -67,6 +67,7 @@ Funciona para volúmenes pequeños. Cuando el archivo crece, el proceso pasa de 
 
 > Todos los motores leen directo desde disco vía bind mount `./data:/data` — sin pasar datos por Python.
 > La diferencia entre motores refleja la eficiencia interna de cada motor para ingesta masiva.
+> Las pruebas se realizaron con configuración por defecto de cada motor, sin tuning adicional. Los resultados pueden mejorar con ajustes de memoria, paralelismo o parámetros de escritura propios de cada BD.
 
 ---
 
@@ -109,9 +110,9 @@ Archivos CSV / TXT
 └───────────────────┘
 ```
 
-### Arquitectura con lineage (roadmap)
+### Arquitectura con linaje (roadmap)
 
-El lineage no puede inyectarse durante la carga nativa — el archivo se transfiere tal cual para preservar el rendimiento. Se agrega en un paso SQL posterior, dentro de la base de datos.
+El linaje no puede inyectarse durante la carga nativa — el archivo se transfiere tal cual para preservar el rendimiento. Se agrega en un paso SQL posterior, dentro de la base de datos.
 
 ```
 Archivos CSV / TXT
@@ -159,7 +160,7 @@ Cada fila en `raw` puede responder: *¿de qué archivo viene? ¿cuándo se carg�
 - Dashboard HTML interactivo por ejecución
 - Logging estructurado con `execution_id` único por ejecución
 - Soporte multi-base de datos (3 motores)
-- Infraestructura de bases de datos contenerizada con Docker
+- Despliegue contenerizado con Docker — app Python y opcionalmente la base de datos
 
 ---
 
@@ -177,121 +178,210 @@ Generado automáticamente al finalizar cada ejecución:
 
 ## Escenarios de despliegue
 
-FlowELT está diseñado para entornos **on-premise**. Docker se usa solo para desarrollo — en producción la base de datos ya existe instalada en un servidor o PC local.
+FlowELT soporta dos escenarios. El único requisito en ambos es **Docker + Docker Compose**.
 
-### Desarrollo (este repositorio)
-
-```
-Tu PC
-├── Python local  ──────────────────► ejecuta FlowELT
-├── Archivos CSV en ./data/
-└── BD en Docker  ◄── bind mount ./data:/data ── BD lee el archivo
-```
-
-Docker sirve para levantar cualquier motor sin instalarlo. Python corre fuera del contenedor.
-
-### Producción — BD y Python en el mismo servidor
-
-```
-Servidor on-premise
-├── Python (local o en Docker)  ────► ejecuta FlowELT
-├── Archivos CSV en /data/
-└── BD instalada (SQL Server, PostgreSQL, MariaDB...)
-         ↓
-BULK INSERT '/data/clientes.csv'      ← SQL Server lee directo
-COPY FROM '/data/clientes.csv'        ← PostgreSQL lee directo
-LOAD DATA INFILE '/data/clientes.csv' ← MariaDB lee directo
-```
-
-### Producción — BD en servidor de red, Python en otro equipo
-
-```
-PC del usuario
-├── Python  ────────────────────────► ejecuta FlowELT
-└── Archivos CSV en C:\datos\ o /mnt/share/
-
-Servidor BD (accesible por red)
-└── BD instalada
-         ↓
-BULK INSERT '\\servidor\share\clientes.csv'    ← SQL Server con UNC path
-COPY FROM '/mnt/share/clientes.csv'            ← PostgreSQL con mount de red
-LOAD DATA INFILE '/mnt/share/clientes.csv'     ← MariaDB con mount de red
-```
-
-El parámetro `bulk_path_map` en `settings.yaml` permite indicar la ruta del archivo desde el punto de vista de la base de datos — no de Python:
-
-```yaml
-bulk_path_map:
-  host: "/home/usuario/proyecto/data"   # donde Python ve el archivo
-  container: "/data"                     # donde la BD ve el mismo archivo
-```
+| | Escenario A | Escenario B |
+|---|---|---|
+| **Cuándo usarlo** | Quiero probar FlowELT sin tener una BD instalada | Ya tengo una BD en mi servidor o red |
+| **Qué levanta Docker** | App Python + base de datos | Solo app Python |
+| **Archivos CSV** | Dentro de `./data/input/` | `./data/input/` o tu propio directorio |
+| **Comando** | `docker compose --profile <motor> up` | `docker compose --profile standalone up` |
 
 ---
 
-## Quickstart
+## Quickstart — Escenario A (Demo completo)
 
-### Prerrequisitos
+> Levanta FlowELT y una base de datos sin instalar nada adicional.
 
-- Python 3.14+
-- [uv](https://docs.astral.sh/uv/)
-- Docker + Docker Compose (solo para desarrollo)
-
-### 1. Clonar repositorio
+### Paso 1 — Clonar el repositorio
 
 ```bash
 git clone https://github.com/daniel-dev-g/project_ELT.git
 cd project_ELT
 ```
 
-### 2. Instalar dependencias
-
-```bash
-uv sync
-```
-
-### 3. Configurar variables de entorno
+### Paso 2 — Crear el archivo de configuración
 
 ```bash
 cp .env.example .env
 ```
 
-Editar `.env` con las credenciales del motor elegido.
+Edita `.env` con las credenciales que quieras usar para la BD que Docker va a crear.
+Solo necesitas cambiar las del motor que vayas a usar — el resto puede quedar con los valores de ejemplo.
 
-### 4. Seleccionar motor de base de datos
+Ejemplo para PostgreSQL:
 
-Descomentar el bloque correspondiente en `config/settings.yaml`.
+```env
+POSTGRES_USER=admin
+POSTGRES_PASSWORD=MiPassword123!
+POSTGRES_DB=mi_base
+```
 
-### 5. Agregar archivos de entrada
+> Los valores de `BULK_PATH_HOST`, `BULK_PATH_CONTAINER` y los hosts de conexión
+> los sobreescribe Docker automáticamente. No los toques para este escenario.
+
+### Paso 3 — Agregar tus archivos CSV
+
+Copia tus archivos dentro de `data/input/`:
 
 ```
-data/input/archivo.csv
+data/
+└── input/
+    ├── clientes.csv
+    └── ventas.csv
 ```
 
-### 6. Configurar pipeline
+### Paso 4 — Configurar el pipeline
+
+Edita `config/pipeline.yaml`. Cada bloque `task` define una carga:
 
 ```yaml
-# config/pipeline.yaml
 task:
   - name: "Carga de Clientes"
-    file: "data/input/clientes.csv"
-    delimiter: ";"
-    table_destination: "clientes"
-    schema: "dbo"
+    file: "data/input/clientes.csv"   # relativo a la raíz del proyecto
+    delimiter: ";"                     # separador del CSV
+    encoding: "utf8"
+    table_destination: "clientes"      # nombre de la tabla destino
+    schema: "public"                   # esquema (public en Postgres, dbo en SQL Server)
+    crear_tabla_si_no_existe: true
     active: true
 ```
 
-### 7. Levantar base de datos
+### Paso 5 — Seleccionar el motor de base de datos
 
-```bash
-docker compose --profile sqlserver up sqlserver -d
-# o postgres, mysql
+Abre `config/settings.yaml` y descomenta el bloque del motor que elegiste.
+
+**Ejemplo con PostgreSQL:**
+
+```yaml
+development:
+  db_engine: postgres
+  default_schema: "public"
+  host: "${POSTGRES_HOST}"
+  port: "${POSTGRES_PORT}"
+  database: ${POSTGRES_DB}
+  username: ${POSTGRES_USER}
+  password: ${POSTGRES_PASSWORD}
+  bulk_path_map:
+    host: "${BULK_PATH_HOST}"
+    container: "${BULK_PATH_CONTAINER}"
+  log_level: "INFO"
 ```
 
-### 8. Ejecutar
+> Solo necesitas descomentar el bloque. Los valores entre `${}` vienen del `.env`.
+
+### Paso 6 — Ejecutar
 
 ```bash
-uv run main.py
+# PostgreSQL
+docker compose --profile postgres up
+
+# SQL Server
+docker compose --profile sqlserver up
+
+# MariaDB
+docker compose --profile mysql up
 ```
+
+Docker construye la imagen, levanta la BD, espera que esté lista y ejecuta la carga.
+Al terminar verás en `logs/` el dashboard HTML y el log estructurado de la ejecución.
+
+---
+
+## Quickstart — Escenario B (BD externa)
+
+> Usa FlowELT con una base de datos que ya tienes instalada.
+
+### Paso 1 — Clonar el repositorio
+
+```bash
+git clone https://github.com/daniel-dev-g/project_ELT.git
+cd project_ELT
+```
+
+### Paso 2 — Crear el archivo de configuración
+
+```bash
+cp .env.example .env
+```
+
+### Paso 3 — Configurar la conexión a tu BD
+
+Edita `.env` con los datos de tu base de datos existente.
+
+**Ejemplo con PostgreSQL en `192.168.1.50`:**
+
+```env
+POSTGRES_HOST=192.168.1.50
+POSTGRES_PORT=5432
+POSTGRES_USER=mi_usuario
+POSTGRES_PASSWORD=mi_password
+POSTGRES_DB=mi_base
+```
+
+### Paso 4 — Configurar las rutas de archivos
+
+FlowELT corre dentro de un contenedor Docker, y tu BD corre fuera. Ambos deben poder ver los mismos archivos CSV — desde perspectivas distintas.
+
+**Opción B1 — usar el directorio `./data/input/` del proyecto**
+
+Pon tus archivos en `data/input/` y configura en `.env`:
+
+```env
+BULK_PATH_HOST=/app/data
+BULK_PATH_CONTAINER=/ruta/absoluta/del/proyecto/data
+```
+
+> `BULK_PATH_HOST` es la ruta que ve el contenedor Python (siempre `/app/data`).
+> `BULK_PATH_CONTAINER` es la ruta que ve tu BD — la carpeta `data/` de este proyecto
+> expresada como ruta absoluta en tu máquina. Puedes obtenerla con `pwd` dentro del proyecto.
+
+**Opción B2 — usar tu propio directorio de datos**
+
+Si tus archivos están en otro lugar de tu máquina, define `USER_DATA_PATH`:
+
+```env
+USER_DATA_PATH=/home/usuario/mis_datos
+
+BULK_PATH_HOST=/app/user_data
+BULK_PATH_CONTAINER=/home/usuario/mis_datos
+```
+
+> `USER_DATA_PATH` monta tu directorio dentro del contenedor en `/app/user_data`.
+> `BULK_PATH_CONTAINER` debe ser la misma ruta que ve tu BD (si está en la misma máquina, coincide con `USER_DATA_PATH`).
+
+### Paso 5 — Agregar tus archivos CSV
+
+- **Opción B1:** copia los archivos en `data/input/`
+- **Opción B2:** tus archivos ya están en `USER_DATA_PATH`
+
+### Paso 6 — Configurar el pipeline
+
+**Opción B1** — usa el mismo path que en Escenario A:
+
+```yaml
+file: "data/input/clientes.csv"
+```
+
+**Opción B2** — usa el prefijo `user_data/`:
+
+```yaml
+file: "user_data/clientes.csv"
+```
+
+Edita el resto de campos igual que en el Escenario A (Paso 4).
+
+### Paso 7 — Seleccionar el motor de base de datos
+
+Igual que en el Escenario A (Paso 5): descomenta el bloque correspondiente en `config/settings.yaml`.
+
+### Paso 8 — Ejecutar
+
+```bash
+docker compose --profile standalone up
+```
+
+Solo se levanta el contenedor Python. Tu BD no se toca ni se reinicia.
 
 ---
 
@@ -341,7 +431,7 @@ Todos los outputs comparten el mismo `execution_id` para trazabilidad completa.
 | Carga masiva nativa en lugar de ORM | Rendimiento — la BD lee directo del disco sin pasar datos por Python |
 | Configuración YAML | Simplicidad y reproducibilidad sin tocar código |
 | `execution_id` por ejecución | Trazabilidad completa entre logs, dashboard y técnico |
-| Docker solo para desarrollo | En producción la BD ya existe instalada — Docker es solo para poder probar los 3 motores sin instalarlos |
+| Docker para app y opcionalmente para la BD | La app Python siempre corre en Docker. La BD puede ser contenerizada (Escenario A — demo) o existente en el servidor del usuario (Escenario B — producción) |
 | `bulk_path_map` en configuración | Desacopla la ruta de Python de la ruta de la BD — funciona igual en desarrollo (Docker), servidor único o red de empresa |
 | Polars en lugar de pandas | Velocidad y bajo consumo de memoria en análisis de metadatos |
 
@@ -361,13 +451,13 @@ Todos los outputs comparten el mismo `execution_id` para trazabilidad completa.
 
 - [ ] Módulo de profiling (nulos, cardinalidad, tipos)
 - [ ] Motor de reglas de calidad configurables en YAML
-- [ ] **Lineage a nivel de fila** — escritura de logs en tabla BD + paso SQL post-carga que adjunta columnas `_execution_id`, `_source_file` y `_load_timestamp` a los datos en capa raw (ver diseño abajo)
+- [ ] **Linaje a nivel de fila** — escritura de logs en tabla BD + paso SQL post-carga que adjunta columnas `_execution_id`, `_source_file` y `_load_timestamp` a los datos en capa raw (ver diseño abajo)
 - [ ] Integración con Prefect (orquestación)
 - [ ] Análisis asistido por IA (opcional)
 
-### Diseño: Lineage a nivel de fila
+### Diseño: Linaje a nivel de fila
 
-La carga nativa (BULK INSERT / COPY / LOAD DATA) no permite inyectar columnas adicionales durante la transferencia — el archivo se lee tal cual. El lineage se agrega en un paso SQL posterior, dentro de la base de datos, sin pasar datos por Python.
+La carga nativa (BULK INSERT / COPY / LOAD DATA) no permite inyectar columnas adicionales durante la transferencia — el archivo se lee tal cual. El linaje se agrega en un paso SQL posterior, dentro de la base de datos, sin pasar datos por Python.
 
 **Flujo propuesto:**
 
@@ -395,7 +485,7 @@ task:
     file: "data/input/clientes.csv"
     table_destination: "landing.clientes"
     log_to_db: true              # escribe execution_id en tabla bd_logs dentro de la BD
-    raw_destination: "raw.clientes"  # ejecuta el paso SQL de lineage automáticamente
+    raw_destination: "raw.clientes"  # ejecuta el paso SQL de linaje automáticamente
     active: true
 ```
 

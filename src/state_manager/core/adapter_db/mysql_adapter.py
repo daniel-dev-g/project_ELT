@@ -24,7 +24,7 @@ class MySQLAdapter(DatabaseAdapter):
 
         return {
             'host': config['host'],
-            'port': config.get('port', 3306),
+            'port': int(config.get('port', 3306)),
             'database': config['database'],
             'user': config['username'],
             'password': config['password'],
@@ -36,7 +36,7 @@ class MySQLAdapter(DatabaseAdapter):
             config = self.config
 
         host = config['host']
-        port = config.get('port', 3306)
+        port = int(config.get('port', 3306))
         database = config['database']
         username = config['username']
         password = config['password']

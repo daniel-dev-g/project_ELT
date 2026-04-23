@@ -1,22 +1,43 @@
 # docker-compose.yml
-# Uso: docker compose --profile <motor> up
-# Motores disponibles: sqlserver | postgres | mysql
+#
+# ESCENARIO A — Demo completo (app + BD en Docker)
+#   docker compose --profile sqlserver up
+#   docker compose --profile postgres  up
+#   docker compose --profile mysql     up
+#
+# ESCENARIO B — Solo app, BD externa (tu propio servidor)
+#   docker compose --profile standalone up
+#   Configura POSTGRES_HOST / MARIADB_HOST / SQLSERVER_HOST en .env
+#   apuntando a tu BD antes de ejecutar.
+
+x-app-base: &app-base
+  build: .
+  env_file: .env
+  volumes:
+    - ./data:/app/data
+    - ./config:/app/config
+    - ./logs:/app/logs
 
 services:
 
   # ─────────────────────────────────────────────
-  # FlowELT app (Python)
-  # Se levanta con cualquier profile de motor
+  # ESCENARIO A — App con BD contenerizada
+  # Sobreescribe host/port con nombres de red interna Docker.
+  # Los valores del .env quedan anulados solo dentro del contenedor.
   # ─────────────────────────────────────────────
   app:
+    <<: *app-base
     profiles: [sqlserver, postgres, mysql]
-    build: .
     container_name: flowelt_app
-    env_file: .env
-    volumes:
-      - ./data:/app/data        # archivos CSV de entrada
-      - ./config:/app/config    # settings.yaml y pipeline.yaml
-      - ./logs:/app/logs        # logs de salida
+    environment:
+      BULK_PATH_HOST: /app/data
+      BULK_PATH_CONTAINER: /data
+      POSTGRES_HOST: flowelt_postgres
+      POSTGRES_PORT: "5432"
+      MARIADB_HOST: flowelt_mysql
+      MARIADB_PORT: "3306"
+      SQLSERVER_HOST: flowelt_sqlserver
+      SQLSERVER_PORT: "1433"
     depends_on:
       sqlserver:
         condition: service_started
@@ -27,6 +48,26 @@ services:
       mysql:
         condition: service_started
         required: false
+
+  # ─────────────────────────────────────────────
+  # ESCENARIO B — Solo app, BD externa
+  # Usa directamente los valores del .env sin sobreescribir nada.
+  # El usuario configura host/port de su BD en .env.
+  #
+  # USER_DATA_PATH (opcional): directorio externo de archivos del usuario.
+  # Se monta en /app/user_data dentro del contenedor.
+  # Si no se define, el volumen apunta a /tmp (inerte).
+  # ─────────────────────────────────────────────
+  app-standalone:
+    <<: *app-base
+    profiles: [standalone]
+    container_name: flowelt_app
+    volumes:
+      - ./data:/app/data
+      - ./config:/app/config
+      - ./logs:/app/logs
+      - ${USER_DATA_PATH:-/tmp}:/app/user_data
+
   # ─────────────────────────────────────────────
   # SQL Server 2022 Developer Edition
   # ─────────────────────────────────────────────
@@ -34,9 +75,6 @@ services:
     profiles: [sqlserver]
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: flowelt_sqlserver
-    # apparmor:unconfined — necesario en Ubuntu/Debian con kernel moderno.
-    # Sin esto, "docker stop" falla con "permission denied" porque AppArmor
-    # bloquea la señal SIGTERM al proceso interno del contenedor.
     security_opt:
       - apparmor:unconfined
     environment:
@@ -71,8 +109,7 @@ services:
     restart: unless-stopped
 
   # ─────────────────────────────────────────────
-  # MariaDB (reemplaza MySQL 8 — compatible con LOAD DATA LOCAL INFILE)
-  # MySQL 8 deshabilitó local_infile y cambió auth a caching_sha2_password
+  # MariaDB 11
   # ─────────────────────────────────────────────
   mysql:
     profiles: [mysql]
