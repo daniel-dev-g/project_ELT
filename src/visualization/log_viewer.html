@@ -445,11 +445,15 @@ body::before {
     border-radius: 20px;
     border: 0.5px solid var(--border-subtle);
     overflow: hidden;
+    min-width: 1020px;
+}
+.main {
+    overflow-x: auto;
 }
 .event-table-header {
     display: grid;
-    grid-template-columns: 150px 200px 1fr 80px;
-    column-gap: 12px;
+    grid-template-columns: 320px 165px 1fr 140px 90px 36px;
+    column-gap: 20px;
     padding: 14px 20px;
     background: #eef2f5;
     border-bottom: 1px solid var(--border-subtle);
@@ -461,8 +465,8 @@ body::before {
 }
 .event-row {
     display: grid;
-    grid-template-columns: 150px 200px 1fr 80px;
-    column-gap: 12px;
+    grid-template-columns: 320px 165px 1fr 140px 90px 36px;
+    column-gap: 20px;
     padding: 0 20px;
     border-bottom: 0.5px solid var(--border-subtle);
     cursor: pointer;
@@ -476,11 +480,46 @@ body::before {
 .event-row:hover {
     background: rgba(59, 130, 246, 0.03);
 }
-.event-time {
+.event-exec-id {
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--accent-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.event-filename {
     font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.event-path {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.event-rows {
+    font-size: 13px;
+    color: var(--success);
+    font-weight: 600;
     font-variant-numeric: tabular-nums;
+}
+.event-duration {
+    font-size: 13px;
     color: var(--text-secondary);
-    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+}
+.event-meta {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 .event-badge {
     display: inline-flex;
@@ -649,6 +688,39 @@ body::before {
     color: var(--text-secondary);
 }
 
+.event-row--flat {
+    cursor: default;
+    opacity: 0.75;
+}
+.file-events-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 4px 0;
+}
+.file-event-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    background: var(--bg-elevated);
+    border: 0.5px solid var(--border-subtle);
+}
+.file-event-time {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    font-variant-numeric: tabular-nums;
+    min-width: 72px;
+    flex-shrink: 0;
+}
+.file-event-detail {
+    font-size: 12px;
+    color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 .empty-state {
     text-align: center;
     padding: 60px;
@@ -682,9 +754,12 @@ body::before {
     .kpi-grid { grid-template-columns: repeat(2,1fr); }
     .main { padding: 20px; }
     .event-table-header, .event-row {
-        grid-template-columns: 110px 120px 1fr;
+        grid-template-columns: 100px 1fr 90px 36px;
     }
-    .event-table-header > :last-child, .event-row > :last-child { display: none; }
+    .event-table-header > :nth-child(2),
+    .event-row > :nth-child(2),
+    .event-table-header > :nth-child(5),
+    .event-row > :nth-child(5) { display: none; }
 }
     </style>
 </head>
@@ -697,7 +772,7 @@ body::before {
     <aside class="sidebar"><div class="sidebar-section"><div class="sidebar-label">Views</div>
         <div class="nav-item active" onclick="setView('all', this)"><div class="nav-dot" style="background: var(--accent-primary)"></div>All Events<span class="nav-count" id="nav-all">0</span></div>
         <div class="nav-item" onclick="setView('pipeline', this)"><div class="nav-dot" style="background: var(--purple-accent)"></div>Pipeline<span class="nav-count" id="nav-pipeline">0</span></div>
-        <div class="nav-item" onclick="setView('file_analysis', this)"><div class="nav-dot" style="background: var(--success)"></div>File Analysis<span class="nav-count" id="nav-file_analysis">0</span></div>
+        <div class="nav-item" onclick="setView('file_success', this)"><div class="nav-dot" style="background: var(--success)"></div>Files<span class="nav-count" id="nav-file_success">0</span></div>
         <div class="nav-item" onclick="setView('errors', this)"><div class="nav-dot" style="background: var(--error)"></div>Errors<span class="nav-count" id="nav-errors">0</span></div>
     </div>
     <div class="sidebar-section"><div class="sidebar-label">Summary</div><div class="summary-stats"><div>Files: <span id="sb-files">—</span></div><div>Rows: <span id="sb-rows">—</span></div><div>Duration: <span id="sb-duration">—</span></div><div>Status: <span id="sb-status">—</span></div></div></div></aside>
@@ -708,266 +783,277 @@ body::before {
         <div class="kpi-card purple"><div class="kpi-label">Total Rows</div><div class="kpi-value" id="kpi-rows">—</div><div class="kpi-sub">processed</div></div></div>
         <div class="timeline-wrap"><div class="section-header"><div class="section-title">Event Timeline</div><span id="timeline-range" style="font-size:12px;"></span></div><div class="timeline-track" id="timeline-track"></div></div>
         <div class="section-header"><div class="section-title">Event Log</div><div><button class="filter-btn" onclick="expandAll()">Expand All</button><button class="filter-btn" onclick="collapseAll()" style="margin-left:6px;">Collapse</button></div></div>
-        <div class="search-wrap"><span class="search-icon">⌕</span><input class="search-input" id="search-input" placeholder="Search events, files, columns..." oninput="applyFilters()"></div>
-        <div class="filters" id="filter-bar"></div>
-        <div class="event-table"><div class="event-table-header"><span>Timestamp</span><span>Event</span><span>Summary</span><span style="text-align:right">▶</span></div><div id="events-body"></div><div class="status-bar"><div class="status-dot green" id="status-dot"></div><span id="status-text">Ready</span><span style="margin-left:auto" id="status-count"></span></div></div>
+        <div class="search-wrap"><span class="search-icon">⌕</span><input class="search-input" id="search-input" placeholder="Buscar archivo, ruta, tabla..." oninput="applyFilters()"></div>
+        <div class="event-table"><div class="event-table-header"><span>Execution ID</span><span>Archivo</span><span>Ruta</span><span>Registros</span><span>Duración</span><span></span></div><div id="events-body"></div><div class="status-bar"><div class="status-dot green" id="status-dot"></div><span id="status-text">Ready</span><span style="margin-left:auto" id="status-count"></span></div></div>
     </main>
 </div>
 <script>
     const RAW_DATA = __LOG_DATA__ || [];
-    let currentView='all', currentFilter='all', searchQuery='', expandedRows=new Set();
-    function init(){
-        if(!RAW_DATA.length){ document.getElementById('events-body').innerHTML='<div class="empty-state">No log data</div>'; return; }
-        buildKPIs(); buildTimeline(); buildFilterBar(); renderEvents();
-        let execId = (RAW_DATA.find(e=>e.detalles?.execution_id)?.detalles?.execution_id) || 'unknown';
-        document.getElementById('exec-id').textContent=execId.slice(0,8)+'...';
-        let last=RAW_DATA[RAW_DATA.length-1];
-        document.getElementById('last-update').textContent=last?.timestamp?.split('T')[1]?.slice(0,8)||'';
-        document.getElementById('log-filename').textContent='pipeline.log';
+    let expandedRows = new Set(), searchQuery = '';
+    // ── Clasificación ─────────────────────────────────────────────────────
+    const FILE_EVENTS  = new Set(['file_start','file_success','file_analysis','file_error','file_not_found']);
+    const TABLE_EVENTS = new Set(['table_already_exists','table_created']);
+    const END_EVENTS   = ['pipeline_init','pipeline_summary','process_complete','dashboard_generated'];
+    function isError(e){ return ['analysis_error','file_not_found','critical_error','file_error'].includes(e.evento); }
+    // ── Badge CSS ─────────────────────────────────────────────────────────
+    function bc(ev){ const m={'pipeline_start':'badge-pipeline_start','pipeline_init':'badge-pipeline_init','pipeline_summary':'badge-pipeline_summary','file_analysis':'badge-file_analysis','file_success':'badge-file_analysis','file_start':'badge-metadata','table_already_exists':'badge-metadata','table_created':'badge-metadata','analysis_error':'badge-analysis_error','file_not_found':'badge-file_not_found','critical_error':'badge-critical_error','process_start':'badge-pipeline_start','process_complete':'badge-pipeline_summary'}; return m[ev]||'badge-default'; }
+
+    // ── Agrupa eventos por archivo ────────────────────────────────────────
+    function buildGroups(){
+        const fileStarts = RAW_DATA.filter(e => e.evento === 'file_start');
+        const usedIdxs   = new Set();
+        const groups     = [];
+
+        // 1. process_start (fila plana, sin expand)
+        const psIdx = RAW_DATA.findIndex(e => e.evento === 'process_start');
+        if(psIdx >= 0){ groups.push({ type:'flat', event: RAW_DATA[psIdx] }); usedIdxs.add(psIdx); }
+
+        // 2. Una fila por archivo
+        fileStarts.forEach(fs => {
+            const d         = fs.detalles || {};
+            const filePath  = d.file || '';
+            const filename  = filePath.split(/[\\/]/).pop();
+            const destTable = d.destination_table || '';
+            const execId    = d.execution_id || '';
+
+            const eventIdxs = [];
+            RAW_DATA.forEach((e, i) => {
+                const ed = e.detalles || {};
+                if(FILE_EVENTS.has(e.evento)  && (ed.file === filePath || ed.file === filename)) eventIdxs.push(i);
+                if(TABLE_EVENTS.has(e.evento) && ed.tabla === destTable) eventIdxs.push(i);
+            });
+            eventIdxs.forEach(i => usedIdxs.add(i));
+
+            const fileEvs = eventIdxs.map(i => RAW_DATA[i]);
+            const success = fileEvs.find(e => e.evento === 'file_success');
+
+            groups.push({
+                type: 'file', filePath, filename, execId,
+                rowsInserted: success?.detalles?.rows_inserted,
+                duration:     success?.detalles?.duration_seconds,
+                hasError:     fileEvs.some(isError),
+                events:       fileEvs,
+            });
+        });
+
+        // 3. Eventos finales
+        RAW_DATA.forEach((e, i) => {
+            if(END_EVENTS.includes(e.evento) && !usedIdxs.has(i)){
+                groups.push({ type:'end', event: e, idx: i });
+                usedIdxs.add(i);
+            }
+        });
+
+        return groups;
     }
-    function getPipelineSummary(){ return RAW_DATA.find(e=>e.evento==='pipeline_summary')?.detalles||null; }
-    function isError(e){ return ['analysis_error','file_not_found','critical_error'].includes(e.evento); }
+
+    // ── KPIs ──────────────────────────────────────────────────────────────
     function buildKPIs(){
-        let total=RAW_DATA.length, errors=RAW_DATA.filter(isError).length, summary=getPipelineSummary();
-        let totalRows=summary?.total_rows??RAW_DATA.filter(e=>e.evento==='file_analysis').reduce((s,e)=>s+(e.detalles?.rows||0),0);
-        let filesOk=summary?.files_ok??RAW_DATA.filter(e=>e.evento==='file_analysis').length;
-        document.getElementById('kpi-total').textContent=total.toLocaleString();
-        document.getElementById('kpi-success').textContent=filesOk.toLocaleString();
-        document.getElementById('kpi-errors').textContent=errors.toLocaleString();
-        let rowsDisplay=totalRows>999999?(totalRows/1e6).toFixed(1)+'M':totalRows>999?(totalRows/1e3).toFixed(1)+'K':totalRows.toString();
-        document.getElementById('kpi-rows').textContent=rowsDisplay;
-        let totalFiles=summary?.total_files??RAW_DATA.filter(e=>e.evento==='file_analysis').length;
-        document.getElementById('sb-files').textContent=`${filesOk} / ${totalFiles}`;
-        document.getElementById('sb-rows').textContent=totalRows.toLocaleString();
-        let hasErr=errors>0;
-        document.getElementById('sb-status').textContent=hasErr?'PARTIAL':'OK';
-        document.getElementById('sb-status').style.color=hasErr?'var(--error)':'var(--success)';
-        document.getElementById('nav-all').textContent=total;
-        document.getElementById('nav-pipeline').textContent=RAW_DATA.filter(e=>['pipeline_start','pipeline_init','pipeline_summary'].includes(e.evento)).length;
-        document.getElementById('nav-file_analysis').textContent=RAW_DATA.filter(e=>e.evento==='file_analysis').length;
-        document.getElementById('nav-errors').textContent=errors;
-        if(hasErr){ document.getElementById('status-dot').className='status-dot red'; document.getElementById('status-text').textContent=`${errors} error(s)`; }
-        else { document.getElementById('status-dot').className='status-dot green'; document.getElementById('status-text').textContent='All systems nominal'; }
+        const summary    = RAW_DATA.find(e => e.evento === 'pipeline_summary')?.detalles || null;
+        const successes  = RAW_DATA.filter(e => e.evento === 'file_success');
+        const errors     = RAW_DATA.filter(isError).length;
+        const totalRows  = summary?.total_rows  ?? successes.reduce((s,e) => s+(e.detalles?.rows_inserted||0), 0);
+        const filesOk    = summary?.files_ok    ?? successes.length;
+        const totalFiles = summary?.total_files ?? successes.length;
+
+        document.getElementById('kpi-total').textContent   = RAW_DATA.length.toLocaleString();
+        document.getElementById('kpi-success').textContent = filesOk.toLocaleString();
+        document.getElementById('kpi-errors').textContent  = errors.toLocaleString();
+        const rd = totalRows>999999?(totalRows/1e6).toFixed(1)+'M':totalRows>999?(totalRows/1e3).toFixed(1)+'K':totalRows.toString();
+        document.getElementById('kpi-rows').textContent    = rd;
+        document.getElementById('sb-files').textContent    = `${filesOk} / ${totalFiles}`;
+        document.getElementById('sb-rows').textContent     = totalRows.toLocaleString();
+        document.getElementById('nav-all').textContent     = RAW_DATA.length;
+        document.getElementById('nav-pipeline').textContent= RAW_DATA.filter(e=>END_EVENTS.includes(e.evento)).length;
+        document.getElementById('nav-file_success').textContent = successes.length;
+        document.getElementById('nav-errors').textContent  = errors;
+        const hasErr = errors > 0;
+        document.getElementById('sb-status').textContent   = hasErr ? 'PARTIAL' : 'OK';
+        document.getElementById('sb-status').style.color   = hasErr ? 'var(--error)' : 'var(--success)';
+        document.getElementById('status-dot').className    = hasErr ? 'status-dot red' : 'status-dot green';
+        document.getElementById('status-text').textContent = hasErr ? `${errors} error(s)` : 'All systems nominal';
         if(summary?.duration_seconds!=null) document.getElementById('sb-duration').textContent=summary.duration_seconds+'s';
-        else if(RAW_DATA.length>=2){ let diff=(new Date(RAW_DATA[RAW_DATA.length-1].timestamp)-new Date(RAW_DATA[0].timestamp))/1000; document.getElementById('sb-duration').textContent=diff.toFixed(1)+'s';}
+        else if(RAW_DATA.length>=2){ const diff=(new Date(RAW_DATA[RAW_DATA.length-1].timestamp)-new Date(RAW_DATA[0].timestamp))/1000; document.getElementById('sb-duration').textContent=diff.toFixed(1)+'s'; }
     }
+
+    // ── Timeline ──────────────────────────────────────────────────────────
     function buildTimeline(){
-        let track=document.getElementById('timeline-track'); track.innerHTML='';
-        RAW_DATA.forEach((e,i)=>{let dot=document.createElement('div'); dot.className='timeline-dot '+(isError(e)?'err':(e.evento==='file_analysis'?'ok':'info')); dot.title=`${e.timestamp.split('T')[1]?.slice(0,8)} — ${e.evento}`; dot.onclick=()=>scrollToEvent(i); track.appendChild(dot);});
-        if(RAW_DATA.length){ let first=RAW_DATA[0].timestamp.split('T')[1]?.slice(0,8), last=RAW_DATA[RAW_DATA.length-1].timestamp.split('T')[1]?.slice(0,8); document.getElementById('timeline-range').textContent=`${first} → ${last}`;}
+        const track = document.getElementById('timeline-track'); track.innerHTML='';
+        RAW_DATA.forEach((e,i) => {
+            const dot = document.createElement('div');
+            dot.className = 'timeline-dot '+(isError(e)?'err':e.evento==='file_success'?'ok':'info');
+            dot.title = `${e.timestamp.split('T')[1]?.slice(0,8)} — ${e.evento}`;
+            dot.onclick = () => {
+                const groups = buildGroups();
+                groups.forEach((g,gi) => { if(g.type==='file' && g.events.includes(e)) openFile(gi); });
+            };
+            track.appendChild(dot);
+        });
+        if(RAW_DATA.length){ const f=RAW_DATA[0].timestamp.split('T')[1]?.slice(0,8), l=RAW_DATA[RAW_DATA.length-1].timestamp.split('T')[1]?.slice(0,8); document.getElementById('timeline-range').textContent=`${f} → ${l}`; }
     }
-    function buildFilterBar(){
-        let events=[...new Set(RAW_DATA.map(e=>e.evento))];
-        let html='<button class="filter-btn active" onclick="setFilter(\'all\', this)">All</button>';
-        events.forEach(ev=>{let isErr=['analysis_error','file_not_found','critical_error'].includes(ev); html+=`<button class="filter-btn ${isErr?'error':''}" onclick="setFilter('${ev}', this)">${ev}</button>`;});
-        document.getElementById('filter-bar').innerHTML=html;
-    }
-    function getFilteredData(){ return RAW_DATA.filter(e=>{ if(currentView==='pipeline' && !['pipeline_start','pipeline_init','pipeline_summary'].includes(e.evento)) return false; if(currentView==='file_analysis' && e.evento!=='file_analysis') return false; if(currentView==='errors' && !isError(e)) return false; if(currentFilter!=='all' && e.evento!==currentFilter) return false; if(searchQuery && !JSON.stringify(e).toLowerCase().includes(searchQuery.toLowerCase())) return false; return true;});}
-    function renderEvents(){
-        let filtered=getFilteredData(); let body=document.getElementById('events-body');
-        const showingEl=document.getElementById('showing-count'); if(showingEl) showingEl.textContent=`${filtered.length} of ${RAW_DATA.length}`;
-        document.getElementById('status-count').textContent=`${filtered.length} events`;
-        if(!filtered.length){ body.innerHTML='<div class="empty-state">No events match filters</div>'; return; }
-        body.innerHTML=filtered.map((e,idx)=>{ let originalIdx=RAW_DATA.indexOf(e); let time=e.timestamp.split('T')[1]?.slice(0,12)||e.timestamp; let badgeClass=(()=>{let m={'pipeline_start':'badge-pipeline_start','pipeline_init':'badge-pipeline_init','pipeline_summary':'badge-pipeline_summary','file_analysis':'badge-file_analysis','metadata':'badge-metadata','columns':'badge-columns','analysis_error':'badge-analysis_error','file_not_found':'badge-file_not_found','critical_error':'badge-critical_error'}; return m[e.evento]||'badge-default';})(); let summary=getSummary(e); let isExp=expandedRows.has(originalIdx);
-            return `<div class="event-row ${isExp?'expanded':''}" id="row-${originalIdx}" onclick="toggleRow(${originalIdx})"><span class="event-time">${time}</span><span><span class="event-badge ${badgeClass}">${e.evento}</span></span><span class="event-summary">${summary}</span><span class="event-expand">▶</span></div><div class="detail-panel ${isExp?'show':''}" id="detail-${originalIdx}">${buildDetail(e)}</div>`;
+
+    // ── Render ────────────────────────────────────────────────────────────
+    function renderGroups(groups){
+        const body = document.getElementById('events-body');
+        document.getElementById('status-count').textContent = `${groups.filter(g=>g.type==='file').length} archivos`;
+        if(!groups.length){ body.innerHTML='<div class="empty-state">Sin resultados</div>'; return; }
+        body.innerHTML = groups.map((g,gi) => {
+            if(g.type==='flat') return renderFlat(g);
+            if(g.type==='file') return renderFile(g, gi);
+            if(g.type==='end')  return renderEnd(g, gi);
+            return '';
         }).join('');
     }
-     function getSummary(e) {
-            const d = e.detalles || {};
 
-            if (e.evento === 'file_analysis') {
-                const rows = d.rows != null ? `${d.rows.toLocaleString()} rows` : '';
-                return `<span class="summary-inline">
-                    <span class="summary-tag ok">✓</span>
-                    <span class="summary-filename">${d.file || ''}</span>
-                    ${rows ? `<span class="summary-tag">${rows}</span>` : ''}
-                </span>`;
-            }
+    function renderFlat(g){
+        const d = g.event.detalles || {};
+        const execId = d.execution_id ? d.execution_id : '—';
+        const time   = g.event.timestamp.split('T')[1]?.slice(0,8) || '';
+        return `<div class="event-row event-row--flat">
+            <span class="event-exec-id" title="${d.execution_id||''}">${execId}</span>
+            <span><span class="event-badge badge-pipeline_start">${g.event.evento}</span></span>
+            <span class="event-meta">${time}</span>
+            <span class="event-meta">—</span><span class="event-meta">—</span><span></span>
+        </div>`;
+    }
 
-            if (e.evento === 'pipeline_summary') {
-                const ok = d.files_ok ?? 0;
-                const err = d.files_error ?? 0;
-                const rows = d.total_rows != null ? `${d.total_rows.toLocaleString()} rows` : '';
-                return `<span class="summary-inline">
-                    <span class="summary-tag ok">${ok} ok</span>
-                    ${err > 0 ? `<span class="summary-tag err">${err} errors</span>` : ''}
-                    ${rows ? `<span class="summary-tag">${rows}</span>` : ''}
-                </span>`;
-            }
+    function renderFile(g, gi){
+        const execId = g.execId ? g.execId.slice(0,8)+'…' : '—';
+        const rows   = g.rowsInserted != null ? g.rowsInserted.toLocaleString() : '—';
+        const dur    = g.duration     != null ? g.duration+'s' : '—';
+        const isExp  = expandedRows.has(gi);
+        const rClass = g.rowsInserted != null ? (g.hasError ? 'event-meta' : 'event-rows') : 'event-meta';
 
-            if (e.evento === 'pipeline_init') {
-                const count = d.cantidad || 0;
-                const files = d.archivos || [];
-                const rowId = `filelist-${Math.random().toString(36).slice(2, 7)}`;
-                return `<span class="summary-inline" style="overflow:visible; flex-wrap:wrap; gap:4px;">
-                    <span class="summary-tag">${count} files</span>
-                    <span class="file-list-toggle" onclick="toggleFileList(event,'${rowId}')">
-                        <span class="arrow">▶</span> show files
-                    </span>
-                    <span class="file-list-dropdown" id="${rowId}">
-                        ${files.map((f, i) =>
-                    `<span class="file-list-item">
-                                <span class="file-list-num">${i + 1}.</span>${f}
-                            </span>`
-                ).join('')}
-                    </span>
-                </span>`;
-            }
+        const evHtml = g.events.map(e => {
+            const ed   = e.detalles || {};
+            const time = e.timestamp.split('T')[1]?.slice(0,8) || '';
+            let detail = '';
+            if(TABLE_EVENTS.has(e.evento))     detail = `${ed.schema?ed.schema+'.':''}${ed.tabla||''}`;
+            else if(e.evento==='file_start')   detail = ed.file || '';
+            else if(e.evento==='file_success') detail = `${(ed.rows_inserted||0).toLocaleString()} registros cargados en ${ed.duration_seconds}s`;
+            else if(e.evento==='file_analysis')detail = `${(ed.rows||0).toLocaleString()} rows analizadas`;
+            else detail = Object.entries(ed).filter(([k])=>k!=='execution_id').slice(0,2).map(([k,v])=>`${k}: ${String(v).slice(0,40)}`).join(' · ');
+            return `<div class="file-event-item">
+                <span class="file-event-time">${time}</span>
+                <span class="event-badge ${bc(e.evento)}">${e.evento}</span>
+                <span class="file-event-detail">${detail}</span>
+            </div>`;
+        }).join('');
 
-            if (e.evento === 'file_not_found') {
-                const path = d.path || '';
-                const filename = path.split(/[\\/]/).pop();
-                return `<span class="summary-inline">
-                    <span class="summary-tag err">✗ not found</span>
-                    <span class="summary-filename" title="${path}">${filename}</span>
-                </span>`;
-            }
+        return `<div class="event-row ${isExp?'expanded':''}" id="frow-${gi}" onclick="toggleFile(${gi})">
+            <span class="event-exec-id" title="${g.execId||''}">${execId}</span>
+            <span class="event-filename" title="${g.filename}">${g.filename}</span>
+            <span class="event-path" title="${g.filePath}">${g.filePath}</span>
+            <span class="${rClass}">${rows}</span>
+            <span class="event-duration">${dur}</span>
+            <span class="event-expand">▶</span>
+        </div>
+        <div class="detail-panel ${isExp?'show':''}" id="fdetail-${gi}">
+            <div class="file-events-list">${evHtml}</div>
+        </div>`;
+    }
 
-            if (e.evento === 'analysis_error' || e.evento === 'critical_error') {
-                const msg = d.message || d.error || 'Error occurred';
-                return `<span class="summary-inline">
-                    <span class="summary-tag err">error</span>
-                    <span class="summary-filename">${msg}</span>
-                </span>`;
-            }
-
-            if (e.evento === 'dashboard_generated') {
-                return `<span class="summary-inline">
-                    <span class="summary-filename">${d.path || ''}</span>
-                </span>`;
-            }
-
-            const parts = Object.entries(d).slice(0, 2)
-                .map(([k, v]) => `<span class="summary-tag">${k}: ${String(v).slice(0, 20)}</span>`)
-                .join('');
-            return `<span class="summary-inline">${parts}</span>`;
+    function renderEnd(g, gi){
+        const d      = g.event.detalles || {};
+        const execId = d.execution_id ? d.execution_id : '—';
+        const isExp  = expandedRows.has('end'+gi);
+        let col3='—', col4='—', col5='—';
+        if(g.event.evento==='pipeline_summary'){
+            col3=`${d.files_ok??0} ok${d.files_error?` · ${d.files_error} err`:''}`;
+            col4=d.total_rows!=null?d.total_rows.toLocaleString():'—';
+            col5=d.duration_seconds!=null?d.duration_seconds+'s':'—';
+        } else if(g.event.evento==='process_complete'){
+            col3=d.status||'';
+            col4=d.total_rows!=null?d.total_rows.toLocaleString():'—';
+            col5=d.duration_seconds!=null?d.duration_seconds+'s':'—';
+        } else if(g.event.evento==='pipeline_init'){
+            col3=`${d.cantidad||0} archivos`;
+        } else if(g.event.evento==='dashboard_generated'){
+            col3=d.path||'';
         }
+        return `<div class="event-row ${isExp?'expanded':''}" id="frow-end${gi}" onclick="toggleEnd(${gi})">
+            <span class="event-exec-id" title="${d.execution_id||''}">${execId}</span>
+            <span><span class="event-badge ${bc(g.event.evento)}">${g.event.evento}</span></span>
+            <span class="event-meta">${col3}</span>
+            <span class="event-meta">${col4}</span>
+            <span class="event-meta">${col5}</span>
+            <span class="event-expand">▶</span>
+        </div>
+        <div class="detail-panel ${isExp?'show':''}" id="fdetail-end${gi}">${buildDetail(g.event,'e'+gi)}</div>`;
+    }
 
-        function buildDetail(e, idx) {
-            const d = e.detalles || {};
-            let html = '<div class="detail-grid">';
-            const columns = d.columns;
-            const rest = Object.entries(d).filter(([k]) => k !== 'columns');
+    // ── Toggles ───────────────────────────────────────────────────────────
+    function openFile(gi){ expandedRows.add(gi); document.getElementById(`frow-${gi}`)?.classList.add('expanded'); document.getElementById(`fdetail-${gi}`)?.classList.add('show'); }
+    function toggleFile(gi){
+        const row=document.getElementById(`frow-${gi}`), det=document.getElementById(`fdetail-${gi}`);
+        if(!row||!det) return;
+        if(expandedRows.has(gi)){ expandedRows.delete(gi); row.classList.remove('expanded'); det.classList.remove('show'); }
+        else{ expandedRows.add(gi); row.classList.add('expanded'); det.classList.add('show'); }
+    }
+    function toggleEnd(gi){
+        const key='end'+gi, row=document.getElementById(`frow-end${gi}`), det=document.getElementById(`fdetail-end${gi}`);
+        if(!row||!det) return;
+        if(expandedRows.has(key)){ expandedRows.delete(key); row.classList.remove('expanded'); det.classList.remove('show'); }
+        else{ expandedRows.add(key); row.classList.add('expanded'); det.classList.add('show'); }
+    }
+    function expandAll(){ buildGroups().forEach((_,i)=>openFile(i)); }
+    function collapseAll(){ expandedRows.clear(); document.querySelectorAll('.event-row').forEach(r=>r.classList.remove('expanded')); document.querySelectorAll('.detail-panel').forEach(d=>d.classList.remove('show')); }
+    function toggleCols(event, idx){ event.stopPropagation(); document.getElementById(`cols-${idx}`)?.classList.toggle('show'); document.getElementById(`cols-toggle-${idx}`)?.classList.toggle('open'); }
 
-            rest.forEach(([k, v]) => {
-                if (Array.isArray(v)) {
-                    html += `<div class="detail-field" style="grid-column: 1/-1">
-                        <div class="detail-key" style="margin-bottom:8px">${k} (${v.length})</div>
-                        <div style="display:flex; flex-wrap:wrap; gap:6px;">
-                            ${v.map((item, i) =>
-                        `<span class="file-list-item" style="flex:1; min-width:160px;">
-                                    <span class="file-list-num">${i + 1}.</span>${item}
-                                </span>`
-                    ).join('')}
-                        </div>
-                    </div>`;
-                } else {
-                    const cls = k === 'success' ? (v ? 'ok' : 'err') :
-                        (typeof v === 'number' ? 'num' : '');
-                    const display = typeof v === 'number' ? v.toLocaleString() : String(v ?? '—');
-                    html += `<div class="detail-field">
-                        <div class="detail-key">${k}</div>
-                        <div class="detail-val ${cls}">${display}</div>
-                    </div>`;
-                }
-            });
-
-            html += '</div>';
-
-            if (Array.isArray(columns) && columns.length > 0) {
-                html += `<div class="cols-section">
-                    <div class="cols-toggle" onclick="toggleCols(event, ${idx})" id="cols-toggle-${idx}">
-                        <span class="cols-toggle-arrow">▶</span>
-                        <span>${columns.length} columns</span>
-                    </div>
-                    <div class="cols-grid" id="cols-${idx}">
-                        ${columns.map((c, i) =>
-                    `<div class="col-chip"><span class="col-idx">${i + 1}</span>${c}</div>`
-                ).join('')}
-                    </div>
-                </div>`;
-            }
-
-            return html;
-        }
-
-        function toggleRow(idx) {
-            const row = document.getElementById(`row-${idx}`);
-            const detail = document.getElementById(`detail-${idx}`);
-            if (!row || !detail) return;
-            const isExp = expandedRows.has(idx);
-            if (isExp) {
-                expandedRows.delete(idx);
-                row.classList.remove('expanded');
-                detail.classList.remove('show');
+    // ── buildDetail ───────────────────────────────────────────────────────
+    function buildDetail(e, idx='0'){
+        const d=e.detalles||{}; let html='<div class="detail-grid">';
+        const columns=d.columns;
+        Object.entries(d).filter(([k])=>k!=='columns').forEach(([k,v])=>{
+            if(Array.isArray(v)){
+                html+=`<div class="detail-field" style="grid-column:1/-1"><div class="detail-key" style="margin-bottom:8px">${k} (${v.length})</div><div style="display:flex;flex-wrap:wrap;gap:6px;">${v.map((item,i)=>`<span class="file-list-item" style="flex:1;min-width:160px;"><span class="file-list-num">${i+1}.</span>${item}</span>`).join('')}</div></div>`;
             } else {
-                expandedRows.add(idx);
-                row.classList.add('expanded');
-                detail.classList.add('show');
+                const cls=k==='success'?(v?'ok':'err'):(typeof v==='number'?'num':'');
+                html+=`<div class="detail-field"><div class="detail-key">${k}</div><div class="detail-val ${cls}">${typeof v==='number'?v.toLocaleString():String(v??'—')}</div></div>`;
             }
+        });
+        html+='</div>';
+        if(Array.isArray(columns)&&columns.length>0){
+            html+=`<div class="cols-section"><div class="cols-toggle" onclick="toggleCols(event,'${idx}')" id="cols-toggle-${idx}"><span class="cols-toggle-arrow">▶</span><span>${columns.length} columns</span></div><div class="cols-grid" id="cols-${idx}">${columns.map((c,i)=>`<div class="col-chip"><span class="col-idx">${i+1}</span>${c}</div>`).join('')}</div></div>`;
         }
+        return html;
+    }
 
-        function toggleCols(event, idx) {
-            event.stopPropagation();
-            document.getElementById(`cols-${idx}`).classList.toggle('show');
-            document.getElementById(`cols-toggle-${idx}`).classList.toggle('open');
-        }
+    // ── Búsqueda y vistas ─────────────────────────────────────────────────
+    function applyFilters(){
+        searchQuery = document.getElementById('search-input').value.toLowerCase();
+        const all = buildGroups();
+        const filtered = searchQuery ? all.filter(g => {
+            if(g.type==='flat') return JSON.stringify(g.event).toLowerCase().includes(searchQuery);
+            if(g.type==='file') return g.filename.toLowerCase().includes(searchQuery)||g.filePath.toLowerCase().includes(searchQuery)||g.events.some(e=>JSON.stringify(e).toLowerCase().includes(searchQuery));
+            return JSON.stringify(g.event).toLowerCase().includes(searchQuery);
+        }) : all;
+        renderGroups(filtered);
+    }
+    function setView(view, el){
+        document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active')); el.classList.add('active');
+        expandedRows.clear();
+        const all=buildGroups();
+        let f;
+        if(view==='all')           f=all;
+        else if(view==='file_success') f=all.filter(g=>g.type==='file');
+        else if(view==='pipeline')     f=all.filter(g=>g.type==='end'||g.type==='flat');
+        else if(view==='errors')       f=all.filter(g=>(g.type==='file'&&g.hasError)||(g.type==='end'&&isError(g.event)));
+        else f=all;
+        renderGroups(f);
+    }
 
-        function toggleFileList(event, id) {
-            event.stopPropagation();
-            const dropdown = document.getElementById(id);
-            const toggle = event.currentTarget;
-            dropdown.classList.toggle('show');
-            const isOpen = dropdown.classList.contains('show');
-            toggle.innerHTML = `<span class="arrow">${isOpen ? '▼' : '▶'}</span> ${isOpen ? 'hide files' : 'show files'}`;
-        }
-
-        function expandAll() {
-            RAW_DATA.forEach((_, i) => {
-                expandedRows.add(i);
-                document.getElementById(`row-${i}`)?.classList.add('expanded');
-                document.getElementById(`detail-${i}`)?.classList.add('show');
-            });
-        }
-
-        function collapseAll() {
-            expandedRows.clear();
-            document.querySelectorAll('.event-row').forEach(r => r.classList.remove('expanded'));
-            document.querySelectorAll('.detail-panel').forEach(d => d.classList.remove('show'));
-        }
-
-        function setView(view, el) {
-            currentView = view;
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            el.classList.add('active');
-            expandedRows.clear();
-            renderEvents();
-        }
-
-        function setFilter(filter, el) {
-            currentFilter = filter;
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-            el.classList.add('active');
-            expandedRows.clear();
-            renderEvents();
-        }
-
-        function applyFilters() {
-            searchQuery = document.getElementById('search-input').value;
-            renderEvents();
-        }
-
-        function scrollToEvent(idx) {
-            const el = document.getElementById(`row-${idx}`);
-            if (el) {
-                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                expandedRows.add(idx);
-                el.classList.add('expanded');
-                document.getElementById(`detail-${idx}`)?.classList.add('show');
-            }
-        }
-
-        init();
+    // ── Init ──────────────────────────────────────────────────────────────
+    function init(){
+        if(!RAW_DATA.length){ document.getElementById('events-body').innerHTML='<div class="empty-state">No log data</div>'; return; }
+        buildKPIs(); buildTimeline();
+        const execId=(RAW_DATA.find(e=>e.detalles?.execution_id)?.detalles?.execution_id)||'unknown';
+        document.getElementById('exec-id').textContent=execId.slice(0,8)+'...';
+        document.getElementById('last-update').textContent=RAW_DATA[RAW_DATA.length-1]?.timestamp?.split('T')[1]?.slice(0,8)||'';
+        document.getElementById('log-filename').textContent='pipeline.log';
+        renderGroups(buildGroups());
+    }
+    init();
     </script>
 </body>
 
