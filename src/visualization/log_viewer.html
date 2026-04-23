@@ -452,7 +452,7 @@ body::before {
 }
 .event-table-header {
     display: grid;
-    grid-template-columns: 320px 165px 1fr 140px 90px 36px;
+    grid-template-columns: 420px 165px 1fr 140px 90px 36px;
     column-gap: 20px;
     padding: 14px 20px;
     background: #eef2f5;
@@ -465,7 +465,7 @@ body::before {
 }
 .event-row {
     display: grid;
-    grid-template-columns: 320px 165px 1fr 140px 90px 36px;
+    grid-template-columns: 420px 165px 1fr 140px 90px 36px;
     column-gap: 20px;
     padding: 0 20px;
     border-bottom: 0.5px solid var(--border-subtle);
@@ -538,7 +538,7 @@ body::before {
     color: var(--accent-primary);
     border-color: rgba(59, 130, 246, 0.25);
 }
-.badge-file_analysis {
+.badge-file_analysis_metadata_metadata {
     background: var(--success-glow);
     color: var(--success);
     border-color: rgba(16, 185, 129, 0.25);
@@ -791,12 +791,12 @@ body::before {
     const RAW_DATA = __LOG_DATA__ || [];
     let expandedRows = new Set(), searchQuery = '';
     // ── Clasificación ─────────────────────────────────────────────────────
-    const FILE_EVENTS  = new Set(['file_start','file_success','file_analysis','file_error','file_not_found']);
+    const FILE_EVENTS  = new Set(['file_start','file_success','file_analysis_metadata','file_error','file_not_found']);
     const TABLE_EVENTS = new Set(['table_already_exists','table_created']);
     const END_EVENTS   = ['pipeline_init','pipeline_summary','process_complete','dashboard_generated'];
     function isError(e){ return ['analysis_error','file_not_found','critical_error','file_error'].includes(e.evento); }
     // ── Badge CSS ─────────────────────────────────────────────────────────
-    function bc(ev){ const m={'pipeline_start':'badge-pipeline_start','pipeline_init':'badge-pipeline_init','pipeline_summary':'badge-pipeline_summary','file_analysis':'badge-file_analysis','file_success':'badge-file_analysis','file_start':'badge-metadata','table_already_exists':'badge-metadata','table_created':'badge-metadata','analysis_error':'badge-analysis_error','file_not_found':'badge-file_not_found','critical_error':'badge-critical_error','process_start':'badge-pipeline_start','process_complete':'badge-pipeline_summary'}; return m[ev]||'badge-default'; }
+    function bc(ev){ const m={'pipeline_start':'badge-pipeline_start','pipeline_init':'badge-pipeline_init','pipeline_summary':'badge-pipeline_summary','file_analysis_metadata':'badge-file_analysis_metadata','file_success':'badge-file_analysis_metadata','file_start':'badge-metadata','table_already_exists':'badge-metadata','table_created':'badge-metadata','analysis_error':'badge-analysis_error','file_not_found':'badge-file_not_found','critical_error':'badge-critical_error','process_start':'badge-pipeline_start','process_complete':'badge-pipeline_summary'}; return m[ev]||'badge-default'; }
 
     // ── Agrupa eventos por archivo ────────────────────────────────────────
     function buildGroups(){
@@ -931,7 +931,7 @@ body::before {
             if(TABLE_EVENTS.has(e.evento))     detail = `${ed.schema?ed.schema+'.':''}${ed.tabla||''}`;
             else if(e.evento==='file_start')   detail = ed.file || '';
             else if(e.evento==='file_success') detail = `${(ed.rows_inserted||0).toLocaleString()} registros cargados en ${ed.duration_seconds}s`;
-            else if(e.evento==='file_analysis')detail = `${(ed.rows||0).toLocaleString()} rows analizadas`;
+            else if(e.evento==='file_analysis_metadata')detail = `${(ed.rows||0).toLocaleString()} rows analizadas`;
             else detail = Object.entries(ed).filter(([k])=>k!=='execution_id').slice(0,2).map(([k,v])=>`${k}: ${String(v).slice(0,40)}`).join(' · ');
             return `<div class="file-event-item">
                 <span class="file-event-time">${time}</span>
