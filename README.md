@@ -206,19 +206,9 @@ cd project_ELT
 cp .env.example .env
 ```
 
-Edita `.env` con las credenciales que quieras usar para la BD que Docker va a crear.
-Solo necesitas cambiar las del motor que vayas a usar — el resto puede quedar con los valores de ejemplo.
-
-Ejemplo para PostgreSQL:
-
-```env
-POSTGRES_USER=admin
-POSTGRES_PASSWORD=MiPassword123!
-POSTGRES_DB=mi_base
-```
-
-> Los valores de `BULK_PATH_HOST`, `BULK_PATH_CONTAINER` y los hosts de conexión
-> los sobreescribe Docker automáticamente. No los toques para este escenario.
+> Para el Escenario A **no necesitas editar el `.env`**. Los valores de ejemplo son suficientes
+> para que Docker cree y configure la base de datos automáticamente.
+> Solo edítalo si quieres usar credenciales propias.
 
 ### Paso 3 — Agregar tus archivos CSV
 
