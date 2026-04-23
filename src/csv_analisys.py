@@ -97,7 +97,7 @@ class CSVAnalysis:
                 metadata["rows_count"] = csv_analysis["rows_count"]
                 metadata["valid_csv"] = csv_analysis["success"]
                 # log
-                registrar_log( "file_analysis", {"execution_id": self.execution_id,
+                registrar_log( "file_analysis_metadata", {"execution_id": self.execution_id,
                                                 "rows": metadata["rows_count"],
                                                 "file": str(Path(path).name)} )
             else:
