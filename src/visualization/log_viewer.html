@@ -347,26 +347,32 @@ body::before {
 }
 .timeline-track {
     display: flex;
-    align-items: center;
-    gap: 6px;
-    flex-wrap: wrap;
+    align-items: stretch;
+    width: 100%;
+    height: 28px;
+    border-radius: 6px;
+    overflow: hidden;
     margin-top: 12px;
+    gap: 1px;
 }
-.timeline-dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
+.timeline-segment {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: filter 0.15s;
+    min-width: 2px;
 }
-.timeline-dot:hover {
-    transform: scale(1.45);
-    box-shadow: 0 0 8px currentColor;
-}
-.timeline-dot.ok { background: var(--success); box-shadow: 0 0 4px var(--success); }
-.timeline-dot.err { background: var(--error); box-shadow: 0 0 4px var(--error); }
-.timeline-dot.info { background: var(--accent-primary); }
-.timeline-dot.warn { background: var(--warning); }
+.timeline-segment:hover { filter: brightness(1.15); }
+.timeline-segment.ok   { background: var(--success);        color: #fff; }
+.timeline-segment.err  { background: var(--error);          color: #fff; }
+.timeline-segment.info { background: var(--accent-primary); color: #fff; opacity: 0.55; }
 
 /* search & filters */
 .search-wrap {
@@ -480,6 +486,8 @@ body::before {
 .event-row:hover {
     background: rgba(59, 130, 246, 0.03);
 }
+.event-row--ok  { border-left: 3px solid var(--success); }
+.event-row--err { border-left: 3px solid var(--error); }
 .event-exec-id {
     font-size: 11px;
     font-family: 'JetBrains Mono', monospace;
@@ -554,6 +562,16 @@ body::before {
 .badge-analysis_error, .badge-critical_error, .badge-file_not_found {
     background: var(--error-glow);
     color: var(--error);
+}
+.badge-complete-ok {
+    background: var(--success-glow);
+    color: var(--success);
+    border-color: rgba(16, 185, 129, 0.25);
+}
+.badge-complete-err {
+    background: var(--error-glow);
+    color: var(--error);
+    border-color: rgba(239, 68, 68, 0.25);
 }
 .event-summary {
     font-size: 13px;
@@ -784,7 +802,7 @@ body::before {
         <div class="timeline-wrap"><div class="section-header"><div class="section-title">Event Timeline</div><span id="timeline-range" style="font-size:12px;"></span></div><div class="timeline-track" id="timeline-track"></div></div>
         <div class="section-header"><div class="section-title">Event Log</div><div><button class="filter-btn" onclick="expandAll()">Expand All</button><button class="filter-btn" onclick="collapseAll()" style="margin-left:6px;">Collapse</button></div></div>
         <div class="search-wrap"><span class="search-icon">⌕</span><input class="search-input" id="search-input" placeholder="Buscar archivo, ruta, tabla..." oninput="applyFilters()"></div>
-        <div class="event-table"><div class="event-table-header"><span>Execution ID</span><span>Archivo</span><span>Ruta</span><span>Registros</span><span>Duración</span><span></span></div><div id="events-body"></div><div class="status-bar"><div class="status-dot green" id="status-dot"></div><span id="status-text">Ready</span><span style="margin-left:auto" id="status-count"></span></div></div>
+        <div class="event-table"><div class="event-table-header"><span>Execution ID</span><span>Archivo / Evento</span><span>Detalle</span><span>Registros</span><span>Duración</span><span></span></div><div id="events-body"></div><div class="status-bar"><div class="status-dot green" id="status-dot"></div><span id="status-text">Ready</span><span style="margin-left:auto" id="status-count"></span></div></div>
     </main>
 </div>
 <script>
@@ -879,17 +897,28 @@ body::before {
     // ── Timeline ──────────────────────────────────────────────────────────
     function buildTimeline(){
         const track = document.getElementById('timeline-track'); track.innerHTML='';
+        if(!RAW_DATA.length) return;
+        const times = RAW_DATA.map(e => new Date(e.timestamp).getTime());
+        const minT = Math.min(...times), maxT = Math.max(...times);
+        const total = maxT - minT || 1;
         RAW_DATA.forEach((e,i) => {
-            const dot = document.createElement('div');
-            dot.className = 'timeline-dot '+(isError(e)?'err':e.evento==='file_success'?'ok':'info');
-            dot.title = `${e.timestamp.split('T')[1]?.slice(0,8)} — ${e.evento}`;
-            dot.onclick = () => {
+            const t0 = new Date(e.timestamp).getTime();
+            const t1 = RAW_DATA[i+1] ? new Date(RAW_DATA[i+1].timestamp).getTime() : t0 + (total * 0.01);
+            const pct = Math.max(((t1 - t0) / total) * 100, 0.3);
+            const seg = document.createElement('div');
+            seg.className = 'timeline-segment '+(isError(e)?'err':e.evento==='file_success'?'ok':'info');
+            seg.style.width = pct+'%';
+            const label = e.archivo || '';
+            seg.title = `${e.timestamp.split('T')[1]?.slice(0,8)} — ${e.evento}${label?' — '+label:''}`;
+            if(pct > 6) seg.textContent = label || e.evento;
+            seg.onclick = () => {
                 const groups = buildGroups();
                 groups.forEach((g,gi) => { if(g.type==='file' && g.events.includes(e)) openFile(gi); });
             };
-            track.appendChild(dot);
+            track.appendChild(seg);
         });
-        if(RAW_DATA.length){ const f=RAW_DATA[0].timestamp.split('T')[1]?.slice(0,8), l=RAW_DATA[RAW_DATA.length-1].timestamp.split('T')[1]?.slice(0,8); document.getElementById('timeline-range').textContent=`${f} → ${l}`; }
+        const f=RAW_DATA[0].timestamp.split('T')[1]?.slice(0,8), l=RAW_DATA[RAW_DATA.length-1].timestamp.split('T')[1]?.slice(0,8);
+        document.getElementById('timeline-range').textContent=`${f} → ${l}`;
     }
 
     // ── Render ────────────────────────────────────────────────────────────
@@ -918,7 +947,7 @@ body::before {
     }
 
     function renderFile(g, gi){
-        const execId = g.execId ? g.execId.slice(0,8)+'…' : '—';
+        const execId = g.execId || '—';
         const rows   = g.rowsInserted != null ? g.rowsInserted.toLocaleString() : '—';
         const dur    = g.duration     != null ? g.duration+'s' : '—';
         const isExp  = expandedRows.has(gi);
@@ -971,9 +1000,13 @@ body::before {
         } else if(g.event.evento==='dashboard_generated'){
             col3=d.path||'';
         }
-        return `<div class="event-row ${isExp?'expanded':''}" id="frow-end${gi}" onclick="toggleEnd(${gi})">
+        const isComplete = g.event.evento === 'process_complete';
+        const hasErr = isComplete && (d.files_error > 0 || (d.status && d.status !== 'COMPLETED'));
+        const rowMod = isComplete ? (hasErr ? 'event-row--err' : 'event-row--ok') : '';
+        const badgeClass = isComplete ? (hasErr ? 'badge-complete-err' : 'badge-complete-ok') : bc(g.event.evento);
+        return `<div class="event-row ${isExp?'expanded':''} ${rowMod}" id="frow-end${gi}" onclick="toggleEnd(${gi})">
             <span class="event-exec-id" title="${d.execution_id||''}">${execId}</span>
-            <span><span class="event-badge ${bc(g.event.evento)}">${g.event.evento}</span></span>
+            <span><span class="event-badge ${badgeClass}">${g.event.evento}</span></span>
             <span class="event-meta">${col3}</span>
             <span class="event-meta">${col4}</span>
             <span class="event-meta">${col5}</span>
