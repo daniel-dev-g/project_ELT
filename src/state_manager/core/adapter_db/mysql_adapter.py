@@ -28,6 +28,7 @@ class MySQLAdapter(DatabaseAdapter):
             'database': config['database'],
             'user': config['username'],
             'password': config['password'],
+            'local_infile': True,
         }
 
     def get_engine(self, config=None):
@@ -93,11 +94,11 @@ class MySQLAdapter(DatabaseAdapter):
             return False
 
     def bulk_load(self, task: dict) -> int:
-        """Upload CSV to MariaDB using server-side LOAD DATA INFILE.
+        """Upload CSV to MariaDB using LOAD DATA LOCAL INFILE.
 
-        MariaDB lee el archivo directo desde disco sin pasar por Python.
-        Requiere bulk_path_map en settings.yaml para mapear la ruta local
-        a la ruta dentro del contenedor (./data:/data).
+        Python lee el archivo en el cliente y lo envía al servidor.
+        No requiere privilegio FILE ni path mapping entre contenedores.
+        Compatible con Scenario A (Docker) y Scenario B (BD local).
         """
 
         file = task['file']
@@ -108,38 +109,35 @@ class MySQLAdapter(DatabaseAdapter):
         if not pathlib.Path(file).is_absolute():
             file = str(pathlib.Path.cwd() / file)
 
-        path_map = self.config.get('bulk_path_map', {})
-        if path_map:
-            file = file.replace(
-                path_map['host'], path_map['container']
-            )
-        else:
-            if not pathlib.Path(file).exists():
-                logger.error("Error: File not found: %s", file)
-                raise FileNotFoundError(f"File not found: {file}")
+        if not pathlib.Path(file).exists():
+            logger.error("Error: File not found: %s", file)
+            raise FileNotFoundError(f"File not found: {file}")
 
         logger.info("Path: %s", file)
 
-        table_ref = (
-            f"`{schema}`.`{table_destination}`" if schema else f"`{table_destination}`"
-        )
+        if schema:
+            table_ref = f"`{schema}`.`{table_destination}`"
+        else:
+            table_ref = f"`{table_destination}`"
 
         load_sql = f"""
-            LOAD DATA INFILE '{file}'
+            LOAD DATA LOCAL INFILE '{file}'
             INTO TABLE {table_ref}
             FIELDS TERMINATED BY '{delimiter}'
             LINES TERMINATED BY '\\n'
             IGNORE 1 ROWS
         """
 
-        logger.info("Executing LOAD DATA INFILE...")
+        logger.info("Executing LOAD DATA LOCAL INFILE...")
 
         try:
             with self.get_db_cursor() as cursor:
                 cursor.execute(load_sql)
                 rows_affected = cursor.rowcount
 
-            logger.info("LOAD DATA successful - %d inserted rows", rows_affected)
+            logger.info(
+                "LOAD DATA successful - %d inserted rows", rows_affected
+            )
             return rows_affected
         except Exception as e:
             logger.error("LOAD DATA failed: %s", str(e))

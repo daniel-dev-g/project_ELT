@@ -42,11 +42,11 @@ Funciona para volúmenes pequeños. Cuando el archivo crece, el proceso pasa de 
 
 ## Rendimiento
 
-| Archivos | Volumen total | Filas      | Duración   | Motor      | Método | Disco |
-|----------|---------------|------------|------------|------------|--------|-------|
-| 4        | ~2 GB         | 13.229.516 | 31.2s      | PostgreSQL | `COPY FROM` | NVMe interno |
-| 4        | ~2 GB         | 13.229.516 | 31.73s     | SQL Server | `BULK INSERT` | NVMe interno |
-| 4        | ~2 GB         | 13.229.516 | 70.16s     | MariaDB    | `LOAD DATA INFILE` | NVMe interno |
+| Archivos | Volumen total | Filas      | Duración   | Motor      | Escenario | Método | Disco |
+|----------|---------------|------------|------------|------------|-----------|--------|-------|
+| 4        | ~2 GB         | 13.229.516 | 31.2s      | PostgreSQL | A (Docker) | `COPY FROM` | NVMe interno |
+| 4        | ~2 GB         | 13.229.516 | 31.73s     | SQL Server | A (Docker) | `BULK INSERT` | NVMe interno |
+| 4        | ~2 GB         | 13.229.516 | 69.98s     | MariaDB    | B (local)  | `LOAD DATA LOCAL INFILE` | NVMe interno |
 
 > Hardware: Intel Core i3-1005G1 @ 1.20GHz / 11 GB RAM / Ubuntu Linux / NVMe interno.
 > Todos los motores medidos en las mismas condiciones de hardware.
@@ -58,15 +58,16 @@ Funciona para volúmenes pequeños. Cuando el archivo crece, el proceso pasa de 
 | OS | Ubuntu Linux | Ubuntu Linux | Ubuntu Linux |
 | Hardware | i3-1005G1 / 11 GB RAM | i3-1005G1 / 11 GB RAM | i3-1005G1 / 11 GB RAM |
 | Disco | NVMe interno | NVMe interno | NVMe interno |
-| Contenedor | `postgres:16` | `mcr.microsoft.com/mssql/server:2022-latest` | `mariadb:11` |
-| Python | Docker (contenedor) | Docker (contenedor) | Docker (contenedor) |
-| Método | `COPY FROM` server-side | `BULK INSERT` con `TABLOCK` + `BATCHSIZE=100000` | `LOAD DATA INFILE` server-side |
+| Contenedor | `postgres:16` | `mcr.microsoft.com/mssql/server:2022-latest` | MariaDB 10.11 en host |
+| Python | Docker (Escenario A) | Docker (Escenario A) | Docker, red host (Escenario B) |
+| Método | `COPY FROM` server-side | `BULK INSERT` con `TABLOCK` + `BATCHSIZE=100000` | `LOAD DATA LOCAL INFILE` (cliente) |
 | Filas | 13.229.516 | 13.229.516 | 13.229.516 |
-| Duración | **31.2 seg** | **31.73 seg** | 70.16 seg |
-| Throughput | **~424.000 filas/seg** | **~417.000 filas/seg** | ~188.000 filas/seg |
+| Duración | **31.2 seg** | **31.73 seg** | 69.98 seg |
+| Throughput | **~424.000 filas/seg** | **~417.000 filas/seg** | ~189.000 filas/seg |
 
-> Todos los motores leen directo desde disco vía bind mount `./data:/data` — sin pasar datos por Python.
-> Con Python en Docker, PostgreSQL y SQL Server alcanzan rendimiento equivalente (~424k y ~417k filas/seg).
+> PostgreSQL y SQL Server medidos en Escenario A (BD contenerizada, Python en Docker).
+> MariaDB medido en Escenario B (BD local en host, Python en contenedor con `network_mode: host`).
+> Con `LOAD DATA LOCAL INFILE`, Python lee el archivo y lo envía al servidor — sin necesidad de privilegio FILE ni path mapping.
 > Las pruebas se realizaron con configuración por defecto de cada motor, sin tuning adicional. Los resultados pueden mejorar con ajustes de memoria, paralelismo o parámetros de escritura propios de cada BD.
 
 ---
@@ -299,67 +300,53 @@ cp .env.example .env
 
 Edita `.env` con los datos de tu base de datos existente.
 
-**Ejemplo con PostgreSQL en `192.168.1.50`:**
+**Ejemplo con MariaDB local:**
 
 ```env
-POSTGRES_HOST=192.168.1.50
-POSTGRES_PORT=5432
-POSTGRES_USER=mi_usuario
-POSTGRES_PASSWORD=mi_password
-POSTGRES_DB=mi_base
+MARIADB_HOST=127.0.0.1
+MARIADB_PORT=3306
+MARIADB_USER=mi_usuario
+MARIADB_PASSWORD=mi_password
+MARIADB_DB=mi_base
 ```
 
-### Paso 4 — Configurar las rutas de archivos
+> El contenedor usa `network_mode: host`, por lo que `127.0.0.1` apunta directamente
+> a tu máquina — no necesitas configurar IPs externas ni reglas de firewall.
 
-FlowELT corre dentro de un contenedor Docker, y tu BD corre fuera. Ambos deben poder ver los mismos archivos CSV — desde perspectivas distintas.
+### Paso 4 — Habilitar carga local en MariaDB
 
-**Opción B1 — usar el directorio `./data/input/` del proyecto**
+FlowELT usa `LOAD DATA LOCAL INFILE` — el contenedor lee el archivo y lo envía al servidor.
+El servidor debe tener esta opción habilitada:
 
-Pon tus archivos en `data/input/` y configura en `.env`:
-
-```env
-BULK_PATH_HOST=/app/data
-BULK_PATH_CONTAINER=/ruta/absoluta/del/proyecto/data
+```bash
+sudo mariadb -e "SET GLOBAL local_infile=1;"
 ```
 
-> `BULK_PATH_HOST` es la ruta que ve el contenedor Python (siempre `/app/data`).
-> `BULK_PATH_CONTAINER` es la ruta que ve tu BD — la carpeta `data/` de este proyecto
-> expresada como ruta absoluta en tu máquina. Puedes obtenerla con `pwd` dentro del proyecto.
+Para que persista entre reinicios, agrega en `/etc/mysql/mariadb.conf.d/50-server.cnf`:
 
-**Opción B2 — usar tu propio directorio de datos**
-
-Si tus archivos están en otro lugar de tu máquina, define `USER_DATA_PATH`:
-
-```env
-USER_DATA_PATH=/home/usuario/mis_datos
-
-BULK_PATH_HOST=/app/user_data
-BULK_PATH_CONTAINER=/home/usuario/mis_datos
+```ini
+[mysqld]
+local_infile=1
 ```
-
-> `USER_DATA_PATH` monta tu directorio dentro del contenedor en `/app/user_data`.
-> `BULK_PATH_CONTAINER` debe ser la misma ruta que ve tu BD (si está en la misma máquina, coincide con `USER_DATA_PATH`).
 
 ### Paso 5 — Agregar tus archivos CSV
 
-- **Opción B1:** copia los archivos en `data/input/`
-- **Opción B2:** tus archivos ya están en `USER_DATA_PATH`
+Copia tus archivos en `data/input/`:
+
+```
+data/
+└── input/
+    ├── clientes.csv
+    └── ventas.csv
+```
 
 ### Paso 6 — Configurar el pipeline
 
-**Opción B1** — usa el mismo path que en Escenario A:
+Igual que en el Escenario A (Paso 4):
 
 ```yaml
 file: "data/input/clientes.csv"
 ```
-
-**Opción B2** — usa el prefijo `user_data/`:
-
-```yaml
-file: "user_data/clientes.csv"
-```
-
-Edita el resto de campos igual que en el Escenario A (Paso 4).
 
 ### Paso 7 — Seleccionar el motor de base de datos
 
@@ -418,7 +405,7 @@ Todos los outputs comparten el mismo `execution_id` para trazabilidad completa.
 
 | Decisión | Razón |
 |---|---|
-| Carga masiva nativa en lugar de ORM | Rendimiento — la BD lee directo del disco sin pasar datos por Python |
+| Carga masiva nativa en lugar de ORM | Rendimiento — la BD lee directo del disco (PostgreSQL, SQL Server) o Python envía el stream al servidor (MariaDB `LOCAL INFILE`) sin construir objetos en memoria |
 | Configuración YAML | Simplicidad y reproducibilidad sin tocar código |
 | `execution_id` por ejecución | Trazabilidad completa entre logs, dashboard y técnico |
 | Docker para app y opcionalmente para la BD | La app Python siempre corre en Docker. La BD puede ser contenerizada (Escenario A — demo) o existente en el servidor del usuario (Escenario B — producción) |
@@ -429,11 +416,11 @@ Todos los outputs comparten el mismo `execution_id` para trazabilidad completa.
 
 ## Estado de pruebas por motor
 
-| Motor | Estado | Método | Lee directo del disco |
-|---|---|---|---|
-| SQL Server | Probado | `BULK INSERT` | Sí |
-| PostgreSQL | Probado | `COPY FROM` | Sí |
-| MariaDB | Probado | `LOAD DATA INFILE` | Sí |
+| Motor | Estado | Escenario probado | Método | Lee directo del disco |
+|---|---|---|---|---|
+| SQL Server | Probado | A (Docker) | `BULK INSERT` | Sí |
+| PostgreSQL | Probado | A (Docker) | `COPY FROM` | Sí |
+| MariaDB | Probado | A (Docker) + B (local) | `LOAD DATA LOCAL INFILE` | No — cliente envía datos |
 
 ---
 

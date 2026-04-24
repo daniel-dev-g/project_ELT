@@ -62,8 +62,7 @@ services:
     <<: *app-base
     profiles: [standalone]
     container_name: flowelt_app
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    network_mode: host
     volumes:
       - ./data:/app/data
       - ./config:/app/config
