@@ -7,9 +7,21 @@ from src.validators import check_db_connection
 
 
 ENGINES = {
-    "postgres": {"label": "PostgreSQL", "port": "5432", "db_engine": "postgres"},
-    "mariadb": {"label": "MariaDB", "port": "3306", "db_engine": "mariadb"},
-    "sqlserver": {"label": "SQL Server", "port": "1433", "db_engine": "sqlserver"},
+    "postgres": {
+        "label": "PostgreSQL",
+        "port": "5432",
+        "db_engine": "postgres",
+    },
+    "mariadb": {
+        "label": "MariaDB",
+        "port": "3306",
+        "db_engine": "mariadb",
+    },
+    "sqlserver": {
+        "label": "SQL Server",
+        "port": "1433",
+        "db_engine": "sqlserver",
+    },
 }
 
 ACCENT = "#7c3aed"
@@ -19,6 +31,18 @@ BG = "#0f0e17"
 SURFACE = "#1a1040"
 MUTED = "#94a3b8"
 BORDER = "#334155"
+
+
+def _field(**kwargs) -> ft.TextField:
+    return ft.TextField(
+        border_color=BORDER,
+        focused_border_color=ACCENT,
+        cursor_color=ACCENT,
+        border_radius=8,
+        text_size=14,
+        label_style=ft.TextStyle(color=MUTED),
+        **kwargs,
+    )
 
 
 def main(page: ft.Page):
@@ -31,26 +55,14 @@ def main(page: ft.Page):
     page.window.resizable = False
 
     # ── Fields ────────────────────────────────────────────────────────────────
-    field_style = dict(
-        border_color=BORDER,
-        focused_border_color=ACCENT,
-        cursor_color=ACCENT,
-        border_radius=8,
-        text_size=14,
-        label_style=ft.TextStyle(color=MUTED),
-    )
-
-    f_host = ft.TextField(
-        label="Host", value="localhost", expand=True, **field_style
-    )
-    f_port = ft.TextField(label="Puerto", value="5432", width=120, **field_style)
-    f_db = ft.TextField(label="Base de datos", **field_style)
-    f_user = ft.TextField(label="Usuario", **field_style)
-    f_pass = ft.TextField(
+    f_host = _field(label="Host", value="localhost", expand=True)
+    f_port = _field(label="Puerto", value="5432", width=120)
+    f_db = _field(label="Base de datos")
+    f_user = _field(label="Usuario")
+    f_pass = _field(
         label="Contraseña",
         password=True,
         can_reveal_password=True,
-        **field_style,
     )
 
     # ── Status banner ─────────────────────────────────────────────────────────
@@ -59,9 +71,8 @@ def main(page: ft.Page):
     status_box = ft.Container(
         content=ft.Row([status_icon, status_msg], spacing=8),
         border_radius=8,
-        padding=ft.padding.symmetric(horizontal=14, vertical=10),
+        padding=ft.Padding.symmetric(horizontal=14, vertical=10),
         visible=False,
-        animate_opacity=200,
     )
 
     def set_status(ok: bool, msg: str):
@@ -75,11 +86,6 @@ def main(page: ft.Page):
         page.update()
 
     # ── Engine dropdown ───────────────────────────────────────────────────────
-    def on_engine_change(e):
-        f_port.value = ENGINES[e.control.value]["port"]
-        status_box.visible = False
-        page.update()
-
     engine_dd = ft.Dropdown(
         label="Motor de base de datos",
         value="postgres",
@@ -92,24 +98,39 @@ def main(page: ft.Page):
             ft.dropdown.Option(key=k, text=v["label"])
             for k, v in ENGINES.items()
         ],
-        on_change=on_engine_change,
     )
 
-    # ── Connect button ────────────────────────────────────────────────────────
-    btn = ft.ElevatedButton(
-        text="Conectar",
-        icon=ft.Icons.CABLE,
-        style=ft.ButtonStyle(
-            bgcolor={"": ACCENT, "disabled": "#1e1b4b"},
-            color={"": "white", "disabled": "#64748b"},
-            overlay_color={"hovered": "#6d28d9"},
-            shape=ft.RoundedRectangleBorder(radius=8),
-            padding=ft.padding.symmetric(horizontal=28, vertical=14),
-            text_style=ft.TextStyle(
-                size=14, weight=ft.FontWeight.W_600
-            ),
-        ),
+    def on_engine_change(e):
+        f_port.value = ENGINES[engine_dd.value]["port"]
+        status_box.visible = False
+        page.update()
+
+    engine_dd.on_change = on_engine_change
+
+    # ── Button (Container) ────────────────────────────────────────────────────
+    btn_icon = ft.Icon(ft.Icons.CABLE, color="white", size=18)
+    btn_label = ft.Text(
+        "Conectar", color="white", size=14, weight=ft.FontWeight.W_600
     )
+    btn = ft.Container(
+        content=ft.Row(
+            [btn_icon, btn_label],
+            spacing=8,
+            alignment=ft.MainAxisAlignment.CENTER,
+            tight=True,
+        ),
+        bgcolor=ACCENT,
+        border_radius=8,
+        padding=ft.Padding.symmetric(horizontal=28, vertical=12),
+        ink=True,
+    )
+
+    def set_loading(loading: bool):
+        btn_icon.name = ft.Icons.HOURGLASS_EMPTY if loading else ft.Icons.CABLE
+        btn_label.value = "Conectando..." if loading else "Conectar"
+        btn.bgcolor = "#5b21b6" if loading else ACCENT
+        btn.on_click = None if loading else do_connect
+        page.update()
 
     def validate_fields() -> str | None:
         if not f_host.value.strip():
@@ -128,9 +149,7 @@ def main(page: ft.Page):
             set_status(False, err)
             return
 
-        btn.disabled = True
-        btn.text = "Conectando..."
-        btn.icon = ft.Icons.HOURGLASS_EMPTY
+        set_loading(True)
         status_box.visible = False
         page.update()
 
@@ -154,20 +173,15 @@ def main(page: ft.Page):
                 adapter = factory_db(cfg)
                 ok, db_err = check_db_connection(adapter.engine)
                 label = ENGINES[key]["label"]
-                host = f"{f_host.value.strip()}:{f_port.value.strip()}"
+                addr = f"{f_host.value.strip()}:{f_port.value.strip()}"
                 if ok:
-                    set_status(
-                        True, f"Conexión exitosa — {label} en {host}"
-                    )
+                    set_status(True, f"Conexión exitosa — {label} en {addr}")
                 else:
                     set_status(False, db_err or "No se pudo conectar")
             except Exception as ex:
                 set_status(False, str(ex))
             finally:
-                btn.disabled = False
-                btn.text = "Conectar"
-                btn.icon = ft.Icons.CABLE
-                page.update()
+                set_loading(False)
 
         threading.Thread(target=run, daemon=True).start()
 
@@ -178,7 +192,7 @@ def main(page: ft.Page):
         ft.Container(
             expand=True,
             bgcolor=BG,
-            padding=ft.padding.symmetric(horizontal=40, vertical=52),
+            padding=ft.Padding.symmetric(horizontal=40, vertical=52),
             content=ft.Column(
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                 spacing=0,
@@ -200,7 +214,7 @@ def main(page: ft.Page):
                         border_radius=16,
                         padding=32,
                         width=440,
-                        border=ft.border.all(1, "#2d2060"),
+                        border=ft.Border.all(1, "#2d2060"),
                         content=ft.Column(
                             spacing=16,
                             controls=[
@@ -231,4 +245,4 @@ def main(page: ft.Page):
     )
 
 
-ft.run(target=main)
+ft.run(main)
