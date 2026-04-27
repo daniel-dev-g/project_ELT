@@ -17,4 +17,5 @@ dependencies = [
     "pymysql>=1.1",
     "python-dotenv>=1.2.2",
     "debugpy>=1.8",
+    "flet>=0.24",
 ]
