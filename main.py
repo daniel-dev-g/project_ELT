@@ -32,15 +32,13 @@ _handler.setFormatter(logging.Formatter(
 root_logger = logging.getLogger()
 root_logger.setLevel(logging.WARNING)
 root_logger.addHandler(_handler)
+logger = logging.getLogger(__name__)
 
 
-def process_task(task: dict, db_adapter, execution_id: str) -> tuple[bool, int]:
-    """
-    Processes a single pipeline task.
-
-    Returns:
-        tuple: (success: bool, rows_inserted: int)
-    """
+def process_task(
+    task: dict, db_adapter, execution_id: str
+) -> tuple[bool, int]:
+    """Processes a single pipeline task. Returns (success, rows_inserted)."""
     file_path = task['file']
     table = task['table_destination']
     schema = task['schema']
@@ -56,7 +54,14 @@ def process_task(task: dict, db_adapter, execution_id: str) -> tuple[bool, int]:
     try:
         check_table_exists(db_adapter.engine, table, schema)
         db_adapter.check_bulk_permission()
-        validate_path(file_path, ".csv")
+        # validate_path returns False when file is not accessible from the
+        # container (e.g. absolute host path in Scenario B). The DB validates.
+        if not validate_path(file_path, ".csv"):
+            logger.info(
+                "File not accessible from container: %s "
+                "— DB server will validate",
+                file_path
+            )
 
         result = db_adapter.bulk_load(task)
         duration = round(time.time() - start_time, 2)
@@ -83,7 +88,7 @@ def process_task(task: dict, db_adapter, execution_id: str) -> tuple[bool, int]:
         })
         return False, 0
 
-    except (FileNotFoundError, IsADirectoryError, ValueError, PermissionError) as e:
+    except (IsADirectoryError, ValueError, PermissionError) as e:
         registrar_log("file_failed", {
             "execution_id": execution_id,
             "file": str(file_path),
@@ -105,7 +110,9 @@ def process_task(task: dict, db_adapter, execution_id: str) -> tuple[bool, int]:
         return False, 0
 
 
-def _run_tasks(pipeline_cfg: dict, db_adapter, execution_id: str, db_cfg: dict) -> dict:
+def _run_tasks(
+    pipeline_cfg: dict, db_adapter, execution_id: str, db_cfg: dict
+) -> dict:
     """Executes all active tasks in the pipeline. Returns summary counters."""
     total_tasks = 0
     successful_tasks = 0
@@ -121,7 +128,9 @@ def _run_tasks(pipeline_cfg: dict, db_adapter, execution_id: str, db_cfg: dict) 
 
         total_tasks += 1
         default_schema = db_cfg.get('default_schema')
-        resolved_schema = task['schema'] if default_schema is None else default_schema
+        resolved_schema = (
+            task['schema'] if default_schema is None else default_schema
+        )
         resolved_task = {**task, 'schema': resolved_schema}
         try:
             table_creator_execute(
@@ -134,11 +143,17 @@ def _run_tasks(pipeline_cfg: dict, db_adapter, execution_id: str, db_cfg: dict) 
                 db_engine=db_cfg['db_engine']
             )
         except Exception as e:  # pylint: disable=broad-exception-caught
-            registrar_log("table_creation_error",
-                          {"table": resolved_task['table_destination'], "error": str(e)})
+            registrar_log("table_creation_error", {
+                "table": resolved_task['table_destination'],
+                "error": str(e)
+            })
             failed_tasks += 1
             continue
-        success, rows = process_task(task=resolved_task, db_adapter=db_adapter, execution_id=execution_id)
+        success, rows = process_task(
+            task=resolved_task,
+            db_adapter=db_adapter,
+            execution_id=execution_id
+        )
 
         if success:
             successful_tasks += 1
@@ -168,7 +183,18 @@ def main():
         with open("config/settings.yaml", "r", encoding="utf-8") as f:
             settings = yaml.safe_load(os.path.expandvars(f.read()))
 
-        db_cfg = settings.get('development', {})
+        db_engine_name = os.getenv('DB_ENGINE', '').lower()
+        if not db_engine_name:
+            raise ValueError(
+                "DB_ENGINE no está definido en .env. "
+                "Valores válidos: postgres, sqlserver, mariadb"
+            )
+        db_cfg = settings.get('engines', {}).get(db_engine_name)
+        if db_cfg is None:
+            raise ValueError(
+                f"DB_ENGINE='{db_engine_name}' no encontrado en settings.yaml. "
+                "Valores válidos: postgres, sqlserver, mariadb"
+            )
         log_level = db_cfg.get('log_level', 'WARNING')
         root_logger.setLevel(getattr(logging, log_level))
         _handler.setLevel(getattr(logging, log_level))

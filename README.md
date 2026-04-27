@@ -78,7 +78,7 @@ Funciona para volúmenes pequeños. Cuando el archivo crece, el proceso pasa de 
 |------------|----------------------------|
 | SQL Server | `BULK INSERT`              |
 | PostgreSQL | `COPY FROM`                |
-| MariaDB    | `LOAD DATA LOCAL INFILE`   |
+| MariaDB    | `LOAD DATA INFILE`         |
 
 ---
 
@@ -207,9 +207,9 @@ cd project_ELT
 cp .env.example .env
 ```
 
-> Para el Escenario A **no necesitas editar el `.env`**. Los valores de ejemplo son suficientes
-> para que Docker cree y configure la base de datos automáticamente.
-> Solo edítalo si quieres usar credenciales propias.
+> Para el Escenario A el `.env.example` ya trae `DB_ENGINE=postgres` configurado.
+> Si vas a usar SQL Server o MariaDB, cambia `DB_ENGINE` al motor correspondiente.
+> El resto de los valores son suficientes para que Docker cree y configure la base de datos automáticamente.
 
 ### Paso 3 — Agregar tus archivos CSV
 
@@ -240,26 +240,13 @@ task:
 
 ### Paso 5 — Seleccionar el motor de base de datos
 
-Abre `config/settings.yaml` y descomenta el bloque del motor que elegiste.
+Edita `.env` y define `DB_ENGINE` con el motor que quieres usar:
 
-**Ejemplo con PostgreSQL:**
-
-```yaml
-development:
-  db_engine: postgres
-  default_schema: "public"
-  host: "${POSTGRES_HOST}"
-  port: "${POSTGRES_PORT}"
-  database: ${POSTGRES_DB}
-  username: ${POSTGRES_USER}
-  password: ${POSTGRES_PASSWORD}
-  bulk_path_map:
-    host: "${BULK_PATH_HOST}"
-    container: "${BULK_PATH_CONTAINER}"
-  log_level: "INFO"
+```env
+DB_ENGINE=postgres     # o sqlserver, o mariadb
 ```
 
-> Solo necesitas descomentar el bloque. Los valores entre `${}` vienen del `.env`.
+> `config/settings.yaml` contiene los tres motores preconfigurados. No necesitas editarlo.
 
 ### Paso 6 — Ejecutar
 
@@ -335,7 +322,7 @@ sudo systemctl restart mariadb
 sudo mariadb -e "GRANT FILE ON *.* TO 'tu_usuario'@'%'; FLUSH PRIVILEGES;"
 ```
 
-**4c — Configurar las rutas en `.env`:**
+**4c — Configurar las rutas en `.env` (solo si usas `./data/`):**
 
 ```env
 BULK_PATH_HOST=/app/data
@@ -344,10 +331,11 @@ BULK_PATH_CONTAINER=/ruta/absoluta/al/proyecto/data
 
 > `BULK_PATH_HOST` siempre es `/app/data` (ruta dentro del contenedor Python).
 > `BULK_PATH_CONTAINER` es la ruta que ve MariaDB en el host — obtén el valor con `pwd` dentro del proyecto y agrega `/data`.
+> Si usas rutas absolutas directamente en `pipeline.yaml` (ver Paso 6), puedes omitir esta configuración.
 
 ### Paso 5 — Agregar tus archivos CSV
 
-Copia tus archivos en `data/input/`:
+Copia tus archivos en `data/input/` o usa rutas absolutas directamente en el pipeline:
 
 ```
 data/
@@ -358,15 +346,43 @@ data/
 
 ### Paso 6 — Configurar el pipeline
 
-Igual que en el Escenario A (Paso 4):
+En el Escenario B los archivos pueden estar en cualquier lugar de tu máquina.
+Usa la ruta absoluta directamente en cada tarea:
 
 ```yaml
-file: "data/input/clientes.csv"
+task:
+  - name: "Carga de Clientes"
+    file: "/home/usuario/datos/clientes.csv"      # ruta absoluta en tu máquina
+    delimiter: ";"
+    encoding: "utf8"
+    table_destination: "clientes"
+    schema: ""
+    crear_tabla_si_no_existe: true
+    active: true
+
+  - name: "Carga ventas red"
+    file: "/mnt/servidor/ventas/ventas_2024.csv"  # ruta de red también funciona
+    delimiter: ";"
+    encoding: "utf8"
+    table_destination: "ventas"
+    schema: ""
+    crear_tabla_si_no_existe: true
+    active: true
 ```
+
+> La base de datos lee los archivos directamente desde disco usando la ruta que le indicas.
+> `BULK_PATH_HOST` y `BULK_PATH_CONTAINER` solo se usan cuando los archivos están dentro de `./data/`.
+> Para rutas absolutas dispersas, FlowELT las pasa tal cual al motor de base de datos.
 
 ### Paso 7 — Seleccionar el motor de base de datos
 
-Igual que en el Escenario A (Paso 5): descomenta el bloque correspondiente en `config/settings.yaml`.
+Edita `.env` y define `DB_ENGINE`:
+
+```env
+DB_ENGINE=mariadb     # o postgres, o sqlserver
+```
+
+> `config/settings.yaml` contiene los tres motores preconfigurados. No necesitas editarlo.
 
 ### Paso 8 — Ejecutar
 
@@ -425,7 +441,9 @@ Todos los outputs comparten el mismo `execution_id` para trazabilidad completa.
 | Configuración YAML | Simplicidad y reproducibilidad sin tocar código |
 | `execution_id` por ejecución | Trazabilidad completa entre logs, dashboard y técnico |
 | Docker para app y opcionalmente para la BD | La app Python siempre corre en Docker. La BD puede ser contenerizada (Escenario A — demo) o existente en el servidor del usuario (Escenario B — producción) |
+| `DB_ENGINE` en `.env` | Selecciona el motor sin tocar `settings.yaml` — los tres motores están siempre configurados |
 | `bulk_path_map` en configuración | Desacopla la ruta de Python de la ruta de la BD — funciona igual en desarrollo (Docker), servidor único o red de empresa |
+| Rutas absolutas por tarea en `pipeline.yaml` | Los archivos pueden estar dispersos en disco o red — cada tarea apunta directamente a su ruta real |
 | Polars en lugar de pandas | Velocidad y bajo consumo de memoria en análisis de metadatos |
 
 ---

@@ -110,12 +110,9 @@ class MySQLAdapter(DatabaseAdapter):
             file = str(pathlib.Path.cwd() / file)
 
         path_map = self.config.get('bulk_path_map', {})
-        if path_map:
-            file = file.replace(path_map['host'], path_map['container'])
-        else:
-            if not pathlib.Path(file).exists():
-                logger.error("Error: File not found: %s", file)
-                raise FileNotFoundError(f"File not found: {file}")
+        host_prefix = path_map.get('host', '') if path_map else ''
+        if host_prefix and host_prefix in file:
+            file = file.replace(host_prefix, path_map['container'])
 
         logger.info("Path: %s", file)
 

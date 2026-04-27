@@ -1,10 +1,10 @@
 """postgres_adapter.py"""
 import pathlib
 import logging
-import psycopg2
-
-from sqlalchemy import create_engine
 from contextlib import contextmanager
+
+import psycopg2
+from sqlalchemy import create_engine
 
 from src.state_manager.core.adapter_db.database_adapter import DatabaseAdapter
 
@@ -41,7 +41,10 @@ class PostgresAdapter(DatabaseAdapter):
         username = config['username']
         password = config['password']
 
-        connection_url = f"postgresql+psycopg2://{username}:{password}@{host}:{port}/{database}"
+        connection_url = (
+            f"postgresql+psycopg2://{username}:{password}"
+            f"@{host}:{port}/{database}"
+        )
         return create_engine(connection_url)
 
     @contextmanager
@@ -61,8 +64,11 @@ class PostgresAdapter(DatabaseAdapter):
             conn.close()
 
     def check_bulk_permission(self) -> bool:
-        """Verifica si el usuario tiene permisos para ejecutar COPY en el servidor."""
-        query = "SELECT pg_has_role(current_user, 'pg_read_server_files', 'MEMBER');"
+        """Verifica si el usuario tiene permisos para COPY en el servidor."""
+        query = (
+            "SELECT pg_has_role("
+            "current_user, 'pg_read_server_files', 'MEMBER');"
+        )
 
         try:
             with self.get_db_cursor() as cursor:
@@ -92,8 +98,8 @@ class PostgresAdapter(DatabaseAdapter):
         """Upload CSV to Postgres using server-side COPY FROM.
 
         Postgres lee el archivo directo desde disco sin pasar por Python.
-        Requiere bulk_path_map en settings.yaml para mapear la ruta local
-        a la ruta dentro del contenedor (./data:/data).
+        Si el path es absoluto y no coincide con bulk_path_map, se usa tal cual
+        (rutas de servidor en Escenario B).
         """
 
         file = task['file']
@@ -105,18 +111,16 @@ class PostgresAdapter(DatabaseAdapter):
             file = str(pathlib.Path.cwd() / file)
 
         path_map = self.config.get('bulk_path_map', {})
-        if path_map:
-            file = file.replace(path_map['host'], path_map['container'])
-        else:
-            if not pathlib.Path(file).exists():
-                logger.error("Error: File not found: %s", file)
-                raise FileNotFoundError(f"File not found: {file}")
+        host_prefix = path_map.get('host', '') if path_map else ''
+        if host_prefix and host_prefix in file:
+            file = file.replace(host_prefix, path_map['container'])
 
         logger.info("Path: %s", file)
 
         copy_sql = (
             f'COPY "{schema}"."{table_destination}" '
-            f"FROM '{file}' WITH (FORMAT csv, DELIMITER '{delimiter}', HEADER true)"
+            f"FROM '{file}' WITH ("
+            f"FORMAT csv, DELIMITER '{delimiter}', HEADER true)"
         )
 
         logger.info("Executing COPY FROM...")
@@ -126,7 +130,9 @@ class PostgresAdapter(DatabaseAdapter):
                 cursor.execute(copy_sql)
                 rows_affected = cursor.rowcount
 
-            logger.info("COPY FROM successful - %d inserted rows", rows_affected)
+            logger.info(
+                "COPY FROM successful - %d inserted rows", rows_affected
+            )
             return rows_affected
         except Exception as e:
             logger.error("COPY FROM failed: %s", str(e))
