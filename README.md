@@ -322,31 +322,9 @@ sudo systemctl restart mariadb
 sudo mariadb -e "GRANT FILE ON *.* TO 'tu_usuario'@'%'; FLUSH PRIVILEGES;"
 ```
 
-**4c — Configurar las rutas en `.env` (solo si usas `./data/`):**
+### Paso 5 — Configurar el pipeline
 
-```env
-BULK_PATH_HOST=/app/data
-BULK_PATH_CONTAINER=/ruta/absoluta/al/proyecto/data
-```
-
-> `BULK_PATH_HOST` siempre es `/app/data` (ruta dentro del contenedor Python).
-> `BULK_PATH_CONTAINER` es la ruta que ve MariaDB en el host — obtén el valor con `pwd` dentro del proyecto y agrega `/data`.
-> Si usas rutas absolutas directamente en `pipeline.yaml` (ver Paso 6), puedes omitir esta configuración.
-
-### Paso 5 — Agregar tus archivos CSV
-
-Copia tus archivos en `data/input/` o usa rutas absolutas directamente en el pipeline:
-
-```
-data/
-└── input/
-    ├── clientes.csv
-    └── ventas.csv
-```
-
-### Paso 6 — Configurar el pipeline
-
-En el Escenario B los archivos pueden estar en cualquier lugar de tu máquina.
+Los archivos pueden estar en cualquier lugar de tu máquina — no necesitas moverlos.
 Usa la ruta absoluta directamente en cada tarea:
 
 ```yaml
@@ -371,10 +349,9 @@ task:
 ```
 
 > La base de datos lee los archivos directamente desde disco usando la ruta que le indicas.
-> `BULK_PATH_HOST` y `BULK_PATH_CONTAINER` solo se usan cuando los archivos están dentro de `./data/`.
-> Para rutas absolutas dispersas, FlowELT las pasa tal cual al motor de base de datos.
+> No necesitas mover los archivos ni configurar rutas adicionales en `.env`.
 
-### Paso 7 — Seleccionar el motor de base de datos
+### Paso 6 — Seleccionar el motor de base de datos
 
 Edita `.env` y define `DB_ENGINE`:
 
@@ -384,7 +361,7 @@ DB_ENGINE=mariadb     # o postgres, o sqlserver
 
 > `config/settings.yaml` contiene los tres motores preconfigurados. No necesitas editarlo.
 
-### Paso 8 — Ejecutar
+### Paso 7 — Ejecutar
 
 ```bash
 docker compose --profile standalone up
