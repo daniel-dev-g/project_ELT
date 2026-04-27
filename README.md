@@ -285,16 +285,36 @@ cp .env.example .env
 
 ### Paso 3 — Configurar la conexión a tu BD
 
-Edita `.env` con los datos de tu base de datos existente.
+Edita `.env` con el motor que usas y las credenciales de tu base de datos.
 
-**Ejemplo con MariaDB local:**
-
+**MariaDB:**
 ```env
+DB_ENGINE=mariadb
 MARIADB_HOST=127.0.0.1
 MARIADB_PORT=3306
 MARIADB_USER=mi_usuario
 MARIADB_PASSWORD=mi_password
 MARIADB_DB=mi_base
+```
+
+**PostgreSQL:**
+```env
+DB_ENGINE=postgres
+POSTGRES_HOST=127.0.0.1
+POSTGRES_PORT=5432
+POSTGRES_USER=mi_usuario
+POSTGRES_PASSWORD=mi_password
+POSTGRES_DB=mi_base
+```
+
+**SQL Server:**
+```env
+DB_ENGINE=sqlserver
+SQLSERVER_HOST=127.0.0.1
+SQLSERVER_PORT=1433
+SQLSERVER_USER=mi_usuario
+SQLSERVER_PASSWORD=mi_password
+SQLSERVER_DB=mi_base
 ```
 
 > El contenedor usa `network_mode: host`, por lo que `127.0.0.1` apunta directamente
@@ -351,17 +371,7 @@ task:
 > La base de datos lee los archivos directamente desde disco usando la ruta que le indicas.
 > No necesitas mover los archivos ni configurar rutas adicionales en `.env`.
 
-### Paso 6 — Seleccionar el motor de base de datos
-
-Edita `.env` y define `DB_ENGINE`:
-
-```env
-DB_ENGINE=mariadb     # o postgres, o sqlserver
-```
-
-> `config/settings.yaml` contiene los tres motores preconfigurados. No necesitas editarlo.
-
-### Paso 7 — Ejecutar
+### Paso 6 — Ejecutar
 
 ```bash
 docker compose --profile standalone up
