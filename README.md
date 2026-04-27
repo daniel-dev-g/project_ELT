@@ -179,14 +179,13 @@ Generado automáticamente al finalizar cada ejecución:
 
 ## Escenarios de despliegue
 
-FlowELT soporta dos escenarios. El único requisito en ambos es **Docker + Docker Compose**.
-
 | | Escenario A | Escenario B |
 |---|---|---|
 | **Cuándo usarlo** | Quiero probar FlowELT sin tener una BD instalada | Ya tengo una BD en mi servidor o red |
-| **Qué levanta Docker** | App Python + base de datos | Solo app Python |
+| **Requisito** | Docker + Docker Compose | Ninguno *(GUI en desarrollo)* — hoy: Docker |
+| **Interfaz** | Línea de comandos | GUI con drag & drop *(en desarrollo)* — hoy: YAML + `.env` |
 | **Archivos CSV** | Dentro de `./data/input/` | Ruta absoluta en tu máquina o red |
-| **Comando** | `docker compose --profile <motor> up` | `docker compose --profile standalone up` |
+| **Qué levanta** | App Python + base de datos en Docker | Solo el ejecutable nativo |
 
 ---
 
@@ -459,17 +458,21 @@ Todos los outputs comparten el mismo `execution_id` para trazabilidad completa.
 
 ## Interfaz gráfica (en desarrollo)
 
-La configuración actual — archivos YAML, variables de entorno y Docker — está pensada para perfiles técnicos. Para que FlowELT sea accesible a usuarios sin experiencia en herramientas de desarrollo, se está diseñando una interfaz gráfica de escritorio.
+La configuración actual de Escenario B — archivos YAML, variables de entorno y Docker — está pensada para perfiles técnicos. Para usuarios sin experiencia en herramientas de desarrollo, se está construyendo una interfaz gráfica de escritorio que elimina Docker del Escenario B por completo.
+
+**El usuario descargará un ejecutable** (`.exe` en Windows, `.app` en macOS, binario en Linux) y lo abrirá directamente — sin instalar Python, Docker ni ninguna dependencia.
 
 **Lo que permitirá hacer:**
 
-- Seleccionar archivos CSV con drag & drop desde cualquier carpeta del equipo
+- Seleccionar archivos CSV con drag & drop desde cualquier carpeta del equipo o red
 - Elegir el motor de base de datos desde un menú desplegable
 - Ingresar las credenciales de conexión en un formulario visual
 - Configurar y ejecutar el pipeline sin tocar ningún archivo de configuración
 - Ver el resultado de la carga en tiempo real
 
-La interfaz generará internamente los mismos archivos de configuración (`pipeline.yaml`, `.env`) que usa el motor actual, sin exponer esa complejidad al usuario.
+El motor de carga (adaptadores por BD, carga masiva nativa) es el mismo — la interfaz es una capa visual encima que gestiona la configuración internamente.
+
+**Stack:** [Flet](https://flet.dev) (Python + Flutter) + PyInstaller para el empaquetado.
 
 > Esta funcionalidad está en desarrollo y aún no está disponible.
 
@@ -477,7 +480,7 @@ La interfaz generará internamente los mismos archivos de configuración (`pipel
 
 ## Roadmap
 
-- [ ] **Interfaz gráfica** — formulario visual con drag & drop para archivos, selección de motor y credenciales (ver sección anterior)
+- [ ] **Interfaz gráfica** (Flet + PyInstaller) — ejecutable nativo para Escenario B sin Docker; drag & drop, selección de motor y credenciales en formulario visual (ver sección anterior)
 - [ ] Módulo de profiling (nulos, cardinalidad, tipos)
 - [ ] Motor de reglas de calidad configurables en YAML
 - [ ] **Linaje a nivel de fila** — escritura de logs en tabla BD + paso SQL post-carga que adjunta columnas `_execution_id`, `_source_file` y `_load_timestamp` a los datos en capa raw (ver diseño abajo)
