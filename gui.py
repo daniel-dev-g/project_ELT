@@ -1,6 +1,5 @@
 """gui.py — FlowELT Desktop App"""
-import concurrent.futures
-import threading
+import asyncio
 import flet as ft
 
 from src.state_manager.core.adapter_db.factory_db import factory_db
@@ -46,7 +45,7 @@ def _field(**kwargs) -> ft.TextField:
     )
 
 
-def main(page: ft.Page):
+async def main(page: ft.Page):
     page.title = "FlowELT"
     page.theme_mode = ft.ThemeMode.DARK
     page.bgcolor = BG
@@ -148,7 +147,7 @@ def main(page: ft.Page):
             return "Ingresa el usuario."
         return None
 
-    def do_connect(_):
+    async def do_connect(_):
         err = validate_fields()
         if err:
             set_status(False, err)
@@ -158,49 +157,49 @@ def main(page: ft.Page):
         status_box.visible = False
         page.update()
 
-        def run():
+        try:
+            key = engine_dd.value
+            cfg = {
+                "db_engine": ENGINES[key]["db_engine"],
+                "host": f_host.value.strip(),
+                "port": f_port.value.strip(),
+                "database": f_db.value.strip(),
+                "username": f_user.value.strip(),
+                "password": f_pass.value,
+            }
+            if key == "sqlserver":
+                cfg["server"] = f"{cfg['host']},{cfg['port']}"
+                cfg["driver"] = "ODBC Driver 18 for SQL Server"
+                cfg["trusted_connection"] = "no"
+                cfg["encrypt"] = "no"
+
+            loop = asyncio.get_event_loop()
+            adapter = factory_db(cfg)
+            label = ENGINES[key]["label"]
+            addr = (
+                f"{f_host.value.strip()}:{f_port.value.strip()}"
+            )
             try:
-                key = engine_dd.value
-                cfg = {
-                    "db_engine": ENGINES[key]["db_engine"],
-                    "host": f_host.value.strip(),
-                    "port": f_port.value.strip(),
-                    "database": f_db.value.strip(),
-                    "username": f_user.value.strip(),
-                    "password": f_pass.value,
-                }
-                if key == "sqlserver":
-                    cfg["server"] = f"{cfg['host']},{cfg['port']}"
-                    cfg["driver"] = "ODBC Driver 18 for SQL Server"
-                    cfg["trusted_connection"] = "no"
-                    cfg["encrypt"] = "no"
-
-                adapter = factory_db(cfg)
-                label = ENGINES[key]["label"]
-                addr = f"{f_host.value.strip()}:{f_port.value.strip()}"
-                with concurrent.futures.ThreadPoolExecutor(1) as ex:
-                    future = ex.submit(
-                        check_db_connection, adapter.engine
-                    )
-                    try:
-                        ok, db_err = future.result(timeout=5)
-                    except concurrent.futures.TimeoutError:
-                        set_status(
-                            False,
-                            "Tiempo de espera agotado — "
-                            "verifica host y puerto",
-                        )
-                        return
-                if ok:
-                    set_status(True, f"Conexión exitosa — {label} en {addr}")
-                else:
-                    set_status(False, db_err or "No se pudo conectar")
-            except Exception as ex:
-                set_status(False, str(ex))
-            finally:
-                set_loading(False)
-
-        threading.Thread(target=run, daemon=True).start()
+                ok, db_err = await asyncio.wait_for(
+                    loop.run_in_executor(
+                        None, check_db_connection, adapter.engine
+                    ),
+                    timeout=5.0,
+                )
+            except asyncio.TimeoutError:
+                set_status(
+                    False,
+                    "Tiempo de espera agotado — verifica host y puerto",
+                )
+                return
+            if ok:
+                set_status(True, f"Conexión exitosa — {label} en {addr}")
+            else:
+                set_status(False, db_err or "No se pudo conectar")
+        except Exception as ex:
+            set_status(False, str(ex))
+        finally:
+            set_loading(False)
 
     btn.on_click = do_connect
 
