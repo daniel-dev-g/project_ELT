@@ -32,7 +32,7 @@ Funciona para volúmenes pequeños. Cuando el archivo crece, el proceso pasa de 
 
 **FlowELT propone un enfoque distinto:**
 
-- Carga masiva nativa por motor de base de datos (sin construir objetos en memoria)
+- Carga masiva nativa por motor de base de datos (sin pasar datos por Python)
 - Configuración declarativa mediante YAML
 - Compatibilidad total con entornos on-premise
 - Observabilidad integrada — logs estructurados + dashboard HTML por ejecución
@@ -46,7 +46,7 @@ Funciona para volúmenes pequeños. Cuando el archivo crece, el proceso pasa de 
 |----------|---------------|------------|------------|------------|-----------|--------|-------|
 | 4        | ~2 GB         | 13.229.516 | 31.2s      | PostgreSQL | A (Docker) | `COPY FROM` | NVMe interno |
 | 4        | ~2 GB         | 13.229.516 | 31.73s     | SQL Server | A (Docker) | `BULK INSERT` | NVMe interno |
-| 4        | ~2 GB         | 13.229.516 | 69.98s     | MariaDB    | B (local)  | `LOAD DATA LOCAL INFILE` | NVMe interno |
+| 4        | ~2 GB         | 13.229.516 | 59.25s     | MariaDB    | B (local)  | `LOAD DATA INFILE` | NVMe interno |
 
 > Hardware: Intel Core i3-1005G1 @ 1.20GHz / 11 GB RAM / Ubuntu Linux / NVMe interno.
 > PostgreSQL y SQL Server en Escenario A (Docker completo). MariaDB en Escenario B (BD local, app en Docker).
@@ -60,14 +60,14 @@ Funciona para volúmenes pequeños. Cuando el archivo crece, el proceso pasa de 
 | Disco | NVMe interno | NVMe interno | NVMe interno |
 | Contenedor | `postgres:16` | `mcr.microsoft.com/mssql/server:2022-latest` | MariaDB 10.11 en host |
 | Python | Docker (Escenario A) | Docker (Escenario A) | Docker, red host (Escenario B) |
-| Método | `COPY FROM` server-side | `BULK INSERT` con `TABLOCK` + `BATCHSIZE=100000` | `LOAD DATA LOCAL INFILE` (cliente) |
+| Método | `COPY FROM` server-side | `BULK INSERT` con `TABLOCK` + `BATCHSIZE=100000` | `LOAD DATA INFILE` server-side |
 | Filas | 13.229.516 | 13.229.516 | 13.229.516 |
-| Duración | **31.2 seg** | **31.73 seg** | 69.98 seg |
-| Throughput | **~424.000 filas/seg** | **~417.000 filas/seg** | ~189.000 filas/seg |
+| Duración | **31.2 seg** | **31.73 seg** | 59.25 seg |
+| Throughput | **~424.000 filas/seg** | **~417.000 filas/seg** | ~223.000 filas/seg |
 
 > PostgreSQL y SQL Server medidos en Escenario A (BD contenerizada, Python en Docker).
 > MariaDB medido en Escenario B (BD local en host, Python en contenedor con `network_mode: host`).
-> Con `LOAD DATA LOCAL INFILE`, Python lee el archivo y lo envía al servidor — sin necesidad de privilegio FILE ni path mapping.
+> Todos los motores leen directo desde disco — sin pasar datos por Python.
 > Las pruebas se realizaron con configuración por defecto de cada motor, sin tuning adicional. Los resultados pueden mejorar con ajustes de memoria, paralelismo o parámetros de escritura propios de cada BD.
 
 ---
@@ -313,21 +313,37 @@ MARIADB_DB=mi_base
 > El contenedor usa `network_mode: host`, por lo que `127.0.0.1` apunta directamente
 > a tu máquina — no necesitas configurar IPs externas ni reglas de firewall.
 
-### Paso 4 — Habilitar carga local en MariaDB
+### Paso 4 — Configurar MariaDB para carga directa desde disco
 
-FlowELT usa `LOAD DATA LOCAL INFILE` — el contenedor lee el archivo y lo envía al servidor.
-El servidor debe tener esta opción habilitada:
+FlowELT usa `LOAD DATA INFILE` — MariaDB lee el archivo directamente desde el disco del host,
+sin pasar datos por Python. Requiere dos configuraciones:
 
-```bash
-sudo mariadb -e "SET GLOBAL local_infile=1;"
-```
-
-Para que persista entre reinicios, agrega en `/etc/mysql/mariadb.conf.d/50-server.cnf`:
+**4a — Eliminar restricción de ruta** en `/etc/mysql/mariadb.conf.d/50-server.cnf`:
 
 ```ini
 [mysqld]
-local_infile=1
+secure_file_priv = ""
 ```
+
+```bash
+sudo systemctl restart mariadb
+```
+
+**4b — Dar privilegio FILE al usuario:**
+
+```bash
+sudo mariadb -e "GRANT FILE ON *.* TO 'tu_usuario'@'%'; FLUSH PRIVILEGES;"
+```
+
+**4c — Configurar las rutas en `.env`:**
+
+```env
+BULK_PATH_HOST=/app/data
+BULK_PATH_CONTAINER=/ruta/absoluta/al/proyecto/data
+```
+
+> `BULK_PATH_HOST` siempre es `/app/data` (ruta dentro del contenedor Python).
+> `BULK_PATH_CONTAINER` es la ruta que ve MariaDB en el host — obtén el valor con `pwd` dentro del proyecto y agrega `/data`.
 
 ### Paso 5 — Agregar tus archivos CSV
 
@@ -405,7 +421,7 @@ Todos los outputs comparten el mismo `execution_id` para trazabilidad completa.
 
 | Decisión | Razón |
 |---|---|
-| Carga masiva nativa en lugar de ORM | Rendimiento — la BD lee directo del disco (PostgreSQL, SQL Server) o Python envía el stream al servidor (MariaDB `LOCAL INFILE`) sin construir objetos en memoria |
+| Carga masiva nativa en lugar de ORM | Rendimiento — la BD lee directo del disco sin pasar datos por Python (`BULK INSERT`, `COPY FROM`, `LOAD DATA INFILE`) |
 | Configuración YAML | Simplicidad y reproducibilidad sin tocar código |
 | `execution_id` por ejecución | Trazabilidad completa entre logs, dashboard y técnico |
 | Docker para app y opcionalmente para la BD | La app Python siempre corre en Docker. La BD puede ser contenerizada (Escenario A — demo) o existente en el servidor del usuario (Escenario B — producción) |
@@ -420,7 +436,7 @@ Todos los outputs comparten el mismo `execution_id` para trazabilidad completa.
 |---|---|---|---|---|
 | SQL Server | Probado | A (Docker) | `BULK INSERT` | Sí |
 | PostgreSQL | Probado | A (Docker) | `COPY FROM` | Sí |
-| MariaDB | Probado | A (Docker) + B (local) | `LOAD DATA LOCAL INFILE` | No — cliente envía datos |
+| MariaDB | Probado | A (Docker) + B (local) | `LOAD DATA INFILE` | Sí |
 
 ---
 
