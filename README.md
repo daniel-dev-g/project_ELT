@@ -113,7 +113,7 @@ Archivos CSV / TXT
 
 ### Arquitectura con linaje (roadmap)
 
-El linaje no puede inyectarse durante la carga nativa — el archivo se transfiere tal cual para preservar el rendimiento. Se agrega en un paso SQL posterior, dentro de la base de datos.
+El linaje no puede inyectarse durante la carga nativa — el archivo se transfiere tal cual para preservar el rendimiento. El diseño propuesto lo agrega en un paso SQL posterior, dentro de la base de datos, sin pasar datos por Python. **Esta funcionalidad aún no está implementada.**
 
 ```
 Archivos CSV / TXT
@@ -455,7 +455,7 @@ Todos los outputs comparten el mismo `execution_id` para trazabilidad completa.
 
 ### Diseño: Linaje a nivel de fila
 
-La carga nativa (BULK INSERT / COPY / LOAD DATA) no permite inyectar columnas adicionales durante la transferencia — el archivo se lee tal cual. El linaje se agrega en un paso SQL posterior, dentro de la base de datos, sin pasar datos por Python.
+La carga nativa (BULK INSERT / COPY / LOAD DATA) no permite inyectar columnas adicionales durante la transferencia — el archivo se lee tal cual. El diseño propuesto agrega el linaje en un paso SQL posterior, dentro de la base de datos, sin pasar datos por Python. **Esta funcionalidad aún no está implementada** — el diseño a continuación describe cómo se puede implementar.
 
 **Flujo propuesto:**
 
