@@ -1,4 +1,5 @@
 """gui.py — FlowELT Desktop App"""
+import concurrent.futures
 import threading
 import flet as ft
 
@@ -109,12 +110,15 @@ def main(page: ft.Page):
 
     # ── Button (Container) ────────────────────────────────────────────────────
     btn_icon = ft.Icon(ft.Icons.CABLE, color="white", size=18)
+    btn_spinner = ft.ProgressRing(
+        width=16, height=16, stroke_width=2, color="white", visible=False
+    )
     btn_label = ft.Text(
         "Conectar", color="white", size=14, weight=ft.FontWeight.W_600
     )
     btn = ft.Container(
         content=ft.Row(
-            [btn_icon, btn_label],
+            [btn_icon, btn_spinner, btn_label],
             spacing=8,
             alignment=ft.MainAxisAlignment.CENTER,
             tight=True,
@@ -126,7 +130,8 @@ def main(page: ft.Page):
     )
 
     def set_loading(loading: bool):
-        btn_icon.name = ft.Icons.HOURGLASS_EMPTY if loading else ft.Icons.CABLE
+        btn_icon.visible = not loading
+        btn_spinner.visible = loading
         btn_label.value = "Conectando..." if loading else "Conectar"
         btn.bgcolor = "#5b21b6" if loading else ACCENT
         btn.on_click = None if loading else do_connect
@@ -171,9 +176,21 @@ def main(page: ft.Page):
                     cfg["encrypt"] = "no"
 
                 adapter = factory_db(cfg)
-                ok, db_err = check_db_connection(adapter.engine)
                 label = ENGINES[key]["label"]
                 addr = f"{f_host.value.strip()}:{f_port.value.strip()}"
+                with concurrent.futures.ThreadPoolExecutor(1) as ex:
+                    future = ex.submit(
+                        check_db_connection, adapter.engine
+                    )
+                    try:
+                        ok, db_err = future.result(timeout=5)
+                    except concurrent.futures.TimeoutError:
+                        set_status(
+                            False,
+                            "Tiempo de espera agotado — "
+                            "verifica host y puerto",
+                        )
+                        return
                 if ok:
                     set_status(True, f"Conexión exitosa — {label} en {addr}")
                 else:
