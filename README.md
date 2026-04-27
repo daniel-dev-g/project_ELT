@@ -445,8 +445,27 @@ Todos los outputs comparten el mismo `execution_id` para trazabilidad completa.
 
 ---
 
+## Interfaz gráfica (en desarrollo)
+
+La configuración actual — archivos YAML, variables de entorno y Docker — está pensada para perfiles técnicos. Para que FlowELT sea accesible a usuarios sin experiencia en herramientas de desarrollo, se está diseñando una interfaz gráfica de escritorio.
+
+**Lo que permitirá hacer:**
+
+- Seleccionar archivos CSV con drag & drop desde cualquier carpeta del equipo
+- Elegir el motor de base de datos desde un menú desplegable
+- Ingresar las credenciales de conexión en un formulario visual
+- Configurar y ejecutar el pipeline sin tocar ningún archivo de configuración
+- Ver el resultado de la carga en tiempo real
+
+La interfaz generará internamente los mismos archivos de configuración (`pipeline.yaml`, `.env`) que usa el motor actual, sin exponer esa complejidad al usuario.
+
+> Esta funcionalidad está en desarrollo y aún no está disponible.
+
+---
+
 ## Roadmap
 
+- [ ] **Interfaz gráfica** — formulario visual con drag & drop para archivos, selección de motor y credenciales (ver sección anterior)
 - [ ] Módulo de profiling (nulos, cardinalidad, tipos)
 - [ ] Motor de reglas de calidad configurables en YAML
 - [ ] **Linaje a nivel de fila** — escritura de logs en tabla BD + paso SQL post-carga que adjunta columnas `_execution_id`, `_source_file` y `_load_timestamp` a los datos en capa raw (ver diseño abajo)
