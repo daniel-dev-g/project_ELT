@@ -32,7 +32,7 @@ Funciona para volúmenes pequeños. Cuando el archivo crece, el proceso pasa de 
 
 **FlowELT propone un enfoque distinto:**
 
-- Carga masiva nativa por motor de base de datos (sin pasar datos por Python)
+- Carga masiva nativa por motor de base de datos (sin construir objetos en memoria)
 - Configuración declarativa mediante YAML
 - Compatibilidad total con entornos on-premise
 - Observabilidad integrada — logs estructurados + dashboard HTML por ejecución
@@ -49,7 +49,7 @@ Funciona para volúmenes pequeños. Cuando el archivo crece, el proceso pasa de 
 | 4        | ~2 GB         | 13.229.516 | 69.98s     | MariaDB    | B (local)  | `LOAD DATA LOCAL INFILE` | NVMe interno |
 
 > Hardware: Intel Core i3-1005G1 @ 1.20GHz / 11 GB RAM / Ubuntu Linux / NVMe interno.
-> Todos los motores medidos en las mismas condiciones de hardware.
+> PostgreSQL y SQL Server en Escenario A (Docker completo). MariaDB en Escenario B (BD local, app en Docker).
 
 ### Detalle — prueba con ~2 GB / 13 millones de filas (NVMe)
 
@@ -77,8 +77,8 @@ Funciona para volúmenes pequeños. Cuando el archivo crece, el proceso pasa de 
 | Motor      | Método de carga nativa     |
 |------------|----------------------------|
 | SQL Server | `BULK INSERT`              |
-| PostgreSQL | `COPY FROM STDIN`          |
-| MySQL      | `LOAD DATA LOCAL INFILE`   |
+| PostgreSQL | `COPY FROM`                |
+| MariaDB    | `LOAD DATA LOCAL INFILE`   |
 
 ---
 
