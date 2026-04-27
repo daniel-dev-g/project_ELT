@@ -185,7 +185,7 @@ FlowELT soporta dos escenarios. El único requisito en ambos es **Docker + Docke
 |---|---|---|
 | **Cuándo usarlo** | Quiero probar FlowELT sin tener una BD instalada | Ya tengo una BD en mi servidor o red |
 | **Qué levanta Docker** | App Python + base de datos | Solo app Python |
-| **Archivos CSV** | Dentro de `./data/input/` | `./data/input/` o tu propio directorio |
+| **Archivos CSV** | Dentro de `./data/input/` | Ruta absoluta en tu máquina o red |
 | **Comando** | `docker compose --profile <motor> up` | `docker compose --profile standalone up` |
 
 ---
@@ -207,9 +207,8 @@ cd project_ELT
 cp .env.example .env
 ```
 
-> Para el Escenario A el `.env.example` ya trae `DB_ENGINE=postgres` configurado.
-> Si vas a usar SQL Server o MariaDB, cambia `DB_ENGINE` al motor correspondiente.
-> El resto de los valores son suficientes para que Docker cree y configure la base de datos automáticamente.
+> Los valores del `.env.example` son suficientes para que Docker cree y configure la base de datos automáticamente.
+> El motor por defecto es PostgreSQL — en el Paso 5 lo puedes cambiar.
 
 ### Paso 3 — Agregar tus archivos CSV
 
@@ -320,12 +319,13 @@ SQLSERVER_DB=mi_base
 > El contenedor usa `network_mode: host`, por lo que `127.0.0.1` apunta directamente
 > a tu máquina — no necesitas configurar IPs externas ni reglas de firewall.
 
-### Paso 4 — Configurar MariaDB para carga directa desde disco
+### Paso 4 — Permisos de carga directa en tu BD
 
-FlowELT usa `LOAD DATA INFILE` — MariaDB lee el archivo directamente desde el disco del host,
-sin pasar datos por Python. Requiere dos configuraciones:
+Cada motor requiere una configuración mínima para leer archivos directamente desde disco.
 
-**4a — Eliminar restricción de ruta** en `/etc/mysql/mariadb.conf.d/50-server.cnf`:
+**MariaDB** — `LOAD DATA INFILE` requiere:
+
+4a — Eliminar restricción de ruta en `/etc/mysql/mariadb.conf.d/50-server.cnf`:
 
 ```ini
 [mysqld]
@@ -336,10 +336,22 @@ secure_file_priv = ""
 sudo systemctl restart mariadb
 ```
 
-**4b — Dar privilegio FILE al usuario:**
+4b — Dar privilegio FILE al usuario:
 
 ```bash
 sudo mariadb -e "GRANT FILE ON *.* TO 'tu_usuario'@'%'; FLUSH PRIVILEGES;"
+```
+
+**PostgreSQL** — `COPY FROM` requiere que el usuario sea superusuario o tenga el rol `pg_read_server_files`:
+
+```sql
+GRANT pg_read_server_files TO mi_usuario;
+```
+
+**SQL Server** — `BULK INSERT` requiere el permiso `ADMINISTER BULK OPERATIONS` o el rol `bulkadmin`:
+
+```sql
+EXEC sp_addrolemember 'bulkadmin', 'mi_usuario';
 ```
 
 ### Paso 5 — Configurar el pipeline
@@ -354,7 +366,7 @@ task:
     delimiter: ";"
     encoding: "utf8"
     table_destination: "clientes"
-    schema: ""
+    schema: "public"      # public → PostgreSQL | dbo → SQL Server | "" → MariaDB
     crear_tabla_si_no_existe: true
     active: true
 
@@ -363,7 +375,7 @@ task:
     delimiter: ";"
     encoding: "utf8"
     table_destination: "ventas"
-    schema: ""
+    schema: "public"
     crear_tabla_si_no_existe: true
     active: true
 ```
@@ -469,7 +481,7 @@ La interfaz generará internamente los mismos archivos de configuración (`pipel
 - [ ] Módulo de profiling (nulos, cardinalidad, tipos)
 - [ ] Motor de reglas de calidad configurables en YAML
 - [ ] **Linaje a nivel de fila** — escritura de logs en tabla BD + paso SQL post-carga que adjunta columnas `_execution_id`, `_source_file` y `_load_timestamp` a los datos en capa raw (ver diseño abajo)
-- [ ] Integración con Prefect (orquestación)
+- [ ] Integración con Airflow o Prefect (orquestación)
 - [ ] Análisis asistido por IA (opcional)
 
 ### Diseño: Linaje a nivel de fila
