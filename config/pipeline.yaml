@@ -1,32 +1,43 @@
-# config/pipeline.yaml
-# DataBridge — Pipeline Configuration
-# Supported formats: .csv, .txt (BCP bulk load)
-# Delimiter: use ";" "," "|" or "\t" for tab-separated files
-# Encoding: utf8, utf8-lossy, ascii
+_defaults:
+  schema: public
+  delimiter: ;
+  crear_tabla_si_no_existe: true
+  truncate_before_load: true
+  active: true
 task:
-  - name: "Carga de Ventas Mensuales"
-    file: "data/input/cliente.csv"
-    delimiter: ";"
-    encoding: "utf8"
-    table_destination: "clientes"
-    crear_tabla_si_no_existe: true
-    schema: "SYSTEM"
-    active: true
-
-  - name: "Carga de Oficinas Mensuales"
-    file: "data/input/oficinas.csv"
-    delimiter: ";"
-    encoding: "utf8"
-    table_destination: "oficinas"
-    crear_tabla_si_no_existe: true
-    schema: "SYSTEM"
-    active: true
-
-  - name: "Carga datos USA"
-    file: "data/input/tripdata_2015-01.csv"
-    delimiter: ","
-    encoding: "utf8"
-    table_destination: "US_TAXI_DEMAND"
-    crear_tabla_si_no_existe: true
-    schema: "SYSTEM"
-    active: true
+- name: Carga oficinas
+  file: /home/daniel/Documentos/ti/proyectos/test/project_ELT/data/input/oficinas.csv
+  delimiter: ;
+  encoding: utf8
+  table_destination: oficinas
+  crear_tabla_si_no_existe: true
+  truncate_before_load: true
+  schema: public
+  active: true
+- name: Carga productos
+  file: /home/daniel/Documentos/ti/proyectos/test/project_ELT/data/input/productos.csv
+  delimiter: ;
+  encoding: utf8
+  table_destination: productos
+  crear_tabla_si_no_existe: true
+  truncate_before_load: true
+  schema: public
+  active: true
+- name: Carga clientes
+  file: /home/daniel/Documentos/ti/proyectos/test/project_ELT/data/input/cliente.csv
+  delimiter: ;
+  encoding: utf8
+  table_destination: clientes
+  crear_tabla_si_no_existe: true
+  truncate_before_load: true
+  schema: public
+  active: true
+- name: Carga taxi_newyork
+  file: /home/daniel/Descargas/datos_carga_elt/tripdata_2015-01.csv
+  delimiter: ;
+  encoding: utf8
+  table_destination: taxi_newyork
+  crear_tabla_si_no_existe: true
+  truncate_before_load: true
+  schema: public
+  active: true
