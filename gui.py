@@ -28,8 +28,8 @@ ACCENT_DIM  = "#2563eb"
 SUCCESS     = "#3b82f6"
 SUCCESS_BG  = "#eff6ff"
 SUCCESS_DIM = "#2563eb"
-RUN_BTN     = "#1d4ed8"
-RUN_BTN_DIM = "#1e40af"
+RUN_BTN     = "#00B427"
+RUN_BTN_DIM = "#21D321"
 ERROR       = "#dc2626"
 ERROR_BG    = "#fee2e2"
 BG          = "#f8fafc"
@@ -41,7 +41,7 @@ MUTED       = "#64748b"
 BORDER      = "#bfdbfe"
 BORDER_ROW  = "#e2e8f0"
 
-CONTENT_W   = 660   # usable width inside 30px horizontal padding
+CONTENT_W   = 920   # usable width inside 30px horizontal padding
 
 
 def _field(**kwargs) -> ft.TextField:
@@ -87,9 +87,9 @@ async def main(page: ft.Page):
     )
     page.bgcolor = BG
     page.padding = 0
-    page.window.width = 720
+    page.window.width = 980
     page.window.height = 820
-    page.window.min_width = 680
+    page.window.min_width = 800
     page.window.min_height = 500
     page.window.resizable = True
 
