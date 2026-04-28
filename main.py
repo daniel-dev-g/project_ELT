@@ -248,6 +248,8 @@ def main():
         })
 
     except Exception as e:  # pylint: disable=broad-exception-caught
+        import traceback
+        traceback.print_exc()
         registrar_log("process_failed", {"execution_id": execution_id, "error": str(e)})
 
     finally:
