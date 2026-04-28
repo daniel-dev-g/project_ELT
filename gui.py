@@ -716,7 +716,7 @@ async def main(page: ft.Page):
                 log_path = get_log_path()
                 dash_path = await loop.run_in_executor(
                     None, generate_dashboard,
-                    log_path, log_path.with_suffix(".html"),
+                    log_path, log_path.with_suffix(".html"), execution_id,
                 )
                 _dashboard_path.clear()
                 _dashboard_path.append(dash_path)
