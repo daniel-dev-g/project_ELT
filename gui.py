@@ -95,40 +95,60 @@ async def main(page: ft.Page):
 
     # ── Connection fields ────────────────────────────────────────────────────
     f_host = _field(label="Host", value="localhost", expand=True)
-    f_port = _field(label="Puerto", value="5432", width=120)
+    f_port = _field(label="Puerto", value="5432", width=110)
     f_db   = _field(label="Base de datos")
     f_user = _field(label="Usuario")
     f_pass = _field(label="Contraseña", password=True, can_reveal_password=True)
 
-    engine_dd = ft.Dropdown(
-        label="Motor de base de datos",
-        value="postgres",
-        border_color=BORDER,
-        focused_border_color=ACCENT,
-        border_radius=8,
-        text_size=14,
-        bgcolor="#ffffff",
-        filled=True,
-        fill_color="#ffffff",
-        label_style=ft.TextStyle(color=MUTED),
-        options=[ft.dropdown.Option(key=k, text=v["label"]) for k, v in ENGINES.items()],
-    )
+    # ── Engine pill selector ─────────────────────────────────────────────────
+    _selected_engine: list[str] = ["postgres"]
+    _pill_refs: dict = {}
 
-    def on_engine_change(e):
-        f_port.value = ENGINES[engine_dd.value]["port"]
+    def select_engine(key: str):
+        _selected_engine[0] = key
+        f_port.value = ENGINES[key]["port"]
+        for k, r in _pill_refs.items():
+            on = k == key
+            r["c"].bgcolor = "#eff6ff" if on else "#f8fafc"
+            r["c"].border  = ft.Border.all(1.5 if on else 1,
+                                           ACCENT if on else BORDER_ROW)
+            r["t"].color   = ACCENT if on else MUTED
+            r["d"].color   = ACCENT if on else "#cbd5e1"
         page.update()
 
-    engine_dd.on_change = on_engine_change
+    engine_pills = []
+    for _k, _v in ENGINES.items():
+        _on = _k == "postgres"
+        _dot = ft.Icon(ft.Icons.CIRCLE, size=7,
+                       color=ACCENT if _on else "#cbd5e1")
+        _lbl = ft.Text(_v["label"], size=12, weight=ft.FontWeight.W_600,
+                       color=ACCENT if _on else MUTED)
+        _pill = ft.Container(
+            content=ft.Row([_dot, _lbl], spacing=6, tight=True),
+            bgcolor="#eff6ff" if _on else "#f8fafc",
+            border_radius=10,
+            border=ft.Border.all(1.5 if _on else 1,
+                                 ACCENT if _on else BORDER_ROW),
+            padding=ft.Padding.symmetric(horizontal=14, vertical=10),
+            ink=True, expand=True,
+            on_click=lambda e, k=_k: select_engine(k),
+        )
+        _pill_refs[_k] = {"c": _pill, "t": _lbl, "d": _dot}
+        engine_pills.append(_pill)
 
     # ── Connect button ───────────────────────────────────────────────────────
-    btn_icon    = ft.Icon(ft.Icons.CABLE, color="#ffffff", size=18)
-    btn_spinner = ft.ProgressRing(width=16, height=16, stroke_width=2, color="#ffffff", visible=False)
-    btn_label   = ft.Text("Conectar", color="#ffffff", size=14, weight=ft.FontWeight.W_600)
+    btn_icon    = ft.Icon(ft.Icons.ARROW_FORWARD, color="#ffffff", size=18)
+    btn_spinner = ft.ProgressRing(width=16, height=16, stroke_width=2,
+                                  color="#ffffff", visible=False)
+    btn_label   = ft.Text("Conectar", color="#ffffff", size=14,
+                          weight=ft.FontWeight.W_600)
     btn = ft.Container(
-        content=ft.Row([btn_icon, btn_spinner, btn_label], spacing=8,
-                       alignment=ft.MainAxisAlignment.CENTER, tight=True),
-        bgcolor=ACCENT, border_radius=8,
-        padding=ft.Padding.symmetric(horizontal=28, vertical=12),
+        content=ft.Row(
+            [btn_icon, btn_spinner, btn_label], spacing=8,
+            alignment=ft.MainAxisAlignment.CENTER, tight=True,
+        ),
+        bgcolor=ACCENT, border_radius=10,
+        padding=ft.Padding.symmetric(horizontal=28, vertical=14),
         ink=True,
     )
 
@@ -148,32 +168,70 @@ async def main(page: ft.Page):
         return None
 
     # ── Connection card (View 1) ─────────────────────────────────────────────
-    status_icon = ft.Icon(ft.Icons.CHECK_CIRCLE, size=18)
-    status_msg  = ft.Text("", size=13)
+    status_icon = ft.Icon(ft.Icons.CHECK_CIRCLE, size=16)
+    status_msg  = ft.Text("", size=12)
     status_box  = ft.Container(
         content=ft.Row([status_icon, status_msg], spacing=8),
         border_radius=8,
-        padding=ft.Padding.symmetric(horizontal=14, vertical=10),
+        padding=ft.Padding.symmetric(horizontal=12, vertical=8),
         visible=False,
     )
 
     conn_card = ft.Container(
-        width=CONTENT_W,
-        bgcolor=SURFACE,
-        border_radius=16,
-        padding=24,
-        border=ft.Border.all(1, BORDER),
-        shadow=ft.BoxShadow(blur_radius=28, color="#0000001a", offset=ft.Offset(0, 8)),
+        width=480,
+        bgcolor="#ffffff",
+        border_radius=20,
+        padding=ft.Padding(left=36, right=36, top=32, bottom=32),
+        border=ft.Border.all(1, "#e2e8f0"),
+        shadow=ft.BoxShadow(
+            blur_radius=48, color="#00000012", offset=ft.Offset(0, 12),
+        ),
         content=ft.Column(
-            spacing=12,
+            spacing=0,
+            tight=True,
             controls=[
-                ft.Text("Conexión a base de datos", size=15, weight=ft.FontWeight.W_600, color=TEXT),
-                ft.Text("Parámetros de acceso al motor de base de datos", size=12, color=MUTED),
-                ft.Divider(height=1, color=BORDER),
-                engine_dd,
+                # Header
+                ft.Row(
+                    [
+                        ft.Container(
+                            content=ft.Icon(ft.Icons.STORAGE_ROUNDED,
+                                            color=ACCENT, size=20),
+                            bgcolor="#eff6ff",
+                            border_radius=12,
+                            padding=10,
+                        ),
+                        ft.Column(
+                            [
+                                ft.Text("Conexión a base de datos",
+                                        size=16, weight=ft.FontWeight.BOLD,
+                                        color=TEXT),
+                                ft.Text("Define los parámetros de acceso al motor",
+                                        size=12, color=MUTED),
+                            ],
+                            spacing=2, tight=True,
+                        ),
+                    ],
+                    spacing=14,
+                    vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                ),
+                ft.Container(height=24),
+                # Engine pills
+                ft.Row(engine_pills, spacing=8),
+                ft.Container(height=20),
+                ft.Divider(height=1, color="#f1f5f9"),
+                ft.Container(height=20),
+                # Fields
                 ft.Row([f_host, f_port], spacing=12),
-                f_db, f_user, f_pass,
-                ft.Row([btn], alignment=ft.MainAxisAlignment.END),
+                ft.Container(height=12),
+                f_db,
+                ft.Container(height=12),
+                f_user,
+                ft.Container(height=12),
+                f_pass,
+                ft.Container(height=16),
+                status_box,
+                ft.Container(height=16),
+                btn,
             ],
         ),
     )
@@ -657,7 +715,7 @@ async def main(page: ft.Page):
         page.update()
 
         try:
-            key = engine_dd.value
+            key = _selected_engine[0]
             cfg = {
                 "db_engine": ENGINES[key]["db_engine"],
                 "host":      f_host.value.strip(),
@@ -835,7 +893,6 @@ async def main(page: ft.Page):
                     ft.Container(height=16),
                     conn_card,
                     ft.Container(height=8),
-                    ft.Container(width=CONTENT_W, content=status_box),
                     connected_bar,
                     ft.Container(height=12),
                     pipeline_section,
