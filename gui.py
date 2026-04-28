@@ -319,7 +319,12 @@ async def main(page: ft.Page):
         )
         if files:
             d = _get_defaults()
+            existing_paths = {t["file"] for t in tasks_data}
+            added = 0
             for f in files:
+                if f.path in existing_paths:
+                    continue
+                existing_paths.add(f.path)
                 task_list.controls.append(make_task_row(
                     f.path,
                     schema=d.get("schema", ""),
@@ -327,7 +332,9 @@ async def main(page: ft.Page):
                     active=d.get("active", True),
                     create_table=d.get("crear_tabla_si_no_existe", True),
                 ))
-            update_pipeline_ui()
+                added += 1
+            if added:
+                update_pipeline_ui()
 
     # ── Column header row ────────────────────────────────────────────────────
     task_header = ft.Container(
