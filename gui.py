@@ -249,10 +249,28 @@ async def main(page: ft.Page):
         cb_create   = ft.Checkbox(
             value=create_table, active_color=ACCENT, tooltip="Crear tabla si no existe"
         )
+        truncate_cont_ref: list = []
+
+        def on_truncate_change(e):
+            if truncate_cont_ref:
+                truncate_cont_ref[0].border = (
+                    None if e.control.value
+                    else ft.Border.all(1, "#fca5a5")
+                )
+                page.update()
+
         cb_truncate = ft.Checkbox(
             value=truncate, active_color=ERROR,
             tooltip="Truncar tabla antes de cargar (elimina todos los registros)",
+            on_change=on_truncate_change,
         )
+        truncate_cont = ft.Container(
+            content=cb_truncate, width=80,
+            alignment=ft.Alignment.CENTER,
+            border=ft.Border.all(1, "#fca5a5") if not truncate else None,
+            border_radius=6,
+        )
+        truncate_cont_ref.append(truncate_cont)
 
         task = {
             "file": file_path, "f_table": f_table, "f_schema": f_schema,
@@ -295,10 +313,7 @@ async def main(page: ft.Page):
                         content=cb_create, width=110,
                         alignment=ft.Alignment.CENTER,
                     ),
-                    ft.Container(
-                        content=cb_truncate, width=80,
-                        alignment=ft.Alignment.CENTER,
-                    ),
+                    truncate_cont,
                     ft.IconButton(
                         icon=ft.Icons.CLOSE, icon_color=MUTED,
                         icon_size=14, on_click=remove, tooltip="Eliminar",
