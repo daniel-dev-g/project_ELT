@@ -31,7 +31,7 @@ SUCCESS_BG = "#d1fae5"
 ERROR = "#dc2626"
 ERROR_BG = "#fee2e2"
 BG = "#f8fafc"
-SURFACE = "#eff6ff"
+SURFACE = "#f0f9ff"
 TEXT = "#1e293b"
 MUTED = "#64748b"
 BORDER = "#bfdbfe"
@@ -44,6 +44,9 @@ def _field(**kwargs) -> ft.TextField:
         cursor_color=ACCENT,
         border_radius=8,
         text_size=14,
+        bgcolor="#ffffff",
+        filled=True,
+        fill_color="#ffffff",
         label_style=ft.TextStyle(color=MUTED),
         **kwargs,
     )
