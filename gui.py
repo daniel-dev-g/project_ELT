@@ -25,11 +25,14 @@ ENGINES = {
 }
 
 ACCENT = "#7c3aed"
+ACCENT_HOVER = "#8b5cf6"
 SUCCESS = "#10b981"
 ERROR = "#ef4444"
-BG = "#0f0e17"
-SURFACE = "#1a1040"
-MUTED = "#94a3b8"
+BG = "#0f172a"
+SURFACE = "#1e293b"
+MUTED = "#64748b"
+TEXT = "#f8fafc"
+TEXT_SUB = "#cbd5e1"
 BORDER = "#334155"
 
 
@@ -108,12 +111,12 @@ async def main(page: ft.Page):
     engine_dd.on_change = on_engine_change
 
     # ── Button (Container) ────────────────────────────────────────────────────
-    btn_icon = ft.Icon(ft.Icons.CABLE, color="white", size=18)
+    btn_icon = ft.Icon(ft.Icons.CABLE, color=TEXT, size=18)
     btn_spinner = ft.ProgressRing(
         width=16, height=16, stroke_width=2, color="white", visible=False
     )
     btn_label = ft.Text(
-        "Conectar", color="white", size=14, weight=ft.FontWeight.W_600
+        "Conectar", color=TEXT, size=14, weight=ft.FontWeight.W_600
     )
     btn = ft.Container(
         content=ft.Row(
@@ -208,8 +211,9 @@ async def main(page: ft.Page):
         ft.Container(
             expand=True,
             bgcolor=BG,
-            padding=ft.Padding.symmetric(horizontal=40, vertical=52),
+            padding=ft.Padding.symmetric(horizontal=30, vertical=40),
             content=ft.Column(
+                scroll=ft.ScrollMode.AUTO,
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                 spacing=0,
                 controls=[
@@ -217,30 +221,40 @@ async def main(page: ft.Page):
                         "FlowELT",
                         size=36,
                         weight=ft.FontWeight.BOLD,
-                        color="white",
+                        color=TEXT,
                     ),
                     ft.Text(
                         "Carga masiva nativa hacia tu base de datos",
                         size=13,
                         color=MUTED,
                     ),
-                    ft.Container(height=36),
+                    ft.Container(height=32),
                     ft.Container(
+                        width=460,
                         bgcolor=SURFACE,
                         border_radius=16,
-                        padding=32,
-                        width=440,
-                        border=ft.Border.all(1, "#2d2060"),
+                        padding=30,
+                        border=ft.Border.all(1, BORDER),
+                        shadow=ft.BoxShadow(
+                            blur_radius=24,
+                            color="#00000055",
+                            offset=ft.Offset(0, 6),
+                        ),
                         content=ft.Column(
                             spacing=16,
                             controls=[
                                 ft.Text(
                                     "Configurar conexión",
-                                    size=15,
+                                    size=16,
                                     weight=ft.FontWeight.W_600,
-                                    color="white",
+                                    color=TEXT,
                                 ),
-                                ft.Divider(height=1, color="#2d2060"),
+                                ft.Text(
+                                    "Parámetros de acceso al motor de base de datos",
+                                    size=12,
+                                    color=MUTED,
+                                ),
+                                ft.Divider(height=1, color=BORDER),
                                 engine_dd,
                                 ft.Row([f_host, f_port], spacing=12),
                                 f_db,
@@ -259,6 +273,5 @@ async def main(page: ft.Page):
             ),
         )
     )
-
 
 ft.run(main)
