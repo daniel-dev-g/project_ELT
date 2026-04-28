@@ -95,11 +95,11 @@ class PostgresAdapter(DatabaseAdapter):
             return False
 
     def bulk_load(self, task: dict) -> int:
-        """Upload CSV to Postgres using server-side COPY FROM.
+        """Upload CSV to Postgres.
 
-        Postgres lee el archivo directo desde disco sin pasar por Python.
-        Si el path es absoluto y no coincide con bulk_path_map, se usa tal cual
-        (rutas de servidor en Escenario B).
+        - Escenario B (nativo): archivo accesible localmente → COPY FROM STDIN
+          (client-side, sin restricciones de permisos del servidor).
+        - Escenario A (Docker): ruta de servidor → COPY FROM file (server-side).
         """
 
         file = task['file']
@@ -116,24 +116,40 @@ class PostgresAdapter(DatabaseAdapter):
             file = file.replace(host_prefix, path_map['container'])
 
         logger.info("Path: %s", file)
-
-        copy_sql = (
-            f'COPY "{schema}"."{table_destination}" '
-            f"FROM '{file}' WITH ("
-            f"FORMAT csv, DELIMITER '{delimiter}', HEADER true)"
-        )
-
         logger.info("Executing COPY FROM...")
 
-        try:
-            with self.get_db_cursor() as cursor:
-                cursor.execute(copy_sql)
-                rows_affected = cursor.rowcount
-
-            logger.info(
-                "COPY FROM successful - %d inserted rows", rows_affected
+        local_path = pathlib.Path(file)
+        if local_path.exists():
+            # Client-side COPY: Python abre el archivo y lo envía vía STDIN.
+            # No requiere pg_read_server_files ni acceso del servidor al FS.
+            copy_sql = (
+                f'COPY "{schema}"."{table_destination}" '
+                f"FROM STDIN WITH ("
+                f"FORMAT csv, DELIMITER '{delimiter}', HEADER true)"
             )
-            return rows_affected
-        except Exception as e:
-            logger.error("COPY FROM failed: %s", str(e))
-            raise
+            try:
+                with self.get_db_cursor() as cursor:
+                    with open(local_path, 'rb') as fh:
+                        cursor.copy_expert(copy_sql, fh)
+                    rows_affected = cursor.rowcount
+                logger.info("COPY STDIN successful - %d inserted rows", rows_affected)
+                return rows_affected
+            except Exception as e:
+                logger.error("COPY STDIN failed: %s", str(e))
+                raise
+        else:
+            # Server-side COPY: ruta accesible sólo desde el proceso PostgreSQL.
+            copy_sql = (
+                f'COPY "{schema}"."{table_destination}" '
+                f"FROM '{file}' WITH ("
+                f"FORMAT csv, DELIMITER '{delimiter}', HEADER true)"
+            )
+            try:
+                with self.get_db_cursor() as cursor:
+                    cursor.execute(copy_sql)
+                    rows_affected = cursor.rowcount
+                logger.info("COPY FROM successful - %d inserted rows", rows_affected)
+                return rows_affected
+            except Exception as e:
+                logger.error("COPY FROM failed: %s", str(e))
+                raise
