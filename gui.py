@@ -30,11 +30,11 @@ SUCCESS = "#059669"
 SUCCESS_BG = "#d1fae5"
 ERROR = "#dc2626"
 ERROR_BG = "#fee2e2"
-BG = "#f1f5f9"
-SURFACE = "#ffffff"
+BG = "#f8fafc"
+SURFACE = "#eff6ff"
 TEXT = "#1e293b"
 MUTED = "#64748b"
-BORDER = "#e2e8f0"
+BORDER = "#bfdbfe"
 
 
 def _field(**kwargs) -> ft.TextField:
