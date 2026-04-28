@@ -28,6 +28,8 @@ ACCENT_DIM  = "#2563eb"
 SUCCESS     = "#3b82f6"
 SUCCESS_BG  = "#eff6ff"
 SUCCESS_DIM = "#2563eb"
+RUN_BTN     = "#1d4ed8"
+RUN_BTN_DIM = "#1e40af"
 ERROR       = "#dc2626"
 ERROR_BG    = "#fee2e2"
 BG          = "#f8fafc"
@@ -415,7 +417,7 @@ async def main(page: ft.Page):
             [run_btn_icon, run_btn_spinner, run_btn_label],
             spacing=6, alignment=ft.MainAxisAlignment.CENTER, tight=True,
         ),
-        bgcolor=SUCCESS, border_radius=8,
+        bgcolor=RUN_BTN, border_radius=8,
         padding=ft.Padding.symmetric(horizontal=20, vertical=10),
         ink=True, expand=True,
     )
@@ -593,7 +595,7 @@ async def main(page: ft.Page):
         run_btn_icon.visible    = not loading
         run_btn_spinner.visible = loading
         run_btn_label.value     = "Ejecutando..." if loading else "Ejecutar pipeline"
-        btn_run.bgcolor         = SUCCESS_DIM if loading else SUCCESS
+        btn_run.bgcolor         = RUN_BTN_DIM if loading else RUN_BTN
         btn_run.on_click        = None if loading else do_run
         btn_save.on_click       = None if loading else do_save
         page.update()
