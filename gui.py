@@ -284,7 +284,7 @@ async def main(page: ft.Page):
                         alignment=ft.Alignment.CENTER,
                     ),
                     ft.Container(
-                        content=cb_create, width=52,
+                        content=cb_create, width=110,
                         alignment=ft.Alignment.CENTER,
                     ),
                     ft.IconButton(
@@ -357,7 +357,7 @@ async def main(page: ft.Page):
                         weight=ft.FontWeight.W_500),
                 ft.Text("Activo",                    size=13, color=MUTED, width=52,
                         weight=ft.FontWeight.W_500, text_align=ft.TextAlign.CENTER),
-                ft.Text("Crear tabla si no existe",  size=13, color=MUTED, width=52,
+                ft.Text("Crear tabla si no existe",  size=13, color=MUTED, width=110,
                         weight=ft.FontWeight.W_500, text_align=ft.TextAlign.CENTER,
                         no_wrap=False),
                 ft.Container(width=36),
