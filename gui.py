@@ -55,6 +55,13 @@ def _field(**kwargs) -> ft.TextField:
 async def main(page: ft.Page):
     page.title = "FlowELT"
     page.theme_mode = ft.ThemeMode.LIGHT
+    page.theme = ft.Theme(
+        color_scheme=ft.ColorScheme(
+            primary=ACCENT,
+            surface="#ffffff",
+            surface_container_highest="#f1f5f9",
+        )
+    )
     page.bgcolor = BG
     page.padding = 0
     page.window.width = 520
@@ -102,6 +109,9 @@ async def main(page: ft.Page):
         focused_border_color=ACCENT,
         border_radius=8,
         text_size=14,
+        bgcolor="#ffffff",
+        filled=True,
+        fill_color="#ffffff",
         label_style=ft.TextStyle(color=MUTED),
         options=[
             ft.dropdown.Option(key=k, text=v["label"])
