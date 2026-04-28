@@ -11,7 +11,8 @@ import flet as ft
 from src.state_manager.core.adapter_db.factory_db import factory_db
 from src.validators import check_db_connection
 from main import _run_tasks
-from src.visualization.log_dashboard import generate_latest_dashboard
+from src.log_csv import get_log_path
+from src.visualization.log_dashboard import generate_dashboard
 
 
 ENGINES = {
@@ -300,13 +301,32 @@ async def main(page: ft.Page):
     file_picker = ft.FilePicker()
     page.services.append(file_picker)
 
+    def _get_defaults() -> dict:
+        base = {"schema": "", "delimiter": ";",
+                "crear_tabla_si_no_existe": True, "active": True}
+        try:
+            if os.path.exists("config/pipeline.yaml"):
+                with open("config/pipeline.yaml", "r", encoding="utf-8") as fh:
+                    data = yaml.safe_load(fh) or {}
+                base.update(data.get("_defaults", {}))
+        except Exception:
+            pass
+        return base
+
     async def open_picker(_):
         files = await file_picker.pick_files(
             allow_multiple=True, allowed_extensions=["csv", "txt"],
         )
         if files:
+            d = _get_defaults()
             for f in files:
-                task_list.controls.append(make_task_row(f.path))
+                task_list.controls.append(make_task_row(
+                    f.path,
+                    schema=d.get("schema", ""),
+                    delimiter=d.get("delimiter", ";"),
+                    active=d.get("active", True),
+                    create_table=d.get("crear_tabla_si_no_existe", True),
+                ))
             update_pipeline_ui()
 
     # ── Column header row ────────────────────────────────────────────────────
@@ -405,6 +425,18 @@ async def main(page: ft.Page):
                                 weight=ft.FontWeight.W_600, color=TEXT, expand=True),
                         ft.Container(
                             content=ft.Row(
+                                [ft.Icon(ft.Icons.DELETE_OUTLINE, color=MUTED, size=14),
+                                 ft.Text("Limpiar", color=MUTED, size=12,
+                                         weight=ft.FontWeight.W_500)],
+                                spacing=4, tight=True,
+                            ),
+                            bgcolor="#f8fafc", border_radius=6,
+                            border=ft.Border.all(1, BORDER_ROW),
+                            padding=ft.Padding.symmetric(horizontal=10, vertical=6),
+                            ink=True, on_click=lambda _: do_clear(),
+                        ),
+                        ft.Container(
+                            content=ft.Row(
                                 [ft.Icon(ft.Icons.ADD, color=ACCENT, size=14),
                                  ft.Text("Agregar CSV", color=ACCENT, size=12,
                                          weight=ft.FontWeight.W_500)],
@@ -450,18 +482,49 @@ async def main(page: ft.Page):
             run_box.visible = False
         page.update()
 
+    def do_clear():
+        cfg = _build_pipeline_cfg([])   # preserves _defaults, task: []
+        with open("config/pipeline.yaml", "w", encoding="utf-8") as fh:
+            yaml.dump(cfg, fh, allow_unicode=True,
+                      default_flow_style=False, sort_keys=False)
+        tasks_data.clear()
+        task_list.controls.clear()
+        _dashboard_path.clear()
+        update_pipeline_ui()
+
     # ── Task dict for yaml ───────────────────────────────────────────────────
     def build_task(t: dict) -> dict:
         return {
-            "name":                   f"Carga {t['f_table'].value.strip() or 'sin nombre'}",
-            "file":                   t["file"],
-            "delimiter":              t["delim_dd"].value,
-            "encoding":               "utf8",
-            "table_destination":      t["f_table"].value.strip(),
+            "name":                    f"Carga {t['f_table'].value.strip() or 'sin nombre'}",
+            "file":                    t["file"],
+            "delimiter":               t["delim_dd"].value,
+            "encoding":                "utf8",
+            "table_destination":       t["f_table"].value.strip(),
             "crear_tabla_si_no_existe": t["cb_create"].value,
-            "schema":                 t["f_schema"].value.strip(),
-            "active":                 t["cb_active"].value,
+            "schema":                  t["f_schema"].value.strip(),
+            "active":                  t["cb_active"].value,
         }
+
+    def _build_pipeline_cfg(tasks: list[dict]) -> dict:
+        """Builds full pipeline config including _defaults from current tasks."""
+        if tasks:
+            first = tasks[0]
+            defaults = {
+                "schema":                  first["schema"],
+                "delimiter":               first["delimiter"],
+                "crear_tabla_si_no_existe": first["crear_tabla_si_no_existe"],
+                "active":                  first["active"],
+            }
+        else:
+            try:
+                if os.path.exists("config/pipeline.yaml"):
+                    with open("config/pipeline.yaml", "r", encoding="utf-8") as fh:
+                        defaults = (yaml.safe_load(fh) or {}).get("_defaults", {})
+                else:
+                    defaults = {}
+            except Exception:
+                defaults = {}
+        return {"_defaults": defaults, "task": tasks}
 
     # ── Load existing pipeline.yaml ──────────────────────────────────────────
     def _load_existing_pipeline():
@@ -599,7 +662,7 @@ async def main(page: ft.Page):
     def do_save(_):
         if not tasks_data:
             return
-        pipeline_cfg = {"task": [build_task(t) for t in tasks_data]}
+        pipeline_cfg = _build_pipeline_cfg([build_task(t) for t in tasks_data])
         with open("config/pipeline.yaml", "w", encoding="utf-8") as fh:
             yaml.dump(pipeline_cfg, fh, allow_unicode=True,
                       default_flow_style=False, sort_keys=False)
@@ -610,12 +673,15 @@ async def main(page: ft.Page):
         if not _adapter:
             _show_run_status(False, "No hay conexión activa. Vuelve a conectar.")
             return
+        if not tasks_data:
+            _show_run_status(False, "Agrega al menos un archivo al pipeline.")
+            return
         missing = [t for t in tasks_data if not t["f_table"].value.strip()]
         if missing:
             _show_run_status(False, "Completa 'Tabla destino' en todas las tareas.")
             return
 
-        pipeline_cfg = {"task": [build_task(t) for t in tasks_data]}
+        pipeline_cfg = _build_pipeline_cfg([build_task(t) for t in tasks_data])
         with open("config/pipeline.yaml", "w", encoding="utf-8") as fh:
             yaml.dump(pipeline_cfg, fh, allow_unicode=True,
                       default_flow_style=False, sort_keys=False)
@@ -640,8 +706,10 @@ async def main(page: ft.Page):
             failed   = summary["failed_tasks"]
 
             try:
+                log_path = get_log_path()
                 dash_path = await loop.run_in_executor(
-                    None, generate_latest_dashboard
+                    None, generate_dashboard,
+                    log_path, log_path.with_suffix(".html"),
                 )
                 _dashboard_path.clear()
                 _dashboard_path.append(dash_path)
