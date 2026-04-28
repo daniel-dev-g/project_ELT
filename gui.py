@@ -55,7 +55,7 @@ async def main(page: ft.Page):
     page.bgcolor = BG
     page.padding = 0
     page.window.width = 520
-    page.window.height = 720
+    page.window.height = 780
     page.window.resizable = False
 
     # ── Fields ────────────────────────────────────────────────────────────────
@@ -214,15 +214,14 @@ async def main(page: ft.Page):
         ft.Container(
             expand=True,
             bgcolor=BG,
-            padding=ft.Padding.symmetric(horizontal=30, vertical=40),
+            padding=ft.Padding.symmetric(horizontal=30, vertical=32),
             content=ft.Column(
-                scroll=ft.ScrollMode.AUTO,
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                 spacing=0,
                 controls=[
                     ft.Text(
                         "FlowELT",
-                        size=36,
+                        size=34,
                         weight=ft.FontWeight.BOLD,
                         color=TEXT,
                     ),
@@ -231,12 +230,12 @@ async def main(page: ft.Page):
                         size=13,
                         color=MUTED,
                     ),
-                    ft.Container(height=32),
+                    ft.Container(height=24),
                     ft.Container(
                         width=460,
                         bgcolor=SURFACE,
                         border_radius=16,
-                        padding=30,
+                        padding=24,
                         border=ft.Border.all(1, BORDER),
                         shadow=ft.BoxShadow(
                             blur_radius=28,
@@ -244,11 +243,11 @@ async def main(page: ft.Page):
                             offset=ft.Offset(0, 8),
                         ),
                         content=ft.Column(
-                            spacing=16,
+                            spacing=12,
                             controls=[
                                 ft.Text(
                                     "Configurar conexión",
-                                    size=16,
+                                    size=15,
                                     weight=ft.FontWeight.W_600,
                                     color=TEXT,
                                 ),
@@ -263,14 +262,17 @@ async def main(page: ft.Page):
                                 f_db,
                                 f_user,
                                 f_pass,
-                                ft.Container(height=4),
                                 ft.Row(
                                     [btn],
                                     alignment=ft.MainAxisAlignment.END,
                                 ),
-                                status_box,
                             ],
                         ),
+                    ),
+                    ft.Container(height=12),
+                    ft.Container(
+                        width=460,
+                        content=status_box,
                     ),
                 ],
             ),
