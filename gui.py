@@ -227,11 +227,11 @@ async def main(page: ft.Page):
         f_schema = _row_field(label="Schema", width=88, value=schema)
 
         delim_dd = ft.Dropdown(
-            value=delimiter, width=72,
+            value=delimiter, width=90,
             border_color=BORDER_ROW, focused_border_color=ACCENT,
             border_radius=6, text_size=12,
             bgcolor="#ffffff", filled=True, fill_color="#ffffff",
-            label="Del.", label_style=ft.TextStyle(color=MUTED, size=11),
+            label="Delimitador", label_style=ft.TextStyle(color=MUTED, size=11),
             content_padding=ft.Padding.symmetric(horizontal=8, vertical=6),
             options=[
                 ft.dropdown.Option(key=";",  text=";"),
@@ -280,11 +280,11 @@ async def main(page: ft.Page):
                     f_schema,
                     delim_dd,
                     ft.Container(
-                        content=cb_active, width=32,
+                        content=cb_active, width=52,
                         alignment=ft.Alignment.CENTER,
                     ),
                     ft.Container(
-                        content=cb_create, width=38,
+                        content=cb_create, width=52,
                         alignment=ft.Alignment.CENTER,
                     ),
                     ft.IconButton(
@@ -346,16 +346,21 @@ async def main(page: ft.Page):
         padding=ft.Padding.symmetric(horizontal=10, vertical=6),
         content=ft.Row(
             [
-                ft.Container(width=14),   # icon placeholder
-                ft.Text("Archivo",        size=11, color=MUTED, expand=2),
-                ft.Text("Tabla destino",  size=11, color=MUTED, expand=True),
-                ft.Text("Schema",         size=11, color=MUTED, width=88),
-                ft.Text("Del.",           size=11, color=MUTED, width=72),
-                ft.Text("Act.",           size=11, color=MUTED, width=32,
-                        text_align=ft.TextAlign.CENTER),
-                ft.Text("Crear",          size=11, color=MUTED, width=38,
-                        text_align=ft.TextAlign.CENTER),
-                ft.Container(width=36),   # delete button placeholder
+                ft.Container(width=14),
+                ft.Text("Archivo",                   size=13, color=MUTED, expand=2,
+                        weight=ft.FontWeight.W_500),
+                ft.Text("Tabla destino",             size=13, color=MUTED, expand=True,
+                        weight=ft.FontWeight.W_500),
+                ft.Text("Schema",                    size=13, color=MUTED, width=88,
+                        weight=ft.FontWeight.W_500),
+                ft.Text("Delimitador",               size=13, color=MUTED, width=90,
+                        weight=ft.FontWeight.W_500),
+                ft.Text("Activo",                    size=13, color=MUTED, width=52,
+                        weight=ft.FontWeight.W_500, text_align=ft.TextAlign.CENTER),
+                ft.Text("Crear tabla si no existe",  size=13, color=MUTED, width=52,
+                        weight=ft.FontWeight.W_500, text_align=ft.TextAlign.CENTER,
+                        no_wrap=False),
+                ft.Container(width=36),
             ],
             spacing=6,
         ),
