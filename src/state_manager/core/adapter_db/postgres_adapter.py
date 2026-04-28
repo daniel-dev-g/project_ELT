@@ -94,6 +94,15 @@ class PostgresAdapter(DatabaseAdapter):
             )
             return False
 
+    def truncate_table(self, schema: str, table: str) -> None:
+        if schema:
+            sql = f'TRUNCATE "{schema}"."{table}"'
+        else:
+            sql = f'TRUNCATE "{table}"'
+        with self.get_db_cursor() as cursor:
+            cursor.execute(sql)
+        logger.info("TRUNCATE OK: %s.%s", schema, table)
+
     def bulk_load(self, task: dict) -> int:
         """Upload CSV to Postgres.
 

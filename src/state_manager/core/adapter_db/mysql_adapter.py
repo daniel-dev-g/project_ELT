@@ -92,6 +92,15 @@ class MySQLAdapter(DatabaseAdapter):
             )
             return False
 
+    def truncate_table(self, schema: str, table: str) -> None:
+        if schema:
+            sql = f"TRUNCATE TABLE `{schema}`.`{table}`"
+        else:
+            sql = f"TRUNCATE TABLE `{table}`"
+        with self.get_db_cursor() as cursor:
+            cursor.execute(sql)
+        logger.info("TRUNCATE OK: %s.%s", schema, table)
+
     def bulk_load(self, task: dict) -> int:
         """Upload CSV to MariaDB using server-side LOAD DATA INFILE.
 

@@ -224,6 +224,7 @@ async def main(page: ft.Page):
         delimiter: str = ";",
         active: bool = True,
         create_table: bool = True,
+        truncate: bool = False,
     ) -> ft.Container:
         f_table  = _row_field(label="Tabla destino", expand=True, value=table)
         f_schema = _row_field(label="Schema", width=88, value=schema)
@@ -242,16 +243,21 @@ async def main(page: ft.Page):
                 ft.dropdown.Option(key="\t", text="\\t"),
             ],
         )
-        cb_active  = ft.Checkbox(
+        cb_active   = ft.Checkbox(
             value=active, active_color=ACCENT, tooltip="Activo"
         )
-        cb_create  = ft.Checkbox(
+        cb_create   = ft.Checkbox(
             value=create_table, active_color=ACCENT, tooltip="Crear tabla si no existe"
+        )
+        cb_truncate = ft.Checkbox(
+            value=truncate, active_color=ERROR,
+            tooltip="Truncar tabla antes de cargar (elimina todos los registros)",
         )
 
         task = {
             "file": file_path, "f_table": f_table, "f_schema": f_schema,
-            "delim_dd": delim_dd, "cb_active": cb_active, "cb_create": cb_create,
+            "delim_dd": delim_dd, "cb_active": cb_active,
+            "cb_create": cb_create, "cb_truncate": cb_truncate,
         }
         tasks_data.append(task)
 
@@ -289,6 +295,10 @@ async def main(page: ft.Page):
                         content=cb_create, width=110,
                         alignment=ft.Alignment.CENTER,
                     ),
+                    ft.Container(
+                        content=cb_truncate, width=80,
+                        alignment=ft.Alignment.CENTER,
+                    ),
                     ft.IconButton(
                         icon=ft.Icons.CLOSE, icon_color=MUTED,
                         icon_size=14, on_click=remove, tooltip="Eliminar",
@@ -307,7 +317,8 @@ async def main(page: ft.Page):
 
     def _get_defaults() -> dict:
         base = {"schema": "", "delimiter": ";",
-                "crear_tabla_si_no_existe": True, "active": True}
+                "crear_tabla_si_no_existe": True, "active": True,
+                "truncate_before_load": False}
         try:
             if os.path.exists("config/pipeline.yaml"):
                 with open("config/pipeline.yaml", "r", encoding="utf-8") as fh:
@@ -335,6 +346,7 @@ async def main(page: ft.Page):
                     delimiter=d.get("delimiter", ";"),
                     active=d.get("active", True),
                     create_table=d.get("crear_tabla_si_no_existe", True),
+                    truncate=d.get("truncate_before_load", False),
                 ))
                 added += 1
             if added:
@@ -360,6 +372,9 @@ async def main(page: ft.Page):
                 ft.Text("Activo",                    size=13, color=MUTED, width=52,
                         weight=ft.FontWeight.W_500, text_align=ft.TextAlign.CENTER),
                 ft.Text("Crear tabla si no existe",  size=13, color=MUTED, width=110,
+                        weight=ft.FontWeight.W_500, text_align=ft.TextAlign.CENTER,
+                        no_wrap=False),
+                ft.Text("Truncar tabla", size=13, color=ERROR, width=80,
                         weight=ft.FontWeight.W_500, text_align=ft.TextAlign.CENTER,
                         no_wrap=False),
                 ft.Container(width=36),
@@ -517,6 +532,7 @@ async def main(page: ft.Page):
             "encoding":                "utf8",
             "table_destination":       t["f_table"].value.strip(),
             "crear_tabla_si_no_existe": t["cb_create"].value,
+            "truncate_before_load":    t["cb_truncate"].value,
             "schema":                  t["f_schema"].value.strip(),
             "active":                  t["cb_active"].value,
         }
@@ -529,6 +545,7 @@ async def main(page: ft.Page):
                 "schema":                  first["schema"],
                 "delimiter":               first["delimiter"],
                 "crear_tabla_si_no_existe": first["crear_tabla_si_no_existe"],
+                "truncate_before_load":    first["truncate_before_load"],
                 "active":                  first["active"],
             }
         else:
@@ -557,6 +574,7 @@ async def main(page: ft.Page):
                     delimiter=t.get("delimiter", ";"),
                     active=t.get("active", True),
                     create_table=t.get("crear_tabla_si_no_existe", True),
+                    truncate=t.get("truncate_before_load", False),
                 )
                 task_list.controls.append(row)
             if task_list.controls:

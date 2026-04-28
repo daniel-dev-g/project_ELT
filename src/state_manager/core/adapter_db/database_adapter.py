@@ -21,3 +21,8 @@ class DatabaseAdapter(ABC):
             Raises exception on technical failure.
         """
         pass
+
+    @abstractmethod
+    def truncate_table(self, schema: str, table: str) -> None:
+        """Deletes all rows from table before loading."""
+        pass

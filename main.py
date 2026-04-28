@@ -54,8 +54,15 @@ def process_task(
     try:
         check_table_exists(db_adapter.engine, table, schema)
         db_adapter.check_bulk_permission()
-        # validate_path returns False when file is not accessible from the
-        # container (e.g. absolute host path in Scenario B). The DB validates.
+
+        if task.get("truncate_before_load"):
+            db_adapter.truncate_table(schema, table)
+            registrar_log("table_truncated", {
+                "execution_id": execution_id,
+                "table": table,
+                "schema": schema,
+            })
+
         if not validate_path(file_path, ".csv"):
             logger.info(
                 "File not accessible from container: %s "
