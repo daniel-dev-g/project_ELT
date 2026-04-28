@@ -189,6 +189,7 @@ async def main(page: ft.Page):
         content=ft.Column(
             spacing=0,
             tight=True,
+            horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
             controls=[
                 # Header
                 ft.Row(
