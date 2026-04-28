@@ -1,13 +1,17 @@
 """gui.py — FlowELT Desktop App"""
 import asyncio
 import os
+import subprocess
+import sys
 import uuid
+import webbrowser
 import yaml
 import flet as ft
 
 from src.state_manager.core.adapter_db.factory_db import factory_db
 from src.validators import check_db_connection
 from main import _run_tasks
+from src.visualization.log_dashboard import generate_latest_dashboard
 
 
 ENGINES = {
@@ -330,9 +334,27 @@ async def main(page: ft.Page):
 
     # ── Run status banner ────────────────────────────────────────────────────
     run_icon = ft.Icon(ft.Icons.CHECK_CIRCLE, size=18)
-    run_msg  = ft.Text("", size=13)
+    run_msg  = ft.Text("", size=13, expand=True)
+    _dashboard_path: list = []   # [Path] tras ejecución exitosa
+
+    dash_link = ft.Container(
+        visible=False,
+        content=ft.Row(
+            [
+                ft.Icon(ft.Icons.OPEN_IN_BROWSER, size=14, color=ACCENT),
+                ft.Text("Ver dashboard", size=12, color=ACCENT,
+                        weight=ft.FontWeight.W_500),
+            ],
+            spacing=4, tight=True,
+        ),
+        ink=True,
+        border_radius=4,
+        padding=ft.Padding.symmetric(horizontal=8, vertical=4),
+        on_click=lambda _: _open_dashboard(),
+    )
     run_box  = ft.Container(
-        content=ft.Row([run_icon, run_msg], spacing=8),
+        content=ft.Row([run_icon, run_msg, dash_link], spacing=8,
+                       vertical_alignment=ft.CrossAxisAlignment.CENTER),
         border_radius=8,
         padding=ft.Padding.symmetric(horizontal=14, vertical=10),
         visible=False,
@@ -407,6 +429,19 @@ async def main(page: ft.Page):
     )
 
     # ── Sync header / action_bar visibility ──────────────────────────────────
+    def _open_dashboard():
+        if not _dashboard_path:
+            return
+        url = f"file://{_dashboard_path[0].resolve()}"
+        if sys.platform == "win32":
+            subprocess.Popen(["cmd", "/c", "start", "", url])
+            return
+        for browser in ("firefox", "brave", "google-chrome", "chromium", "msedge"):
+            if subprocess.run(["which", browser], capture_output=True).returncode == 0:
+                subprocess.Popen([browser, url])
+                return
+        webbrowser.open(url)
+
     def update_pipeline_ui():
         has_tasks = bool(task_list.controls)
         task_header.visible = has_tasks
@@ -486,15 +521,16 @@ async def main(page: ft.Page):
         btn_save.on_click       = None if loading else do_save
         page.update()
 
-    def _show_run_status(ok: bool, msg: str):
+    def _show_run_status(ok: bool, msg: str, show_dash: bool = False):
         color = SUCCESS if ok else ERROR
-        run_icon.name  = ft.Icons.CHECK_CIRCLE if ok else ft.Icons.ERROR
-        run_icon.color = color
-        run_msg.value  = msg
-        run_msg.color  = color
+        run_icon.name   = ft.Icons.CHECK_CIRCLE if ok else ft.Icons.ERROR
+        run_icon.color  = color
+        run_msg.value   = msg
+        run_msg.color   = color
         run_box.bgcolor = SUCCESS_BG if ok else ERROR_BG
         run_box.border  = ft.Border.all(1, color)
         run_box.visible = True
+        dash_link.visible = show_dash
         page.update()
 
     # ── Connect handler ──────────────────────────────────────────────────────
@@ -602,15 +638,28 @@ async def main(page: ft.Page):
             total    = summary["total_tasks"]
             rows     = summary["total_rows"]
             failed   = summary["failed_tasks"]
+
+            try:
+                dash_path = await loop.run_in_executor(
+                    None, generate_latest_dashboard
+                )
+                _dashboard_path.clear()
+                _dashboard_path.append(dash_path)
+                show_dash = True
+            except Exception:
+                show_dash = False
+
             if failed == 0:
                 _show_run_status(
                     True,
                     f"Completado — {ok_count}/{total} tareas · {rows:,} filas insertadas",
+                    show_dash=show_dash,
                 )
             else:
                 _show_run_status(
                     False,
                     f"Parcial — {ok_count} OK / {failed} fallidas · {rows:,} filas",
+                    show_dash=show_dash,
                 )
         except asyncio.TimeoutError:
             _show_run_status(False, "Tiempo de espera agotado (>5 min)")
