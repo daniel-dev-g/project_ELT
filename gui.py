@@ -3,6 +3,7 @@ import asyncio
 import os
 import subprocess
 import sys
+import time
 import uuid
 import webbrowser
 import yaml
@@ -11,7 +12,8 @@ import flet as ft
 from src.state_manager.core.adapter_db.factory_db import factory_db
 from src.validators import check_db_connection
 from main import _run_tasks
-from src.log_csv import get_log_path
+from src.csv_analisys import CSVAnalysis
+from src.log_csv import get_log_path, registrar_log
 from src.visualization.log_dashboard import generate_dashboard
 
 
@@ -694,10 +696,13 @@ async def main(page: ft.Page):
                       default_flow_style=False, sort_keys=False)
 
         execution_id = str(uuid.uuid4())
+        start_time   = time.time()
         loop = asyncio.get_running_loop()
         set_run_loading(True)
         run_box.visible = False
         page.update()
+
+        registrar_log("process_start", {"execution_id": execution_id})
 
         try:
             summary = await asyncio.wait_for(
@@ -711,6 +716,29 @@ async def main(page: ft.Page):
             total    = summary["total_tasks"]
             rows     = summary["total_rows"]
             failed   = summary["failed_tasks"]
+
+            # Análisis CSV (pipeline_init, file_analysis_metadata, pipeline_summary)
+            try:
+                await loop.run_in_executor(
+                    None,
+                    lambda: CSVAnalysis(
+                        execution_id=execution_id, start_time=start_time
+                    ).run_csv_analysis(),
+                )
+            except Exception:
+                pass
+
+            # process_complete
+            final_status = "COMPLETED" if failed == 0 else "PARTIAL"
+            registrar_log("process_complete", {
+                "execution_id": execution_id,
+                "status":            final_status,
+                "total_tasks":       total,
+                "successful_tasks":  ok_count,
+                "failed_tasks":      failed,
+                "total_rows":        rows,
+                "duration_seconds":  round(time.time() - start_time, 2),
+            })
 
             try:
                 log_path = get_log_path()
