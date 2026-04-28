@@ -24,16 +24,17 @@ ENGINES = {
     },
 }
 
-ACCENT = "#7c3aed"
-ACCENT_HOVER = "#8b5cf6"
-SUCCESS = "#10b981"
-ERROR = "#ef4444"
-BG = "#0f172a"
-SURFACE = "#1e293b"
+ACCENT = "#3b82f6"
+ACCENT_DIM = "#2563eb"
+SUCCESS = "#059669"
+SUCCESS_BG = "#d1fae5"
+ERROR = "#dc2626"
+ERROR_BG = "#fee2e2"
+BG = "#f1f5f9"
+SURFACE = "#ffffff"
+TEXT = "#1e293b"
 MUTED = "#64748b"
-TEXT = "#f8fafc"
-TEXT_SUB = "#cbd5e1"
-BORDER = "#334155"
+BORDER = "#e2e8f0"
 
 
 def _field(**kwargs) -> ft.TextField:
@@ -50,7 +51,7 @@ def _field(**kwargs) -> ft.TextField:
 
 async def main(page: ft.Page):
     page.title = "FlowELT"
-    page.theme_mode = ft.ThemeMode.DARK
+    page.theme_mode = ft.ThemeMode.LIGHT
     page.bgcolor = BG
     page.padding = 0
     page.window.width = 520
@@ -80,11 +81,13 @@ async def main(page: ft.Page):
 
     def set_status(ok: bool, msg: str):
         color = SUCCESS if ok else ERROR
+        bg = SUCCESS_BG if ok else ERROR_BG
         status_icon.name = ft.Icons.CHECK_CIRCLE if ok else ft.Icons.ERROR
         status_icon.color = color
         status_msg.value = msg
         status_msg.color = color
-        status_box.bgcolor = "#052e16" if ok else "#450a0a"
+        status_box.bgcolor = bg
+        status_box.border = ft.Border.all(1, color)
         status_box.visible = True
         page.update()
 
@@ -111,12 +114,12 @@ async def main(page: ft.Page):
     engine_dd.on_change = on_engine_change
 
     # ── Button (Container) ────────────────────────────────────────────────────
-    btn_icon = ft.Icon(ft.Icons.CABLE, color=TEXT, size=18)
+    btn_icon = ft.Icon(ft.Icons.CABLE, color="#ffffff", size=18)
     btn_spinner = ft.ProgressRing(
-        width=16, height=16, stroke_width=2, color="white", visible=False
+        width=16, height=16, stroke_width=2, color="#ffffff", visible=False
     )
     btn_label = ft.Text(
-        "Conectar", color=TEXT, size=14, weight=ft.FontWeight.W_600
+        "Conectar", color="#ffffff", size=14, weight=ft.FontWeight.W_600
     )
     btn = ft.Container(
         content=ft.Row(
@@ -135,7 +138,7 @@ async def main(page: ft.Page):
         btn_icon.visible = not loading
         btn_spinner.visible = loading
         btn_label.value = "Conectando..." if loading else "Conectar"
-        btn.bgcolor = "#5b21b6" if loading else ACCENT
+        btn.bgcolor = ACCENT_DIM if loading else ACCENT
         btn.on_click = None if loading else do_connect
         page.update()
 
@@ -236,9 +239,9 @@ async def main(page: ft.Page):
                         padding=30,
                         border=ft.Border.all(1, BORDER),
                         shadow=ft.BoxShadow(
-                            blur_radius=24,
-                            color="#00000055",
-                            offset=ft.Offset(0, 6),
+                            blur_radius=28,
+                            color="#0000001a",
+                            offset=ft.Offset(0, 8),
                         ),
                         content=ft.Column(
                             spacing=16,
