@@ -21,6 +21,42 @@ def check_db_connection(engine) -> tuple[bool, str | None]:
         return False, str(e)
 
 
+def validate_table_schema(
+    engine: Engine, tabla: str, schema: str, file_path: str, delimiter: str
+) -> None:
+    """Raises ValueError if the CSV columns don't match the existing table columns.
+
+    Skips silently when the file is not accessible from Python (server-side COPY).
+    """
+    from pathlib import Path
+    csv_path = Path(file_path)
+    if not csv_path.exists():
+        return
+
+    try:
+        inspector = inspect(engine)
+        schema_arg = schema if schema else None
+        if not inspector.has_table(tabla, schema=schema_arg):
+            return
+
+        db_cols = [col["name"] for col in inspector.get_columns(tabla, schema=schema_arg)]
+
+        with open(csv_path, "r", encoding="utf-8", errors="replace") as f:
+            header = f.readline().strip()
+        csv_cols = [c.strip().strip('"') for c in header.split(delimiter)]
+
+        if len(db_cols) != len(csv_cols):
+            raise ValueError(
+                f"Schema mismatch in '{schema}.{tabla}': "
+                f"table has {len(db_cols)} columns, CSV has {len(csv_cols)}. "
+                f"Drop the table or use a different destination table name."
+            )
+    except ValueError:
+        raise
+    except (OperationalError, ProgrammingError, OSError) as e:
+        logger.warning("Could not validate schema for %s.%s: %s", schema, tabla, e)
+
+
 def check_table_exists(engine_global: Engine, tabla: str, schema: str = "dbo") -> bool:
     "Check if the table exists in the database using SQLAlchemy Inspector."
     try:

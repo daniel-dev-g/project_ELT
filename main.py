@@ -16,7 +16,8 @@ from src.log_csv import registrar_log
 from src.validators import (
     check_db_connection,
     check_table_exists,
-    validate_path
+    validate_table_schema,
+    validate_path,
 )
 from src.visualization.log_dashboard import generate_latest_dashboard
 
@@ -69,6 +70,11 @@ def process_task(
                 "— DB server will validate",
                 file_path
             )
+
+        validate_table_schema(
+            db_adapter.engine, table, schema,
+            file_path, task.get("delimiter", ";")
+        )
 
         result = db_adapter.bulk_load(task)
         duration = round(time.time() - start_time, 2)
