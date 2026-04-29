@@ -25,15 +25,17 @@ class SqlServerAdapter(DatabaseAdapter):
             config = self.config
 
         driver = config['driver']
+        trusted = config.get('trusted_connection', 'no').strip().lower() == 'yes'
         params = {
             'DRIVER': f'{{{driver}}}',
             'SERVER': config['server'],
             'DATABASE': config['database'],
-            'UID': config.get('username', ''),
-            'PWD': config.get('password', ''),
-            'Trusted_Connection': config.get('trusted_connection', 'no'),
-            'Encrypt': config.get('encrypt', 'no')
+            'Trusted_Connection': 'yes' if trusted else 'no',
+            'Encrypt': config.get('encrypt', 'no'),
         }
+        if not trusted:
+            params['UID'] = config.get('username', '')
+            params['PWD'] = config.get('password', '')
         return ';'.join([f'{k}={v}' for k, v in params.items()])
 
     def get_engine(self, config=None):

@@ -100,6 +100,21 @@ async def main(page: ft.Page):
     f_user = _field(label="Usuario")
     f_pass = _field(label="Contraseña", password=True, can_reveal_password=True)
 
+    sw_winauth = ft.Checkbox(
+        label="Autenticación Windows (Trusted Connection)",
+        value=False,
+        visible=False,
+        active_color=ACCENT,
+    )
+
+    def on_winauth_change(_):
+        use_win = sw_winauth.value
+        f_user.visible = not use_win
+        f_pass.visible = not use_win
+        page.update()
+
+    sw_winauth.on_change = on_winauth_change
+
     # ── Engine pill selector ─────────────────────────────────────────────────
     _selected_engine: list[str] = ["postgres"]
     _pill_refs: dict = {}
@@ -107,6 +122,12 @@ async def main(page: ft.Page):
     def select_engine(key: str):
         _selected_engine[0] = key
         f_port.value = ENGINES[key]["port"]
+        is_ss = key == "sqlserver"
+        sw_winauth.visible = is_ss
+        if not is_ss:
+            sw_winauth.value = False
+            f_user.visible = True
+            f_pass.visible = True
         for k, r in _pill_refs.items():
             on = k == key
             r["c"].bgcolor = "#eff6ff" if on else "#f8fafc"
@@ -164,7 +185,8 @@ async def main(page: ft.Page):
         if not f_host.value.strip(): return "El campo Host es obligatorio."
         if not f_port.value.strip(): return "El campo Puerto es obligatorio."
         if not f_db.value.strip():   return "Ingresa el nombre de la base de datos."
-        if not f_user.value.strip(): return "Ingresa el usuario."
+        if not sw_winauth.value and not f_user.value.strip():
+            return "Ingresa el usuario."
         return None
 
     # ── Connection card (View 1) ─────────────────────────────────────────────
@@ -226,6 +248,8 @@ async def main(page: ft.Page):
                 ft.Container(height=12),
                 f_db,
                 ft.Container(height=12),
+                sw_winauth,
+                ft.Container(height=4),
                 f_user,
                 ft.Container(height=12),
                 f_pass,
@@ -740,9 +764,10 @@ async def main(page: ft.Page):
                 "password":  f_pass.value,
             }
             if key == "sqlserver":
+                use_win = sw_winauth.value
                 cfg["server"]             = f"{cfg['host']},{cfg['port']}"
                 cfg["driver"]             = "ODBC Driver 18 for SQL Server"
-                cfg["trusted_connection"] = "no"
+                cfg["trusted_connection"] = "yes" if use_win else "no"
                 cfg["encrypt"]            = "no"
 
             loop    = asyncio.get_running_loop()
@@ -765,7 +790,9 @@ async def main(page: ft.Page):
                     "default_schema": None,
                 })
                 conn_info.value = (
-                    f"{label}  ·  {f_db.value.strip()} @ {addr}  ·  {f_user.value.strip()}"
+                    f"{label}  ·  {f_db.value.strip()} @ {addr}  ·  "
+                    + ("Autenticación Windows" if key == "sqlserver" and sw_winauth.value
+                       else f_user.value.strip())
                 )
                 conn_card.visible     = False
                 status_box.visible    = False
