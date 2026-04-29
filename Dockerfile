@@ -27,4 +27,4 @@ RUN uv sync --frozen
 # ── Código fuente ────────────────────────────────────────────────────────────
 COPY . .
 
-CMD ["uv", "run", "main.py"]
+CMD ["sh", "-c", "chmod -R a+rw /app/logs /app/config 2>/dev/null; uv run main.py"]
