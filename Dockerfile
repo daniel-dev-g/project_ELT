@@ -1,10 +1,14 @@
-# Dockerfile — FlowELT app
-# Incluye ODBC Driver 18 para SQL Server (otros motores no requieren drivers extra)
-# Oracle en modo thin (no requiere Instant Client)
+# Dockerfile — FlowELT
+#
+# Imagen de la aplicación para los escenarios A (Docker completo) y standalone.
+# Incluye ODBC Driver 18 porque SQL Server lo requiere en tiempo de ejecución;
+# PostgreSQL y MariaDB no necesitan drivers de sistema adicionales.
 
 FROM python:3.14-slim
 
-# ── Sistema: ODBC para SQL Server ───────────────────────────────────────────
+# ── Sistema: ODBC Driver 18 para SQL Server ──────────────────────────────────
+# Se instala el repositorio oficial de Microsoft y el driver en una sola capa
+# para minimizar el tamaño de la imagen.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         curl gnupg2 unixodbc-dev \
     && curl -fsSL https://packages.microsoft.com/keys/microsoft.asc \
@@ -16,10 +20,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && ACCEPT_EULA=Y apt-get install -y --no-install-recommends msodbcsql18 \
     && rm -rf /var/lib/apt/lists/*
 
-# ── uv ──────────────────────────────────────────────────────────────────────
+# ── uv (gestor de dependencias) ──────────────────────────────────────────────
+# Se copia el binario desde la imagen oficial; no requiere instalación adicional.
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 # ── Dependencias Python ──────────────────────────────────────────────────────
+# pyproject.toml y uv.lock se copian antes del código fuente para aprovechar
+# la caché de capas: si el código cambia pero las dependencias no, esta capa
+# no se reconstruye.
 WORKDIR /app
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen
@@ -27,4 +35,8 @@ RUN uv sync --frozen
 # ── Código fuente ────────────────────────────────────────────────────────────
 COPY . .
 
+# ── Arranque ─────────────────────────────────────────────────────────────────
+# chmod garantiza que los directorios montados como volúmenes (creados por
+# Docker como root) sean escribibles por el usuario local después del run.
+# 2>/dev/null suprime errores si los directorios aún no existen.
 CMD ["sh", "-c", "chmod -R a+rw /app/logs /app/config 2>/dev/null; uv run main.py"]
