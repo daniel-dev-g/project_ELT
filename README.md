@@ -136,6 +136,10 @@ task:
     active: true
 ```
 
+> **Requisito:** Los archivos CSV deben incluir fila de encabezado (primera fila = nombres de columnas).
+> El pipeline la usa para inferir el esquema al crear la tabla y para configurar la carga masiva.
+> Un archivo sin encabezado producirá errores de esquema o datos corruptos.
+
 ### Paso 6 — Ejecutar
 
 ```bash

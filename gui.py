@@ -557,6 +557,20 @@ async def main(page: ft.Page):
                     vertical_alignment=ft.CrossAxisAlignment.CENTER,
                 ),
                 ft.Divider(height=1, color=BORDER_ROW),
+                ft.Container(
+                    content=ft.Row(
+                        [
+                            ft.Icon(ft.Icons.INFO_OUTLINE, color="#64748b", size=13),
+                            ft.Text(
+                                "Los archivos CSV deben incluir fila de encabezado "
+                                "(primera fila = nombres de columnas).",
+                                size=12, color="#64748b", italic=True,
+                            ),
+                        ],
+                        spacing=6,
+                    ),
+                    padding=ft.Padding.symmetric(horizontal=4, vertical=2),
+                ),
                 task_header,
                 task_list,
                 action_bar,
