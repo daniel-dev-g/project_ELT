@@ -159,5 +159,12 @@ class SqlServerAdapter(DatabaseAdapter):
             )
             return rows_affected
         except Exception as e:
-            logger.error("BULK INSERT failed: %s", str(e))
+            err = str(e)
+            if "4860" in err:
+                raise RuntimeError(
+                    f"SQL Server no puede leer el archivo desde el servidor. "
+                    f"Si SQL Server corre en Docker, el archivo debe estar en './data/' "
+                    f"(montado en el contenedor como '/data'). Ruta usada: {file}"
+                ) from e
+            logger.error("BULK INSERT failed: %s", err)
             raise

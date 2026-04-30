@@ -16,6 +16,7 @@ from src.log_csv import registrar_log
 from src.validators import (
     check_db_connection,
     check_table_exists,
+    validate_schema_exists,
     validate_table_schema,
     validate_path,
 )
@@ -146,6 +147,9 @@ def _run_tasks(
         )
         resolved_task = {**task, 'schema': resolved_schema}
         try:
+            validate_schema_exists(
+                db_adapter.engine, resolved_task['schema'], db_cfg['db_engine']
+            )
             table_creator_execute(
                 execution_id=execution_id,
                 engine=db_adapter.engine,
@@ -158,6 +162,7 @@ def _run_tasks(
         except Exception as e:  # pylint: disable=broad-exception-caught
             registrar_log("table_creation_error", {
                 "table": resolved_task['table_destination'],
+                "schema": resolved_task['schema'],
                 "error": str(e)
             })
             failed_tasks += 1

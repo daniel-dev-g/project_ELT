@@ -57,6 +57,25 @@ def validate_table_schema(
         logger.warning("Could not validate schema for %s.%s: %s", schema, tabla, e)
 
 
+def validate_schema_exists(engine: Engine, schema: str, db_engine: str) -> None:
+    """Raises ValueError if the schema doesn't exist in the database.
+
+    MariaDB doesn't use schemas, so it's skipped.
+    """
+    if not schema or db_engine == "mariadb":
+        return
+    try:
+        inspector = inspect(engine)
+        existing = inspector.get_schema_names()
+        if schema not in existing:
+            raise ValueError(
+                f"El schema '{schema}' no existe en la base de datos. "
+                f"Schemas disponibles: {', '.join(existing)}"
+            )
+    except (OperationalError, ProgrammingError) as e:
+        logger.warning("No se pudo validar el schema '%s': %s", schema, e)
+
+
 def check_table_exists(engine_global: Engine, tabla: str, schema: str = "dbo") -> bool:
     "Check if the table exists in the database using SQLAlchemy Inspector."
     try:
