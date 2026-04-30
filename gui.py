@@ -893,17 +893,9 @@ async def main(page: ft.Page):
                 show_dash = False
 
             if failed == 0:
-                _show_run_status(
-                    True,
-                    f"Completado — {ok_count}/{total} tareas · {rows:,} filas insertadas",
-                    show_dash=show_dash,
-                )
+                _show_run_status(True, "Carga finalizada", show_dash=show_dash)
             else:
-                _show_run_status(
-                    False,
-                    f"Parcial — {ok_count} OK / {failed} fallidas · {rows:,} filas",
-                    show_dash=show_dash,
-                )
+                _show_run_status(False, "Carga finalizada con errores", show_dash=show_dash)
         except asyncio.TimeoutError:
             _show_run_status(False, "Tiempo de espera agotado (>5 min)")
         except Exception as ex:
