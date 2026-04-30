@@ -36,7 +36,6 @@ RUN uv sync --frozen
 COPY . .
 
 # ── Arranque ─────────────────────────────────────────────────────────────────
-# chmod garantiza que los directorios montados como volúmenes (creados por
-# Docker como root) sean escribibles por el usuario local después del run.
-# 2>/dev/null suprime errores si los directorios aún no existen.
-CMD ["sh", "-c", "chmod -R a+rw /app/logs /app/config 2>/dev/null; uv run main.py"]
+# chmod corre DESPUÉS de main.py para que los archivos creados durante la
+# ejecución (JSON, HTML) también queden accesibles por el usuario del host.
+CMD ["sh", "-c", "uv run main.py; chmod -R a+rw /app/logs /app/config 2>/dev/null"]
