@@ -151,7 +151,8 @@ class SqlServerAdapter(DatabaseAdapter):
         try:
             with self.get_db_cursor() as cursor:
                 cursor.execute(sql_query)
-                rows_affected = cursor.rowcount
+                cursor.execute("SELECT @@ROWCOUNT")
+                rows_affected = cursor.fetchone()[0]
 
             logger.info(
                 "BULK INSERT successful - %d inserted rows", rows_affected
