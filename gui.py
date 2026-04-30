@@ -44,6 +44,64 @@ BORDER_ROW  = "#e2e8f0"
 CONTENT_W   = 920   # usable width inside 30px horizontal padding
 
 
+def _parse_conn_error(raw: str, engine_key: str) -> str:
+    """Convierte un error críptico de conexión en un mensaje legible en español."""
+    r = raw.lower()
+
+    # Driver ODBC no instalado (SQL Server)
+    if any(x in r for x in ["no suitable driver", "driver not found", "im002",
+                              "could not find driver"]):
+        return "Driver ODBC no encontrado — instala 'ODBC Driver 18 for SQL Server'"
+
+    # Host / red inalcanzable
+    if any(x in r for x in ["connection refused", "could not connect", "can't connect",
+                              "no route to host", "name or service not known",
+                              "nodename nor servname", "server not found",
+                              "not accessible", "network-related", "tcp provider",
+                              "named pipes provider", "10061", "111"]):
+        return "No se pudo alcanzar el servidor — verifica host y puerto"
+
+    # Tiempo de espera agotado
+    if any(x in r for x in ["timeout", "timed out", "10060"]):
+        return "Tiempo de espera agotado — verifica host y puerto"
+
+    # Autenticación / credenciales
+    if any(x in r for x in ["password authentication failed", "access denied for user",
+                              "login failed", "authentication failed",
+                              "invalid password", "28000"]):
+        if engine_key == "sqlserver":
+            return ("Autenticación fallida — verifica usuario y contraseña, "
+                    "o usa Autenticación Windows")
+        return "Credenciales incorrectas — verifica usuario y contraseña"
+
+    # Base de datos no existe
+    if any(x in r for x in ["does not exist", "unknown database",
+                              "cannot open database", "invalid catalog name",
+                              "3d000"]):
+        return f"La base de datos no existe — verifica el nombre"
+
+    # Usuario/rol no existe (PostgreSQL)
+    if "role" in r and ("does not exist" in r or "not found" in r):
+        return "El usuario no existe en el servidor"
+
+    # Sin permisos de acceso (pg_hba, host no autorizado)
+    if any(x in r for x in ["pg_hba", "no pg_hba.conf entry", "permission denied",
+                              "not authorized", "insufficient privilege"]):
+        return "Acceso denegado — este host no tiene permiso de conexión (revisa pg_hba.conf)"
+
+    # SSL / cifrado
+    if any(x in r for x in ["ssl", "certificate verify", "self-signed"]):
+        return "Error SSL — el servidor requiere o rechaza cifrado; revisa la configuración Encrypt"
+
+    # Puerto fuera de rango o inválido
+    if any(x in r for x in ["invalid port", "port out of range"]):
+        return "Puerto inválido — debe estar entre 1 y 65535"
+
+    # Fallback: primera línea del error, truncada
+    first = raw.replace("\n", " ").strip()
+    return first[:160] if len(first) > 160 else first
+
+
 def _field(**kwargs) -> ft.TextField:
     return ft.TextField(
         border_color=BORDER,
@@ -801,9 +859,9 @@ async def main(page: ft.Page):
                 _load_existing_pipeline()
                 page.update()
             else:
-                _show_status(False, db_err or "No se pudo conectar")
+                _show_status(False, _parse_conn_error(db_err or "", key))
         except Exception as ex:
-            _show_status(False, str(ex))
+            _show_status(False, _parse_conn_error(str(ex), _selected_engine[0]))
         finally:
             set_loading(False)
 
