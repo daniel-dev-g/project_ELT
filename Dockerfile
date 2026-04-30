@@ -36,6 +36,8 @@ RUN uv sync --frozen
 COPY . .
 
 # ── Arranque ─────────────────────────────────────────────────────────────────
-# chmod corre DESPUÉS de main.py para que los archivos creados durante la
-# ejecución (JSON, HTML) también queden accesibles por el usuario del host.
-CMD ["sh", "-c", "uv run main.py; chmod -R 777 /app/logs /app/config 2>/dev/null"]
+# Tras la ejecución se transfiere la propiedad de los archivos generados al
+# usuario del host, detectado por el UID:GID del volumen montado en /app/logs.
+# Esto permite abrir el dashboard HTML sin sudo en navegadores como Brave/Chrome
+# que rechazan archivos locales cuyo dueño es root.
+CMD ["sh", "-c", "uv run main.py; chown -R $(stat -c '%u:%g' /app/logs 2>/dev/null || echo '0:0') /app/logs /app/config 2>/dev/null; true"]
