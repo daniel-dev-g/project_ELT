@@ -38,4 +38,4 @@ COPY . .
 # ── Arranque ─────────────────────────────────────────────────────────────────
 # chmod corre DESPUÉS de main.py para que los archivos creados durante la
 # ejecución (JSON, HTML) también queden accesibles por el usuario del host.
-CMD ["sh", "-c", "uv run main.py; chmod -R a+rw /app/logs /app/config 2>/dev/null"]
+CMD ["sh", "-c", "uv run main.py; chmod -R 777 /app/logs /app/config 2>/dev/null"]

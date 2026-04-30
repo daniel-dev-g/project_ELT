@@ -160,6 +160,13 @@ def _run_tasks(
                 db_engine=db_cfg['db_engine']
             )
         except Exception as e:  # pylint: disable=broad-exception-caught
+            logger.error(
+                "Error en tarea '%s' [%s.%s]: %s",
+                resolved_task.get('name', ''),
+                resolved_task['schema'],
+                resolved_task['table_destination'],
+                e,
+            )
             registrar_log("table_creation_error", {
                 "table": resolved_task['table_destination'],
                 "schema": resolved_task['schema'],
