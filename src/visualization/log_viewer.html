@@ -867,12 +867,13 @@ body::before {
 
     // ── KPIs ──────────────────────────────────────────────────────────────
     function buildKPIs(){
+        const complete   = RAW_DATA.find(e => e.evento === 'process_complete')?.detalles || null;
         const summary    = RAW_DATA.find(e => e.evento === 'pipeline_summary')?.detalles || null;
         const successes  = RAW_DATA.filter(e => e.evento === 'file_success');
         const errors     = RAW_DATA.filter(isError).length;
-        const totalRows  = summary?.total_rows  ?? successes.reduce((s,e) => s+(e.detalles?.rows_inserted||0), 0);
-        const filesOk    = summary?.files_ok    ?? successes.length;
-        const totalFiles = summary?.total_files ?? successes.length;
+        const totalRows  = complete?.total_rows ?? summary?.total_rows ?? successes.reduce((s,e) => s+(e.detalles?.rows_inserted||0), 0);
+        const filesOk    = complete?.successful_tasks ?? summary?.files_ok    ?? successes.length;
+        const totalFiles = complete?.total_tasks      ?? summary?.total_files ?? successes.length;
 
         document.getElementById('kpi-total').textContent   = RAW_DATA.length.toLocaleString();
         document.getElementById('kpi-success').textContent = filesOk.toLocaleString();
@@ -890,7 +891,8 @@ body::before {
         document.getElementById('sb-status').style.color   = hasErr ? 'var(--error)' : 'var(--success)';
         document.getElementById('status-dot').className    = hasErr ? 'status-dot red' : 'status-dot green';
         document.getElementById('status-text').textContent = hasErr ? `${errors} error(s)` : 'Ejecución completada';
-        if(summary?.duration_seconds!=null) document.getElementById('sb-duration').textContent=summary.duration_seconds+'s';
+        const dur = complete?.duration_seconds ?? summary?.duration_seconds;
+        if(dur!=null) document.getElementById('sb-duration').textContent=dur+'s';
         else if(RAW_DATA.length>=2){ const diff=(new Date(RAW_DATA[RAW_DATA.length-1].timestamp)-new Date(RAW_DATA[0].timestamp))/1000; document.getElementById('sb-duration').textContent=diff.toFixed(1)+'s'; }
     }
 
