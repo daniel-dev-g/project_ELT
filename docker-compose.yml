@@ -3,11 +3,12 @@
 # ESCENARIO A — Demo completo (app + BD en Docker)
 #   docker compose --profile sqlserver up
 #   docker compose --profile postgres  up
-#   docker compose --profile mysql     up
+#   docker compose --profile mysql     up   ← MariaDB 11
+#   docker compose --profile mysql8    up   ← MySQL 8
 #
 # ESCENARIO B — Solo app, BD externa (tu propio servidor)
 #   docker compose --profile standalone up
-#   Configura POSTGRES_HOST / MARIADB_HOST / SQLSERVER_HOST en .env
+#   Configura POSTGRES_HOST / MARIADB_HOST / MYSQL_HOST / SQLSERVER_HOST en .env
 #   apuntando a tu BD antes de ejecutar.
 
 x-app-base: &app-base
@@ -27,7 +28,7 @@ services:
   # ─────────────────────────────────────────────
   app:
     <<: *app-base
-    profiles: [sqlserver, postgres, mysql]
+    profiles: [sqlserver, postgres, mysql, mysql8]
     container_name: flowelt_app
     environment:
       BULK_PATH_HOST: /app/data
@@ -36,6 +37,8 @@ services:
       POSTGRES_PORT: "5432"
       MARIADB_HOST: flowelt_mysql
       MARIADB_PORT: "3306"
+      MYSQL_HOST: flowelt_mysql8
+      MYSQL_PORT: "3306"
       SQLSERVER_HOST: flowelt_sqlserver
       SQLSERVER_PORT: "1433"
     depends_on:
@@ -46,6 +49,9 @@ services:
         condition: service_healthy
         required: false
       mysql:
+        condition: service_healthy
+        required: false
+      mysql8:
         condition: service_healthy
         required: false
 
@@ -148,7 +154,40 @@ services:
       retries: 15
     restart: unless-stopped
 
+  # ─────────────────────────────────────────────
+  # MySQL 8
+  # ─────────────────────────────────────────────
+  mysql8:
+    profiles: [mysql8]
+    image: mysql:8
+    container_name: flowelt_mysql8
+    command: >
+      --local-infile=1
+      --secure-file-priv=''
+      --innodb-flush-log-at-trx-commit=2
+      --innodb-buffer-pool-size=2G
+      --innodb-log-buffer-size=256M
+      --innodb-flush-method=O_DIRECT
+      --bulk-insert-buffer-size=256M
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DB}
+    ports:
+      - "3308:3306"
+    volumes:
+      - mysql8_data:/var/lib/mysql
+      - ./data:/data
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}", "--silent"]
+      interval: 3s
+      timeout: 5s
+      retries: 15
+    restart: unless-stopped
+
 volumes:
   sqlserver_data:
   postgres_data:
   mariadb_data:
+  mysql8_data:

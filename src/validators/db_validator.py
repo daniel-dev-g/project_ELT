@@ -62,7 +62,7 @@ def validate_schema_exists(engine: Engine, schema: str, db_engine: str) -> None:
 
     MariaDB doesn't use schemas, so it's skipped.
     """
-    if not schema or db_engine == "mariadb":
+    if not schema or db_engine in ("mariadb", "mysql"):
         return
     try:
         inspector = inspect(engine)

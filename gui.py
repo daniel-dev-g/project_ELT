@@ -9,6 +9,9 @@ import webbrowser
 import yaml
 import flet as ft
 
+from dotenv import load_dotenv
+load_dotenv()
+
 from src.state_manager.core.adapter_db.factory_db import factory_db
 from src.validators import check_db_connection
 from main import _run_tasks
@@ -18,9 +21,10 @@ from src.visualization.log_dashboard import generate_dashboard
 
 
 ENGINES = {
-    "postgres": {"label": "PostgreSQL", "port": "5432", "db_engine": "postgres"},
-    "mariadb":  {"label": "MariaDB",    "port": "3306", "db_engine": "mariadb"},
-    "sqlserver":{"label": "SQL Server", "port": "1433", "db_engine": "sqlserver"},
+    "postgres": {"label": "PostgreSQL", "port": "5432", "db_engine": "postgres",  "default_schema": "public"},
+    "mariadb":  {"label": "MariaDB",    "port": "3306", "db_engine": "mariadb",   "default_schema": ""},
+    "mysql":    {"label": "MySQL",      "port": "3306", "db_engine": "mysql",     "default_schema": ""},
+    "sqlserver":{"label": "SQL Server", "port": "1433", "db_engine": "sqlserver", "default_schema": "dbo"},
 }
 
 ACCENT      = "#3b82f6"
@@ -297,7 +301,9 @@ async def main(page: ft.Page):
                 ),
                 ft.Container(height=24),
                 # Engine pills
-                ft.Row(engine_pills, spacing=8),
+                ft.Row(engine_pills[:2], spacing=8),
+                ft.Container(height=6),
+                ft.Row(engine_pills[2:], spacing=8),
                 ft.Container(height=20),
                 ft.Divider(height=1, color="#f1f5f9"),
                 ft.Container(height=20),
@@ -814,12 +820,17 @@ async def main(page: ft.Page):
         try:
             key = _selected_engine[0]
             cfg = {
-                "db_engine": ENGINES[key]["db_engine"],
-                "host":      f_host.value.strip(),
-                "port":      f_port.value.strip(),
-                "database":  f_db.value.strip(),
-                "username":  f_user.value.strip(),
-                "password":  f_pass.value,
+                "db_engine":      ENGINES[key]["db_engine"],
+                "default_schema": ENGINES[key]["default_schema"],
+                "host":           f_host.value.strip(),
+                "port":           f_port.value.strip(),
+                "database":       f_db.value.strip(),
+                "username":       f_user.value.strip(),
+                "password":       f_pass.value,
+                "bulk_path_map":  {
+                    "host":      os.getenv("BULK_PATH_HOST", ""),
+                    "container": os.getenv("BULK_PATH_CONTAINER", ""),
+                },
             }
             if key == "sqlserver":
                 use_win = sw_winauth.value
@@ -844,8 +855,8 @@ async def main(page: ft.Page):
             if ok:
                 _adapter.clear(); _adapter.append(adapter)
                 _db_cfg.clear();  _db_cfg.append({
-                    "db_engine": ENGINES[key]["db_engine"],
-                    "default_schema": None,
+                    "db_engine":      ENGINES[key]["db_engine"],
+                    "default_schema": ENGINES[key]["default_schema"],
                 })
                 conn_info.value = (
                     f"{label}  ·  {f_db.value.strip()} @ {addr}  ·  "

@@ -63,28 +63,26 @@ class MySQLAdapter(DatabaseAdapter):
             conn.close()
 
     def check_bulk_permission(self) -> bool:
-        """Verifica privilegio FILE para LOAD DATA INFILE."""
-        query = (
-            "SELECT File_priv FROM mysql.user WHERE User = CURRENT_USER()"
-        )
-
+        """Verifica privilegio FILE para LOAD DATA INFILE usando SHOW GRANTS."""
         try:
             with self.get_db_cursor() as cursor:
-                cursor.execute(query)
-                result = cursor.fetchone()
-                has_permission = result is not None and result[0] == 'Y'
+                cursor.execute("SHOW GRANTS FOR CURRENT_USER()")
+                grants = cursor.fetchall()
 
-                if has_permission:
-                    logger.info(
-                        "The user has FILE permissions on host: %s",
-                        self.config.get('host')
-                    )
-                else:
-                    logger.warning(
-                        "The user does NOT have FILE permissions on host: %s",
-                        self.config.get('host')
-                    )
-                return has_permission
+            has_permission = any(
+                'FILE' in str(row) for row in grants
+            )
+            if has_permission:
+                logger.info(
+                    "The user has FILE permissions on host: %s",
+                    self.config.get('host')
+                )
+            else:
+                logger.warning(
+                    "The user does NOT have FILE permissions on host: %s",
+                    self.config.get('host')
+                )
+            return has_permission
         except Exception as e:
             logger.error(
                 "Technical error while verifying permissions on %s: %s",
@@ -142,8 +140,12 @@ class MySQLAdapter(DatabaseAdapter):
 
         try:
             with self.get_db_cursor() as cursor:
+                cursor.execute("SET foreign_key_checks=0")
+                cursor.execute("SET unique_checks=0")
                 cursor.execute(load_sql)
                 rows_affected = cursor.rowcount
+                cursor.execute("SET foreign_key_checks=1")
+                cursor.execute("SET unique_checks=1")
 
             logger.info(
                 "LOAD DATA successful - %d inserted rows", rows_affected
