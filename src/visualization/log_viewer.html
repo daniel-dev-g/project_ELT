@@ -458,7 +458,7 @@ body::before {
 }
 .event-table-header {
     display: grid;
-    grid-template-columns: 420px 165px 1fr 140px 90px 36px;
+    grid-template-columns: 420px 165px 1fr 110px 110px 90px 36px;
     column-gap: 20px;
     padding: 14px 20px;
     background: #eef2f5;
@@ -471,7 +471,7 @@ body::before {
 }
 .event-row {
     display: grid;
-    grid-template-columns: 420px 165px 1fr 140px 90px 36px;
+    grid-template-columns: 420px 165px 1fr 110px 110px 90px 36px;
     column-gap: 20px;
     padding: 0 20px;
     border-bottom: 0.5px solid var(--border-subtle);
@@ -772,12 +772,16 @@ body::before {
     .kpi-grid { grid-template-columns: repeat(2,1fr); }
     .main { padding: 20px; }
     .event-table-header, .event-row {
-        grid-template-columns: 100px 1fr 90px 36px;
+        grid-template-columns: 100px 1fr 110px 36px;
     }
     .event-table-header > :nth-child(2),
     .event-row > :nth-child(2),
-    .event-table-header > :nth-child(5),
-    .event-row > :nth-child(5) { display: none; }
+    .event-table-header > :nth-child(3),
+    .event-row > :nth-child(3),
+    .event-table-header > :nth-child(4),
+    .event-row > :nth-child(4),
+    .event-table-header > :nth-child(6),
+    .event-row > :nth-child(6) { display: none; }
 }
     </style>
 </head>
@@ -802,7 +806,7 @@ body::before {
         <div class="timeline-wrap"><div class="section-header"><div class="section-title">Event Timeline</div><span id="timeline-range" style="font-size:12px;"></span></div><div class="timeline-track" id="timeline-track"></div></div>
         <div class="section-header"><div class="section-title">Event Log</div><div><button class="filter-btn" onclick="expandAll()">Expand All</button><button class="filter-btn" onclick="collapseAll()" style="margin-left:6px;">Collapse</button></div></div>
         <div class="search-wrap"><span class="search-icon">⌕</span><input class="search-input" id="search-input" placeholder="Buscar archivo, ruta, tabla..." oninput="applyFilters()"></div>
-        <div class="event-table"><div class="event-table-header"><span>Execution ID</span><span>Archivo / Evento</span><span>Detalle</span><span>Registros</span><span>Duración</span><span></span></div><div id="events-body"></div><div class="status-bar"><div class="status-dot green" id="status-dot"></div><span id="status-text">Ready</span><span style="margin-left:auto" id="status-count"></span></div></div>
+        <div class="event-table"><div class="event-table-header"><span>Execution ID</span><span>Archivo / Evento</span><span>Detalle</span><span>En archivo</span><span>Cargados</span><span>Duración</span><span></span></div><div id="events-body"></div><div class="status-bar"><div class="status-dot green" id="status-dot"></div><span id="status-text">Ready</span><span style="margin-left:auto" id="status-count"></span></div></div>
     </main>
 </div>
 <script>
@@ -844,9 +848,11 @@ body::before {
 
             const fileEvs = eventIdxs.map(i => RAW_DATA[i]);
             const success = fileEvs.find(e => e.evento === 'file_success');
+            const meta    = fileEvs.find(e => e.evento === 'file_analysis_metadata');
 
             groups.push({
                 type: 'file', filePath, filename, execId,
+                rowsInFile:   meta?.detalles?.rows,
                 rowsInserted: success?.detalles?.rows_inserted,
                 duration:     success?.detalles?.duration_seconds,
                 hasError:     fileEvs.some(isError),
@@ -944,16 +950,17 @@ body::before {
             <span class="event-exec-id" title="${d.execution_id||''}">${execId}</span>
             <span><span class="event-badge badge-pipeline_start">${g.event.evento}</span></span>
             <span class="event-meta">${time}</span>
-            <span class="event-meta">—</span><span class="event-meta">—</span><span></span>
+            <span class="event-meta">—</span><span class="event-meta">—</span><span class="event-meta">—</span><span></span>
         </div>`;
     }
 
     function renderFile(g, gi){
-        const execId = g.execId || '—';
-        const rows   = g.rowsInserted != null ? g.rowsInserted.toLocaleString() : '—';
-        const dur    = g.duration     != null ? g.duration+'s' : '—';
-        const isExp  = expandedRows.has(gi);
-        const rClass = g.rowsInserted != null ? (g.hasError ? 'event-meta' : 'event-rows') : 'event-meta';
+        const execId     = g.execId || '—';
+        const rowsFile   = g.rowsInFile   != null ? g.rowsInFile.toLocaleString()   : '—';
+        const rowsLoaded = g.rowsInserted != null ? g.rowsInserted.toLocaleString() : '—';
+        const dur        = g.duration     != null ? g.duration+'s' : '—';
+        const isExp      = expandedRows.has(gi);
+        const rClass     = g.rowsInserted != null ? (g.hasError ? 'event-meta' : 'event-rows') : 'event-meta';
 
         const evHtml = g.events.map(e => {
             const ed   = e.detalles || {};
@@ -962,7 +969,7 @@ body::before {
             if(TABLE_EVENTS.has(e.evento))     detail = `${ed.schema?ed.schema+'.':''}${ed.tabla||''}`;
             else if(e.evento==='file_start')   detail = ed.file || '';
             else if(e.evento==='file_success') detail = `${(ed.rows_inserted||0).toLocaleString()} registros cargados en ${ed.duration_seconds}s`;
-            else if(e.evento==='file_analysis_metadata')detail = `${(ed.rows||0).toLocaleString()} rows analizadas`;
+            else if(e.evento==='file_analysis_metadata')detail = `${(ed.rows||0).toLocaleString()} registros en el origen`;
             else detail = Object.entries(ed).filter(([k])=>k!=='execution_id').slice(0,2).map(([k,v])=>`${k}: ${String(v).slice(0,40)}`).join(' · ');
             return `<div class="file-event-item">
                 <span class="file-event-time">${time}</span>
@@ -975,7 +982,8 @@ body::before {
             <span class="event-exec-id" title="${g.execId||''}">${execId}</span>
             <span class="event-filename" title="${g.filename}">${g.filename}</span>
             <span class="event-path" title="${g.filePath}">${g.filePath}</span>
-            <span class="${rClass}">${rows}</span>
+            <span class="event-meta">${rowsFile}</span>
+            <span class="${rClass}">${rowsLoaded}</span>
             <span class="event-duration">${dur}</span>
             <span class="event-expand">▶</span>
         </div>
@@ -988,15 +996,15 @@ body::before {
         const d      = g.event.detalles || {};
         const execId = d.execution_id ? d.execution_id : '—';
         const isExp  = expandedRows.has('end'+gi);
-        let col3='—', col4='—', col5='—';
+        let col3='—', col4='—', col5='—', col6='—';
         if(g.event.evento==='pipeline_summary'){
             col3=`${d.files_ok??0} ok${d.files_error?` · ${d.files_error} err`:''}`;
-            col4=d.total_rows!=null?d.total_rows.toLocaleString():'—';
-            col5=d.duration_seconds!=null?d.duration_seconds+'s':'—';
+            col5=d.total_rows!=null?d.total_rows.toLocaleString():'—';
+            col6=d.duration_seconds!=null?d.duration_seconds+'s':'—';
         } else if(g.event.evento==='process_complete'){
             col3=d.status||'';
-            col4=d.total_rows!=null?d.total_rows.toLocaleString():'—';
-            col5=d.duration_seconds!=null?d.duration_seconds+'s':'—';
+            col5=d.total_rows!=null?d.total_rows.toLocaleString():'—';
+            col6=d.duration_seconds!=null?d.duration_seconds+'s':'—';
         } else if(g.event.evento==='pipeline_init'){
             col3=`${d.cantidad||0} archivos`;
         } else if(g.event.evento==='dashboard_generated'){
@@ -1012,6 +1020,7 @@ body::before {
             <span class="event-meta">${col3}</span>
             <span class="event-meta">${col4}</span>
             <span class="event-meta">${col5}</span>
+            <span class="event-meta">${col6}</span>
             <span class="event-expand">▶</span>
         </div>
         <div class="detail-panel ${isExp?'show':''}" id="fdetail-end${gi}">${buildDetail(g.event,'e'+gi)}</div>`;
