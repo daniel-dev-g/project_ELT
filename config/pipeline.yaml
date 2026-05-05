@@ -6,7 +6,7 @@ _defaults:
   active: true
 task:
 - name: Carga cliente
-  file: /home/daniel/Documentos/ti/proyectos/project_ELT/data/input/cliente.csv
+  file: data/input/cliente.csv
   delimiter: ;
   encoding: utf8
   table_destination: cliente
@@ -15,7 +15,7 @@ task:
   schema: public
   active: true
 - name: Carga oficina
-  file: /home/daniel/Documentos/ti/proyectos/project_ELT/data/input/oficinas.csv
+  file: data/input/oficinas.csv
   delimiter: ;
   encoding: utf8
   table_destination: oficina
@@ -24,7 +24,7 @@ task:
   schema: public
   active: true
 - name: Carga producto
-  file: /home/daniel/Documentos/ti/proyectos/project_ELT/data/input/productos.csv
+  file: data/input/productos.csv
   delimiter: ;
   encoding: utf8
   table_destination: producto
@@ -33,7 +33,7 @@ task:
   schema: public
   active: true
 - name: Carga taxi
-  file: /home/daniel/Documentos/ti/proyectos/project_ELT/data/input/tripdata_2015-01.csv
+  file: data/input/tripdata_2015-01.csv
   delimiter: ','
   encoding: utf8
   table_destination: taxi
