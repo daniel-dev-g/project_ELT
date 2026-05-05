@@ -8,7 +8,7 @@ wheels/
 
 # Virtual environments
 .venv
-settings.yaml
+
 
 # Extensiones de C y carpetas de caché de herramientas
 .ipynb_checkpoints

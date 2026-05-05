@@ -37,6 +37,7 @@ def get_connection_string(config=None):
         'DRIVER': f'{{{driver}}}',
         'SERVER': config['server'],
         'DATABASE': config['database'],
+        
         'Trusted_Connection': config.get('trusted_connection', 'yes'),
         'Encrypt': config.get('encrypt', 'no')
     }

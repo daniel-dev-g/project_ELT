@@ -1,4 +1,4 @@
-""" Orquesta la carga de datos a SQL Server usando BCP."""
+""" Orquesta la carga de datos a base de datos."""
 import sys
 import time
 import logging
@@ -12,13 +12,14 @@ from src.log_csv import registrar_log
 from src.bulk_loader import sqlserver_bcp_windows
 from src.state_manager import StateManager
 from src.validators import (
-    create_engine_db,
     check_db_connection,
     check_table_exists,
     check_bulk_permission,
     validate_path
 )
 from src.visualization.log_dashboard import generate_latest_dashboard
+from src.state_manager.core.database import get_engine
+
 
 
 # Crear carpeta logs si no existe
@@ -35,7 +36,6 @@ root_logger.addHandler(_handler)
 
 def process_task(
     task: dict,
-    engine_global,
     state: StateManager
 ) -> tuple[bool, int]:
     """
@@ -47,8 +47,6 @@ def process_task(
     file_id = state.start_file_processing(task['file'], task)
 
     try:
-        check_table_exists(engine_global, task['table_destination'], task['schema'])
-        check_bulk_permission(engine_global)
         validate_path(task['file'], ".csv")
 
         start_time = time.time()
@@ -81,9 +79,7 @@ def process_task(
 def main():
     """ Entry point of the program """
     start_time = time.time()
-    # PHASE 0: Initialize StateManager
-    state = StateManager("Carga_ETL_BCP")
-    execution_id = state.start_process()
+    state = None
 
     try:
         # PHASE 1: Read configuration
@@ -97,11 +93,20 @@ def main():
         root_logger.setLevel(getattr(logging, log_level))
         _handler.setLevel(getattr(logging, log_level))
 
+        # PHASE 0: Initialize StateManager (after logging is configured)
+        state = StateManager("Carga_ETL_BCP")
+        execution_id = state.start_process()
+
         # PHASE 2: Database connection
-        engine_global = create_engine_db(db_cfg)
+        engine_global = get_engine(db_cfg)
         if not check_db_connection(engine_global):
             state.complete_process(status='FAILED')
             sys.exit(1)
+
+        if not check_bulk_permission(engine_global):
+            state.complete_process(status='FAILED')
+            sys.exit(1)
+
 
         # PHASE 3: File analysis
         with open("config/pipeline.yaml", "r", encoding="utf-8") as f:
@@ -118,26 +123,40 @@ def main():
         for task in pipeline_cfg['task']:
             if not task['active']:
                 continue
+            # 1. Primero verificar que el archivo existe
+            if not Path(task['file']).exists():
+                    registrar_log("file_not_found", {"file": task['file']})
+                    failed_tasks += 1
+                    continue  # ← salta al siguiente task
 
-            #try:
-            #    table_creator_execute(file=task['file'], tabla=task['table_destination'])
-            #except Exception as e:
-            #   registrar_log("table_creation_error",
-            #               {"table": task['table_destination'], "error": str(e)})
-            #   state.complete_process(status='FAILED')
+            if task.get('crear_tabla_si_no_existe', False):
+                    try:
+                        table_creator_execute(execution_id, engine_global, schema=task['schema'], table_destino=task['table_destination'],file=task['file'], delimiter=task['delimiter'] )
+                    except Exception as e:
+                       registrar_log("table_creation_error",
+                                   {"table": task['table_destination'], "error": str(e)})
+                       state.complete_process(status='FAILED')
+                       continue
+
+            if not (check_table_exists(engine_global, task['schema'], task['table_destination'])):
+
+                 registrar_log("table_not_found", {
+                 "table": task['table_destination'],
+                 "schema": task['schema']
+                 })
+                 failed_tasks += 1
+                 continue
 
             total_tasks += 1
             success, rows = process_task(
                 task=task,
-                engine_global=engine_global,
                 state=state
             )
-
             if success:
-                successful_tasks += 1
-                total_rows += rows
+                    successful_tasks += 1
+                    total_rows += rows
             else:
-                failed_tasks += 1
+                    failed_tasks += 1
 
         # Sumary log of the entire process
         try:
@@ -165,11 +184,15 @@ def main():
             registrar_log("dashboard_error", {"error": str(e)})
 
     except Exception as e:
+        root_logger.critical("Error crítico en main: %s", str(e), exc_info=True)
         registrar_log("critical_error", {"error": str(e)})
-        state.complete_process(status='FAILED')
+        if state:
+            try:
+                state.complete_process(status='FAILED')
+            except Exception:
+                pass
         sys.exit(1)
 
 
 if __name__ == "__main__":
     main()
-    

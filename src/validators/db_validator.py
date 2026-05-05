@@ -1,4 +1,4 @@
-""" Contains functions to validate the database connection,
+""" validator.py Contains functions to validate the database connection,
 existence of tables, and permissions. """
 
 import logging
@@ -22,7 +22,7 @@ def check_db_connection(engine) -> bool:
         return False
 
 
-def check_table_exists(engine_global: str, tabla: str, schema: str = "dbo") -> bool:
+def check_table_exists(engine_global: str, schema: str , tabla: str ) -> bool:
     "Check if the table exists in the database using SQLAlchemy Inspector."
     try:
         inspector = inspect(engine_global)
@@ -38,8 +38,6 @@ def check_table_exists(engine_global: str, tabla: str, schema: str = "dbo") -> b
         #  Es mejor lanzar el error o registrarlo en un log real
         logger.error(" Connection or inspection error: %s", e)
         return False
-    finally:
-        engine_global.dispose() # Limpia el pool de conexiones
 
 
 

@@ -1,0 +1,13 @@
+# config/settings.yaml
+development:
+  driver: "ODBC Driver 17 for SQL Server"
+  server: "LAPTOP-6N8CIQUQ" # Ej: "localhost" o "192.168.1.50"
+  database: "polars"
+  trusted_connection: "yes"
+  encrypt: "no"
+  log_level: "DEBUG" # DEBUG | INFO | WARNING | ERROR | CRITICAL
+
+
+  # NUEVA SECCIÓN para metadata
+  #metadata:
+  #schema: "etl_log" # ← PARAMETRIZABLE
