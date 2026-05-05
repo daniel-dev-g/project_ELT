@@ -1,0 +1,193 @@
+# docker-compose.yml
+#
+# ESCENARIO A — Demo completo (app + BD en Docker)
+#   docker compose --profile sqlserver up
+#   docker compose --profile postgres  up
+#   docker compose --profile mysql     up   ← MariaDB 11
+#   docker compose --profile mysql8    up   ← MySQL 8
+#
+# ESCENARIO B — Solo app, BD externa (tu propio servidor)
+#   docker compose --profile standalone up
+#   Configura POSTGRES_HOST / MARIADB_HOST / MYSQL_HOST / SQLSERVER_HOST en .env
+#   apuntando a tu BD antes de ejecutar.
+
+x-app-base: &app-base
+  build: .
+  env_file: .env
+  volumes:
+    - ./data:/app/data
+    - ./config:/app/config
+    - ./logs:/app/logs
+
+services:
+
+  # ─────────────────────────────────────────────
+  # ESCENARIO A — App con BD contenerizada
+  # Sobreescribe host/port con nombres de red interna Docker.
+  # Los valores del .env quedan anulados solo dentro del contenedor.
+  # ─────────────────────────────────────────────
+  app:
+    <<: *app-base
+    profiles: [sqlserver, postgres, mysql, mysql8]
+    container_name: flowelt_app
+    environment:
+      BULK_PATH_HOST: /app/data
+      BULK_PATH_CONTAINER: /data
+      POSTGRES_HOST: flowelt_postgres
+      POSTGRES_PORT: "5432"
+      MARIADB_HOST: flowelt_mysql
+      MARIADB_PORT: "3306"
+      MYSQL_HOST: flowelt_mysql8
+      MYSQL_PORT: "3306"
+      SQLSERVER_HOST: flowelt_sqlserver
+      SQLSERVER_PORT: "1433"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+        required: false
+      postgres:
+        condition: service_healthy
+        required: false
+      mysql:
+        condition: service_healthy
+        required: false
+      mysql8:
+        condition: service_healthy
+        required: false
+
+  # ─────────────────────────────────────────────
+  # ESCENARIO B — Solo app, BD externa
+  # Usa directamente los valores del .env sin sobreescribir nada.
+  # El usuario configura host/port de su BD en .env.
+  #
+  # USER_DATA_PATH (opcional): directorio externo de archivos del usuario.
+  # Se monta en /app/user_data dentro del contenedor.
+  # Si no se define, el volumen apunta a /tmp (inerte).
+  # ─────────────────────────────────────────────
+  app-standalone:
+    <<: *app-base
+    profiles: [standalone]
+    container_name: flowelt_app
+    network_mode: host
+    volumes:
+      - ./data:/app/data
+      - ./config:/app/config
+      - ./logs:/app/logs
+      - ${USER_DATA_PATH:-/tmp}:/app/user_data
+
+  # ─────────────────────────────────────────────
+  # SQL Server 2022 Developer Edition
+  # ─────────────────────────────────────────────
+  sqlserver:
+    profiles: [sqlserver]
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: flowelt_sqlserver
+    security_opt:
+      - apparmor:unconfined
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${SQLSERVER_PASSWORD}
+      SQLSERVER_DB: ${SQLSERVER_DB}
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+      - ./data:/data
+      - ./init/sqlserver/init.sh:/init.sh
+    entrypoint: ["/bin/bash", "/init.sh"]
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -No -Q \"SELECT name FROM sys.databases WHERE name='$$SQLSERVER_DB'\" | grep -q \"$$SQLSERVER_DB\""]
+      interval: 5s
+      timeout: 10s
+      retries: 20
+      start_period: 20s
+    restart: unless-stopped
+
+  # ─────────────────────────────────────────────
+  # PostgreSQL 16
+  # ─────────────────────────────────────────────
+  postgres:
+    profiles: [postgres]
+    image: postgres:16
+    container_name: flowelt_postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 3s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # ─────────────────────────────────────────────
+  # MariaDB 11
+  # ─────────────────────────────────────────────
+  mysql:
+    profiles: [mysql]
+    image: mariadb:11
+    container_name: flowelt_mysql
+    command: --local-infile=1
+    security_opt:
+      - apparmor:unconfined
+      - seccomp:unconfined
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
+      MARIADB_USER: ${MARIADB_USER}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD}
+      MARIADB_DATABASE: ${MARIADB_DB}
+    ports:
+      - "3307:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+      - ./data:/data
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 3s
+      timeout: 5s
+      retries: 15
+    restart: unless-stopped
+
+  # ─────────────────────────────────────────────
+  # MySQL 8
+  # ─────────────────────────────────────────────
+  mysql8:
+    profiles: [mysql8]
+    image: mysql:8
+    container_name: flowelt_mysql8
+    command: >
+      --local-infile=1
+      --secure-file-priv=''
+      --innodb-flush-log-at-trx-commit=2
+      --innodb-buffer-pool-size=2G
+      --innodb-log-buffer-size=256M
+      --innodb-flush-method=O_DIRECT
+      --bulk-insert-buffer-size=256M
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DB}
+    ports:
+      - "3308:3306"
+    volumes:
+      - mysql8_data:/var/lib/mysql
+      - ./data:/data
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}", "--silent"]
+      interval: 3s
+      timeout: 5s
+      retries: 15
+    restart: unless-stopped
+
+volumes:
+  sqlserver_data:
+  postgres_data:
+  mariadb_data:
+  mysql8_data:

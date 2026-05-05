@@ -1,1416 +1,1103 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DataBridge — Pipeline Monitor</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>FlowELT — Pipeline Monitor | Dark Elegant</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg: #080c10;
-            --surface: #0d1117;
-            --surface-2: #161b22;
-            --surface-3: #1c2128;
-            --border: #21262d;
-            --border-bright: #30363d;
-            --text: #e6edf3;
-            --text-muted: #7d8590;
-            --text-dim: #484f58;
-            --accent: #58a6ff;
-            --accent-glow: rgba(88, 166, 255, 0.15);
-            --green: #3fb950;
-            --green-glow: rgba(63, 185, 80, 0.15);
-            --red: #f85149;
-            --red-glow: rgba(248, 81, 73, 0.15);
-            --yellow: #d29922;
-            --yellow-glow: rgba(210, 153, 34, 0.15);
-            --purple: #bc8cff;
-            --cyan: #39d353;
-            --radius: 6px;
-            --radius-lg: 10px;
-        }
-
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
-        body {
-            font-family: 'JetBrains Mono', monospace;
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.03) 2px, rgba(0, 0, 0, 0.03) 4px);
-            pointer-events: none;
-            z-index: 1000;
-        }
-
-        .topbar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 32px;
-            height: 56px;
-            background: var(--surface);
-            border-bottom: 1px solid var(--border);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .logo {
-            font-family: 'Syne', sans-serif;
-            font-weight: 800;
-            font-size: 18px;
-            letter-spacing: -0.5px;
-            color: var(--text);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .logo-dot {
-            width: 8px;
-            height: 8px;
-            background: var(--accent);
-            border-radius: 50%;
-            box-shadow: 0 0 8px var(--accent);
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-
-            0%,
-            100% {
-                opacity: 1;
-                transform: scale(1);
-            }
-
-            50% {
-                opacity: 0.5;
-                transform: scale(0.8);
-            }
-        }
-
-        .topbar-meta {
-            font-size: 16px;
-            color: var(--text-muted);
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .execution-badge {
-            background: var(--surface-3);
-            border: 1px solid var(--border-bright);
-            padding: 4px 10px;
-            border-radius: 4px;
-            font-size: 16px;
-            color: var(--accent);
-            font-family: 'JetBrains Mono', monospace;
-        }
-
-        .layout {
-            display: grid;
-            grid-template-columns: 260px 1fr;
-            min-height: calc(100vh - 56px);
-        }
-
-        .sidebar {
-            background: var(--surface);
-            border-right: 1px solid var(--border);
-            padding: 20px 0;
-            position: sticky;
-            top: 56px;
-            height: calc(100vh - 56px);
-            overflow-y: auto;
-        }
-
-        .sidebar-section {
-            padding: 0 16px;
-            margin-bottom: 24px;
-        }
-
-        .sidebar-label {
-            font-size: 16px;
-            font-weight: 700;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            color: var(--text-dim);
-            padding: 0 4px;
-            margin-bottom: 8px;
-        }
-
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px 12px;
-            border-radius: var(--radius);
-            cursor: pointer;
-            font-size: 16px;
-            color: var(--text-muted);
-            transition: all 0.15s;
-            border: 1px solid transparent;
-        }
-
-        .nav-item:hover {
-            background: var(--surface-2);
-            color: var(--text);
-        }
-
-        .nav-item.active {
-            background: var(--accent-glow);
-            border-color: rgba(88, 166, 255, 0.3);
-            color: var(--accent);
-        }
-
-        .nav-dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            flex-shrink: 0;
-        }
-
-        .nav-count {
-            margin-left: auto;
-            font-size: 16px;
-            background: var(--surface-3);
-            padding: 2px 6px;
-            border-radius: 10px;
-            color: var(--text-dim);
-        }
-
-        .main {
-            padding: 28px 32px;
-            overflow-y: auto;
-        }
-
-        .kpi-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 16px;
-            margin-bottom: 28px;
-        }
-
-        .kpi-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            padding: 20px;
-            position: relative;
-            overflow: hidden;
-            transition: border-color 0.2s;
-        }
-
-        .kpi-card:hover {
-            border-color: var(--border-bright);
-        }
-
-        .kpi-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 2px;
-        }
-
-        .kpi-card.blue::before {
-            background: var(--accent);
-        }
-
-        .kpi-card.green::before {
-            background: var(--green);
-        }
-
-        .kpi-card.red::before {
-            background: var(--red);
-        }
-
-        .kpi-card.purple::before {
-            background: var(--purple);
-        }
-
-        .kpi-label {
-            font-size: 16px;
-            color: var(--text-muted);
-            letter-spacing: 0.5px;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-        }
-
-        .kpi-value {
-            font-family: 'Outfit', sans-serif;
-            font-size: 32px;
-            font-weight: 700;
-            line-height: 1;
-            margin-bottom: 6px;
-        }
-
-        .kpi-card.blue .kpi-value {
-            color: var(--accent);
-        }
-
-        .kpi-card.green .kpi-value {
-            color: var(--green);
-        }
-
-        .kpi-card.red .kpi-value {
-            color: var(--red);
-        }
-
-        .kpi-card.purple .kpi-value {
-            color: var(--purple);
-        }
-
-        .kpi-sub {
-            font-size: 16px;
-            color: var(--text-dim);
-        }
-
-        .section-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 16px;
-        }
-
-        .section-title {
-            font-family: 'Syne', sans-serif;
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--text);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .section-title::before {
-            content: '';
-            display: block;
-            width: 3px;
-            height: 14px;
-            background: var(--accent);
-            border-radius: 2px;
-        }
-
-        .filters {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 16px;
-            flex-wrap: wrap;
-        }
-
-        .filter-btn {
-            padding: 5px 14px;
-            border-radius: 20px;
-            font-size: 16px;
-            font-family: 'JetBrains Mono', monospace;
-            border: 1px solid var(--border);
-            background: var(--surface-2);
-            color: var(--text-muted);
-            cursor: pointer;
-            transition: all 0.15s;
-            letter-spacing: 0.3px;
-        }
-
-        .filter-btn:hover {
-            border-color: var(--border-bright);
-            color: var(--text);
-        }
-
-        .filter-btn.active {
-            background: var(--accent-glow);
-            border-color: rgba(88, 166, 255, 0.4);
-            color: var(--accent);
-        }
-
-        .filter-btn.success.active {
-            background: var(--green-glow);
-            border-color: rgba(63, 185, 80, 0.4);
-            color: var(--green);
-        }
-
-        .filter-btn.error.active {
-            background: var(--red-glow);
-            border-color: rgba(248, 81, 73, 0.4);
-            color: var(--red);
-        }
-
-        .search-wrap {
-            position: relative;
-            margin-bottom: 16px;
-        }
-
-        .search-input {
-            width: 100%;
-            background: var(--surface-2);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 8px 12px 8px 36px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 16px;
-            color: var(--text);
-            outline: none;
-            transition: border-color 0.2s;
-        }
-
-        .search-input:focus {
-            border-color: var(--accent);
-        }
-
-        .search-input::placeholder {
-            color: var(--text-dim);
-        }
-
-        .search-icon {
-            position: absolute;
-            left: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text-dim);
-            font-size: 16px;
-        }
-
-        .event-table {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            overflow: hidden;
-        }
-
-        .event-table-header {
-            display: grid;
-            grid-template-columns: 160px 160px 1fr 100px;
-            padding: 10px 16px;
-            background: var(--surface-2);
-            border-bottom: 1px solid var(--border);
-            font-size: 16px;
-            font-weight: 700;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            color: var(--text-dim);
-        }
-
-        .event-row {
-            display: grid;
-            grid-template-columns: 160px 160px 1fr 100px;
-            padding: 0 16px;
-            border-bottom: 1px solid var(--border);
-            cursor: pointer;
-            transition: background 0.1s;
-            min-height: 44px;
-            align-items: center;
-        }
-
-        .event-row:last-child {
-            border-bottom: none;
-        }
-
-        .event-row:hover {
-            background: var(--surface-2);
-        }
-
-        .event-row.expanded {
-            background: var(--surface-2);
-        }
-
-        .event-time {
-            font-size: 16px;
-            color: var(--text-muted);
-            font-variant-numeric: tabular-nums;
-        }
-
-        .event-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            font-size: 16px;
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-weight: 500;
-            width: fit-content;
-        }
-
-        .badge-pipeline_start,
-        .badge-pipeline_init {
-            background: var(--accent-glow);
-            color: var(--accent);
-            border: 1px solid rgba(88, 166, 255, 0.2);
-        }
-
-        .badge-file_analysis {
-            background: var(--green-glow);
-            color: var(--green);
-            border: 1px solid rgba(63, 185, 80, 0.2);
-        }
-
-        .badge-pipeline_summary {
-            background: rgba(188, 140, 255, 0.1);
-            color: var(--purple);
-            border: 1px solid rgba(188, 140, 255, 0.2);
-        }
-
-        .badge-metadata {
-            background: var(--yellow-glow);
-            color: var(--yellow);
-            border: 1px solid rgba(210, 153, 34, 0.2);
-        }
-
-        .badge-columns {
-            background: rgba(188, 140, 255, 0.1);
-            color: var(--purple);
-            border: 1px solid rgba(188, 140, 255, 0.2);
-        }
-
-        .badge-analysis_error,
-        .badge-file_not_found,
-        .badge-critical_error {
-            background: var(--red-glow);
-            color: var(--red);
-            border: 1px solid rgba(248, 81, 73, 0.2);
-        }
-
-        .badge-dashboard_generated {
-            background: var(--surface-3);
-            color: var(--text-muted);
-            border: 1px solid var(--border);
-        }
-
-        .badge-default {
-            background: var(--surface-3);
-            color: var(--text-muted);
-            border: 1px solid var(--border);
-        }
-
-        .event-summary {
-            font-size: 16px;
-            color: var(--text-muted);
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            padding-right: 16px;
-            padding-left: 16px;
-        }
-
-        .event-expand {
-            font-size: 16px;
-            color: var(--text-dim);
-            text-align: right;
-            transition: transform 0.2s, color 0.2s;
-        }
-
-        .event-row.expanded .event-expand {
-            transform: rotate(90deg);
-            color: var(--accent);
-        }
-
-        .detail-panel {
-            display: none;
-            padding: 16px;
-            background: var(--bg);
-            border-bottom: 1px solid var(--border);
-            border-top: 1px solid var(--border);
-        }
-
-        .detail-panel.show {
-            display: block;
-        }
-
-        .detail-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-            gap: 10px;
-            margin-bottom: 12px;
-        }
-
-        .detail-field {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 10px 14px;
-        }
-
-        .detail-key {
-            font-size: 16px;
-            color: var(--text-dim);
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            margin-bottom: 4px;
-        }
-
-        .detail-val {
-            font-size: 16px;
-            color: var(--text);
-            word-break: break-all;
-        }
-
-        .detail-val.num {
-            color: var(--accent);
-            font-size: 16px;
-            font-weight: 600;
-        }
-
-        .detail-val.ok {
-            color: var(--green);
-        }
-
-        .detail-val.err {
-            color: var(--red);
-        }
-
-        .cols-section {
-            margin-top: 12px;
-        }
-
-        .cols-toggle {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 16px;
-            color: var(--text-muted);
-            cursor: pointer;
-            padding: 6px 0;
-            user-select: none;
-            transition: color 0.15s;
-        }
-
-        .cols-toggle:hover {
-            color: var(--text);
-        }
-
-        .cols-toggle-arrow {
-            transition: transform 0.2s;
-            font-size: 16px;
-        }
-
-        .cols-toggle.open .cols-toggle-arrow {
-            transform: rotate(90deg);
-        }
-
-        .cols-grid {
-            display: none;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            gap: 6px;
-            margin-top: 8px;
-        }
-
-        .cols-grid.show {
-            display: grid;
-        }
-
-        .col-chip {
-            background: var(--surface-2);
-            border: 1px solid var(--border);
-            border-radius: 4px;
-            padding: 5px 10px;
-            font-size: 16px;
-            color: var(--text-muted);
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            transition: all 0.15s;
-        }
-
-        .col-chip:hover {
-            border-color: var(--accent);
-            color: var(--text);
-        }
-
-        .col-idx {
-            color: var(--text-dim);
-            font-size: 16px;
-            min-width: 18px;
-        }
-
-        .status-bar {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            padding: 10px 16px;
-            background: var(--surface-2);
-            border-top: 1px solid var(--border);
-            font-size: 16px;
-            color: var(--text-dim);
-            margin-top: 4px;
-            border-radius: 0 0 var(--radius-lg) var(--radius-lg);
-        }
-
-        .status-dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-        }
-
-        .status-dot.green {
-            background: var(--green);
-            box-shadow: 0 0 6px var(--green);
-        }
-
-        .status-dot.red {
-            background: var(--red);
-            box-shadow: 0 0 6px var(--red);
-        }
-
-        .status-dot.yellow {
-            background: var(--yellow);
-        }
-
-        .timeline-wrap {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            padding: 20px;
-            margin-bottom: 28px;
-        }
-
-        .timeline-track {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            margin-top: 16px;
-            flex-wrap: wrap;
-        }
-
-        .timeline-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            cursor: pointer;
-            transition: transform 0.15s;
-            flex-shrink: 0;
-        }
-
-        .timeline-dot:hover {
-            transform: scale(1.5);
-        }
-
-        .timeline-dot.ok {
-            background: var(--green);
-        }
-
-        .timeline-dot.err {
-            background: var(--red);
-        }
-
-        .timeline-dot.info {
-            background: var(--accent);
-        }
-
-        .timeline-dot.warn {
-            background: var(--yellow);
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 48px;
-            color: var(--text-dim);
-            font-size: 16px;
-        }
-
-        .file-list-toggle {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            font-size: 16px;
-            color: var(--accent);
-            cursor: pointer;
-            padding: 2px 8px;
-            border-radius: 4px;
-            border: 1px solid rgba(88, 166, 255, 0.2);
-            background: var(--accent-glow);
-            transition: all 0.15s;
-            user-select: none;
-            margin-left: 6px;
-        }
-
-        .file-list-toggle:hover {
-            background: rgba(88, 166, 255, 0.25);
-        }
-
-        .file-list-toggle .arrow {
-            transition: transform 0.2s;
-            font-size: 14px;
-        }
-
-        .file-list-toggle.open .arrow {
-            transform: rotate(90deg);
-        }
-
-        .file-list-dropdown {
-            display: none;
-            flex-direction: column;
-            gap: 4px;
-            margin-top: 8px;
-            padding: 8px;
-            background: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-        }
-
-        .file-list-dropdown.show {
-            display: flex;
-        }
-
-        .file-list-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 16px;
-            color: var(--text-muted);
-            padding: 4px 8px;
-            border-radius: 4px;
-            border-left: 2px solid var(--border-bright);
-            transition: all 0.1s;
-        }
-
-        .file-list-item:hover {
-            background: var(--surface-2);
-            border-left-color: var(--accent);
-            color: var(--text);
-        }
-
-        .file-list-num {
-            color: var(--text-dim);
-            font-size: 16px;
-            min-width: 20px;
-        }
-
-        .summary-inline {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            flex-wrap: nowrap;
-            overflow: hidden;
-        }
-
-        .summary-tag {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 16px;
-            padding: 2px 6px;
-            border-radius: 3px;
-            background: var(--surface-3);
-            color: var(--text-muted);
-            white-space: nowrap;
-            flex-shrink: 0;
-        }
-
-        .summary-tag.ok {
-            background: var(--green-glow);
-            color: var(--green);
-        }
-
-        .summary-tag.err {
-            background: var(--red-glow);
-            color: var(--red);
-        }
-
-        .summary-filename {
-            font-size: 16px;
-            color: var(--text);
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: var(--surface);
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: var(--border-bright);
-            border-radius: 3px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--text-dim);
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(4px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .event-row {
-            animation: fadeIn 0.2s ease both;
-        }
-
-        @media (max-width: 900px) {
-            .layout {
-                grid-template-columns: 1fr;
-            }
-
-            .sidebar {
-                display: none;
-            }
-
-            .kpi-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .event-table-header,
-            .event-row {
-                grid-template-columns: 120px 120px 1fr;
-            }
-
-            .event-row> :last-child {
-                display: none;
-            }
-
-            .event-table-header> :last-child {
-                display: none;
-            }
-        }
+ :root {
+    /* Modo claro suave - reducido el blanco, tonos más cálidos */
+    --bg-deep: #eef2f5;
+    --bg-surface: #f8fafc;
+    --bg-elevated: #f1f5f9;
+    --bg-card: #ffffff;
+    --border-subtle: #e2e8f0;
+    --border-medium: #cbd5e1;
+    --accent-primary: #3b82f6;
+    --accent-glow: rgba(59, 130, 246, 0.08);
+    --accent-soft: #dbeafe;
+    /* Textos con excelente contraste pero suaves */
+    --text-primary: #1e293b;
+    --text-secondary: #475569;
+    --text-tertiary: #64748b;
+    --success: #10b981;
+    --success-glow: rgba(16, 185, 129, 0.08);
+    --error: #ef4444;
+    --error-glow: rgba(239, 68, 68, 0.08);
+    --warning: #f59e0b;
+    --warning-glow: rgba(245, 158, 11, 0.08);
+    --purple-accent: #8b5cf6;
+    --purple-glow: rgba(139, 92, 246, 0.08);
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --transition-fast: 0.15s ease;
+    --transition-smooth: 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: var(--bg-deep);
+    font-family: 'JetBrains Mono', 'SF Mono', monospace;
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+    line-height: 1.5;
+    letter-spacing: -0.01em;
+}
+
+/* efecto de textura muy sutil */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at 20% 30%, rgba(59, 130, 246, 0.02) 0%, transparent 80%);
+    pointer-events: none;
+    z-index: 999;
+}
+
+/* scrollbar elegante */
+::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+}
+::-webkit-scrollbar-track {
+    background: var(--bg-surface);
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-primary);
+}
+
+/* topbar — menos blanco, más translúcido */
+.topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 36px;
+    height: 64px;
+    background: rgba(248, 250, 252, 0.95);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border-subtle);
+    position: sticky;
+    top: 0;
+    z-index: 110;
+}
+
+.logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 20px;
+    letter-spacing: -0.8px;
+    background: linear-gradient(135deg, #1e293b 0%, #3b82f6 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.logo-dot {
+    width: 9px;
+    height: 9px;
+    background: var(--accent-primary);
+    border-radius: 50%;
+    box-shadow: 0 0 8px rgba(59, 130, 246, 0.4);
+    animation: softPulse 2.2s infinite;
+}
+@keyframes softPulse {
+    0%, 100% { opacity: 0.9; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.85); }
+}
+
+.topbar-meta {
+    font-size: 13px;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+.execution-badge {
+    background: rgba(59, 130, 246, 0.1);
+    border: 0.5px solid rgba(59, 130, 246, 0.2);
+    padding: 5px 14px;
+    border-radius: 40px;
+    font-size: 12px;
+    font-weight: 500;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.2px;
+    color: var(--accent-primary);
+}
+
+/* layout grid */
+.layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    min-height: calc(100vh - 64px);
+}
+
+/* sidebar — fondo más integrado, menos blanco */
+.sidebar {
+    background: rgba(241, 245, 249, 0.8);
+    backdrop-filter: blur(4px);
+    border-right: 1px solid var(--border-subtle);
+    padding: 28px 0;
+    position: sticky;
+    top: 64px;
+    height: calc(100vh - 64px);
+    overflow-y: auto;
+}
+
+.sidebar-section {
+    padding: 0 20px;
+    margin-bottom: 32px;
+}
+.sidebar-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    margin-bottom: 14px;
+    padding-left: 8px;
+}
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    transition: all var(--transition-fast);
+    margin-bottom: 6px;
+    border: 1px solid transparent;
+}
+.nav-item:hover {
+    background: rgba(59, 130, 246, 0.06);
+    color: var(--text-primary);
+    border-color: rgba(59, 130, 246, 0.15);
+}
+.nav-item.active {
+    background: var(--accent-glow);
+    border-color: rgba(59, 130, 246, 0.25);
+    color: var(--accent-primary);
+}
+.nav-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+}
+.nav-count {
+    margin-left: auto;
+    font-size: 11px;
+    background: #e2e8f0;
+    padding: 2px 8px;
+    border-radius: 30px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+/* summary block */
+.summary-stats {
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 16px;
+    padding: 14px 18px;
+    margin-top: 8px;
+    border: 0.5px solid var(--border-subtle);
+}
+.summary-stats > div {
+    font-size: 13px;
+    line-height: 1.9;
+    color: var(--text-secondary);
+}
+.summary-stats span {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+/* main area */
+.main {
+    padding: 32px 24px;
+    background: radial-gradient(ellipse at 20% 30%, rgba(59, 130, 246, 0.02), transparent);
+}
+
+/* KPI cards — menos blanco, más integración */
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    margin-bottom: 32px;
+}
+.kpi-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 20px;
+    padding: 20px 22px;
+    position: relative;
+    transition: all var(--transition-smooth);
+    backdrop-filter: blur(2px);
+    overflow: hidden;
+}
+.kpi-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent-primary), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+.kpi-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(59, 130, 246, 0.4);
+    box-shadow: 0 12px 28px -12px rgba(0, 0, 0, 0.1);
+}
+.kpi-card:hover::after {
+    opacity: 0.6;
+}
+.kpi-label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+}
+.kpi-value {
+    font-family: 'Outfit', sans-serif;
+    font-size: 38px;
+    font-weight: 700;
+    line-height: 1.1;
+    margin-bottom: 6px;
+    letter-spacing: -1px;
+}
+.kpi-card.blue .kpi-value { color: var(--accent-primary); }
+.kpi-card.green .kpi-value { color: var(--success); }
+.kpi-card.red .kpi-value { color: var(--error); }
+.kpi-card.purple .kpi-value { color: var(--purple-accent); }
+.kpi-sub {
+    font-size: 12px;
+    color: var(--text-tertiary);
+}
+
+/* timeline wrap — más suave */
+.timeline-wrap {
+    background: rgba(248, 250, 252, 0.8);
+    backdrop-filter: blur(4px);
+    border: 0.5px solid var(--border-subtle);
+    border-radius: 24px;
+    padding: 10px 24px;
+    margin-bottom: 24px;
+}
+.timeline-wrap .section-header {
+    margin-bottom: 8px;
+}
+.section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    padding-bottom: 8px;
+}
+/* Align Event Log header with content inside timeline-wrap */
+.main > .section-header {
+    padding-left: 24px;
+}
+.main > .search-wrap {
+    margin-left: 24px;
+    margin-right: 24px;
+}
+.main > .filters {
+    padding-left: 24px;
+    padding-right: 24px;
+}
+.section-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+    color: var(--text-secondary);
+    padding-left: 14px;
+    background: linear-gradient(to right, var(--accent-primary) 4px, transparent 4px);
+    border-radius: 2px;
+}
+.timeline-track {
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+    height: 28px;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-top: 12px;
+    gap: 1px;
+}
+.timeline-segment {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+    transition: filter 0.15s;
+    min-width: 2px;
+}
+.timeline-segment:hover { filter: brightness(1.15); }
+.timeline-segment.ok   { background: var(--success);        color: #fff; }
+.timeline-segment.err  { background: var(--error);          color: #fff; }
+.timeline-segment.info { background: var(--accent-primary); color: #fff; opacity: 0.55; }
+
+/* search & filters */
+.search-wrap {
+    position: relative;
+    margin-bottom: 35px;
+}
+.search-input {
+    width: 100%;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: 44px;
+    padding: 12px 20px 12px 48px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--text-primary);
+    transition: all var(--transition-fast);
+}
+.search-input:focus {
+    border-color: var(--accent-primary);
+    outline: none;
+    box-shadow: 0 0 0 2px var(--accent-glow);
+}
+.search-input::placeholder {
+    color: var(--text-tertiary);
+}
+.search-icon {
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 16px;
+    color: var(--text-tertiary);
+}
+.filters {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+.filter-btn {
+    padding: 6px 18px;
+    border-radius: 40px;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 500;
+    background: #f1f5f9;
+    border: 0.5px solid var(--border-subtle);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.filter-btn:hover {
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--accent-primary);
+    border-color: var(--accent-primary);
+}
+.filter-btn.active {
+    background: var(--accent-glow);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+}
+.filter-btn.success.active {
+    background: var(--success-glow);
+    border-color: var(--success);
+    color: var(--success);
+}
+.filter-btn.error.active {
+    background: var(--error-glow);
+    border-color: var(--error);
+    color: var(--error);
+}
+
+/* event table — menos blanco, más integrado */
+.event-table {
+    background: var(--bg-surface);
+    border-radius: 20px;
+    border: 0.5px solid var(--border-subtle);
+    overflow: hidden;
+    min-width: 1020px;
+}
+.main {
+    overflow-x: auto;
+}
+.event-table-header {
+    display: grid;
+    grid-template-columns: 420px 165px 1fr 110px 110px 90px 36px;
+    column-gap: 20px;
+    padding: 14px 20px;
+    background: #eef2f5;
+    border-bottom: 1px solid var(--border-subtle);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+}
+.event-row {
+    display: grid;
+    grid-template-columns: 420px 165px 1fr 110px 110px 90px 36px;
+    column-gap: 20px;
+    padding: 0 20px;
+    border-bottom: 0.5px solid var(--border-subtle);
+    cursor: pointer;
+    transition: background 0.15s;
+    min-height: 56px;
+    align-items: center;
+}
+.event-row:last-child {
+    border-bottom: none;
+}
+.event-row:hover {
+    background: rgba(59, 130, 246, 0.03);
+}
+.event-row--ok  { border-left: 3px solid var(--success); }
+.event-row--err { border-left: 3px solid var(--error); }
+.event-exec-id {
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--accent-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.event-filename {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.event-path {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.event-rows {
+    font-size: 13px;
+    color: var(--success);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+.event-duration {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+}
+.event-meta {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.event-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 30px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: -0.2px;
+    background: #eef2f5;
+    color: var(--text-secondary);
+    border: 0.5px solid var(--border-subtle);
+}
+.badge-pipeline_start, .badge-pipeline_init {
+    background: var(--accent-glow);
+    color: var(--accent-primary);
+    border-color: rgba(59, 130, 246, 0.25);
+}
+.badge-file_analysis_metadata_metadata {
+    background: var(--success-glow);
+    color: var(--success);
+    border-color: rgba(16, 185, 129, 0.25);
+}
+.badge-pipeline_summary {
+    background: var(--purple-glow);
+    color: var(--purple-accent);
+}
+.badge-metadata, .badge-columns {
+    background: rgba(139, 92, 246, 0.08);
+    color: #7c3aed;
+}
+.badge-analysis_error, .badge-critical_error, .badge-file_not_found {
+    background: var(--error-glow);
+    color: var(--error);
+}
+.badge-complete-ok {
+    background: var(--success-glow);
+    color: var(--success);
+    border-color: rgba(16, 185, 129, 0.25);
+}
+.badge-complete-err {
+    background: var(--error-glow);
+    color: var(--error);
+    border-color: rgba(239, 68, 68, 0.25);
+}
+.event-summary {
+    font-size: 13px;
+    color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding-right: 12px;
+}
+.event-expand {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    text-align: right;
+    transition: transform 0.2s, color 0.2s;
+}
+.event-row.expanded .event-expand {
+    transform: rotate(90deg);
+    color: var(--accent-primary);
+}
+
+/* detail panel — más suave */
+.detail-panel {
+    display: none;
+    padding: 20px 24px;
+    background: #f9fbfd;
+    border-top: 1px solid var(--border-subtle);
+}
+.detail-panel.show {
+    display: block;
+}
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 12px;
+}
+.detail-field {
+    background: #f1f5f9;
+    border-radius: 14px;
+    padding: 12px 16px;
+    border: 0.5px solid var(--border-subtle);
+}
+.detail-key {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-tertiary);
+    margin-bottom: 8px;
+}
+.detail-val {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+.detail-val.num { color: var(--accent-primary); font-family: monospace; font-weight: 600;}
+.detail-val.ok { color: var(--success); font-weight: 600;}
+.detail-val.err { color: var(--error); font-weight: 600;}
+
+.cols-section {
+    margin-top: 16px;
+}
+.cols-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    cursor: pointer;
+    color: var(--accent-primary);
+    background: rgba(59, 130, 246, 0.08);
+    padding: 4px 14px;
+    border-radius: 40px;
+    transition: 0.2s;
+}
+.cols-grid {
+    display: none;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 8px;
+    margin-top: 14px;
+}
+.cols-grid.show {
+    display: grid;
+}
+.col-chip {
+    background: #f1f5f9;
+    border: 0.5px solid var(--border-subtle);
+    border-radius: 40px;
+    padding: 5px 14px;
+    font-size: 12px;
+    display: flex;
+    gap: 8px;
+    color: var(--text-secondary);
+}
+.status-bar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 20px;
+    background: #f1f5f9;
+    border-top: 0.5px solid var(--border-subtle);
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.file-list-toggle {
+    display: inline-flex;
+    gap: 6px;
+    font-size: 12px;
+    background: rgba(59, 130, 246, 0.1);
+    padding: 2px 12px;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: 0.15s;
+    color: var(--accent-primary);
+}
+.file-list-dropdown {
+    display: none;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 12px;
+    background: var(--bg-elevated);
+    border-radius: 14px;
+    padding: 12px;
+    max-height: 200px;
+    overflow-y: auto;
+    border: 0.5px solid var(--border-subtle);
+}
+.file-list-dropdown.show { display: flex; }
+.file-list-item {
+    font-size: 12px;
+    padding: 4px 8px;
+    border-left: 2px solid var(--accent-primary);
+    color: var(--text-secondary);
+}
+
+.event-row--flat {
+    cursor: default;
+    opacity: 0.75;
+}
+.file-events-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 4px 0;
+}
+.file-event-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    background: var(--bg-elevated);
+    border: 0.5px solid var(--border-subtle);
+}
+.file-event-time {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    font-variant-numeric: tabular-nums;
+    min-width: 72px;
+    flex-shrink: 0;
+}
+.file-event-detail {
+    font-size: 12px;
+    color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.empty-state {
+    text-align: center;
+    padding: 60px;
+    color: var(--text-tertiary);
+}
+.summary-inline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.summary-tag {
+    background: #eef2f5;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 500;
+}
+.summary-tag.ok { background: var(--success-glow); color: var(--success);}
+.summary-tag.err { background: var(--error-glow); color: var(--error);}
+.summary-filename {
+    font-family: monospace;
+    font-size: 12px;
+    color: var(--text-primary);
+}
+
+/* responsive */
+@media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .kpi-grid { grid-template-columns: repeat(2,1fr); }
+    .main { padding: 20px; }
+    .event-table-header, .event-row {
+        grid-template-columns: 100px 1fr 110px 36px;
+    }
+    .event-table-header > :nth-child(2),
+    .event-row > :nth-child(2),
+    .event-table-header > :nth-child(3),
+    .event-row > :nth-child(3),
+    .event-table-header > :nth-child(4),
+    .event-row > :nth-child(4),
+    .event-table-header > :nth-child(6),
+    .event-row > :nth-child(6) { display: none; }
+}
     </style>
 </head>
-
 <body>
-    <div class="topbar">
-        <div class="logo">
-            <div class="logo-dot"></div>
-            DataBridge
-        </div>
-        <div class="topbar-meta">
-            <span id="log-filename" style="color: var(--text-dim)">—</span>
-            <span class="execution-badge" id="exec-id">execution_id</span>
-            <span id="last-update" style="font-size:16px; color: var(--text-dim)"></span>
-        </div>
+<div class="topbar">
+    <div class="logo"><div class="logo-dot"></div>FlowELT</div>
+    <div class="topbar-meta"><span id="log-filename">—</span><span class="execution-badge" id="exec-id">execution_id</span><span id="last-update"></span></div>
+</div>
+<div class="layout">
+    <aside class="sidebar"><div class="sidebar-section"><div class="sidebar-label">Views</div>
+        <div class="nav-item active" onclick="setView('all', this)"><div class="nav-dot" style="background: var(--accent-primary)"></div>All Events<span class="nav-count" id="nav-all">0</span></div>
+        <div class="nav-item" onclick="setView('pipeline', this)"><div class="nav-dot" style="background: var(--purple-accent)"></div>Pipeline<span class="nav-count" id="nav-pipeline">0</span></div>
+        <div class="nav-item" onclick="setView('file_success', this)"><div class="nav-dot" style="background: var(--success)"></div>Files<span class="nav-count" id="nav-file_success">0</span></div>
+        <div class="nav-item" onclick="setView('errors', this)"><div class="nav-dot" style="background: var(--error)"></div>Errors<span class="nav-count" id="nav-errors">0</span></div>
     </div>
+    <div class="sidebar-section"><div class="sidebar-label">Summary</div><div class="summary-stats"><div>Files: <span id="sb-files">—</span></div><div>Rows: <span id="sb-rows">—</span></div><div>Duration: <span id="sb-duration">—</span></div><div>Status: <span id="sb-status">—</span></div></div></div></aside>
+    <main class="main">
+        <div class="kpi-grid"><div class="kpi-card blue"><div class="kpi-label">Total Events</div><div class="kpi-value" id="kpi-total">—</div><div class="kpi-sub">log entries</div></div>
+        <div class="kpi-card green"><div class="kpi-label">Files OK</div><div class="kpi-value" id="kpi-success">—</div><div class="kpi-sub">analyzed</div></div>
+        <div class="kpi-card red"><div class="kpi-label">Errors</div><div class="kpi-value" id="kpi-errors">—</div><div class="kpi-sub">failed files</div></div>
+        <div class="kpi-card purple"><div class="kpi-label">Total Rows</div><div class="kpi-value" id="kpi-rows">—</div><div class="kpi-sub">processed</div></div></div>
+        <div class="timeline-wrap"><div class="section-header"><div class="section-title">Event Timeline</div><span id="timeline-range" style="font-size:12px;"></span></div><div class="timeline-track" id="timeline-track"></div></div>
+        <div class="section-header"><div class="section-title">Event Log</div><div><button class="filter-btn" onclick="expandAll()">Expand All</button><button class="filter-btn" onclick="collapseAll()" style="margin-left:6px;">Collapse</button></div></div>
+        <div class="search-wrap"><span class="search-icon">⌕</span><input class="search-input" id="search-input" placeholder="Buscar archivo, ruta, tabla..." oninput="applyFilters()"></div>
+        <div class="event-table"><div class="event-table-header"><span>Execution ID</span><span>Archivo / Evento</span><span>Detalle</span><span>En archivo</span><span>Cargados</span><span>Duración</span><span></span></div><div id="events-body"></div><div class="status-bar"><div class="status-dot green" id="status-dot"></div><span id="status-text">Ready</span><span style="margin-left:auto" id="status-count"></span></div></div>
+    </main>
+</div>
+<script>
+    const RAW_DATA = __LOG_DATA__ || [];
+    let expandedRows = new Set(), searchQuery = '';
+    // ── Clasificación ─────────────────────────────────────────────────────
+    const FILE_EVENTS  = new Set(['file_start','file_success','file_analysis_metadata','file_error','file_not_found']);
+    const TABLE_EVENTS = new Set(['table_already_exists','table_created']);
+    const END_EVENTS   = ['pipeline_init','pipeline_summary','process_complete','dashboard_generated'];
+    function isError(e){ return ['analysis_error','file_not_found','critical_error','file_error'].includes(e.evento); }
+    // ── Badge CSS ─────────────────────────────────────────────────────────
+    function bc(ev){ const m={'pipeline_start':'badge-pipeline_start','pipeline_init':'badge-pipeline_init','pipeline_summary':'badge-pipeline_summary','file_analysis_metadata':'badge-file_analysis_metadata','file_success':'badge-file_analysis_metadata','file_start':'badge-metadata','table_already_exists':'badge-metadata','table_created':'badge-metadata','analysis_error':'badge-analysis_error','file_not_found':'badge-file_not_found','critical_error':'badge-critical_error','process_start':'badge-pipeline_start','process_complete':'badge-pipeline_summary'}; return m[ev]||'badge-default'; }
 
-    <div class="layout">
-        <aside class="sidebar">
-            <div class="sidebar-section">
-                <div class="sidebar-label">Views</div>
-                <div class="nav-item active" onclick="setView('all', this)">
-                    <div class="nav-dot" style="background: var(--accent)"></div>
-                    All Events
-                    <span class="nav-count" id="nav-all">0</span>
-                </div>
-                <div class="nav-item" onclick="setView('pipeline', this)">
-                    <div class="nav-dot" style="background: var(--purple)"></div>
-                    Pipeline
-                    <span class="nav-count" id="nav-pipeline">0</span>
-                </div>
-                <div class="nav-item" onclick="setView('file_analysis', this)">
-                    <div class="nav-dot" style="background: var(--green)"></div>
-                    File Analysis
-                    <span class="nav-count" id="nav-file_analysis">0</span>
-                </div>
-                <div class="nav-item" onclick="setView('errors', this)">
-                    <div class="nav-dot" style="background: var(--red)"></div>
-                    Errors
-                    <span class="nav-count" id="nav-errors">0</span>
-                </div>
-            </div>
+    // ── Agrupa eventos por archivo ────────────────────────────────────────
+    function buildGroups(){
+        const fileStarts = RAW_DATA.filter(e => e.evento === 'file_start');
+        const usedIdxs   = new Set();
+        const groups     = [];
 
-            <div class="sidebar-section">
-                <div class="sidebar-label">Summary</div>
-                <div style="padding: 0 4px; font-size: 16px; color: var(--text-muted); line-height: 2;">
-                    <div>Files: <span id="sb-files" style="color: var(--text)">—</span></div>
-                    <div>Rows: <span id="sb-rows" style="color: var(--text)">—</span></div>
-                    <div>Duration: <span id="sb-duration" style="color: var(--text)">—</span></div>
-                    <div>Status: <span id="sb-status" style="color: var(--green)">—</span></div>
-                </div>
-            </div>
-        </aside>
+        // 1. process_start (fila plana, sin expand)
+        const psIdx = RAW_DATA.findIndex(e => e.evento === 'process_start');
+        if(psIdx >= 0){ groups.push({ type:'flat', event: RAW_DATA[psIdx] }); usedIdxs.add(psIdx); }
 
-        <main class="main">
-            <div class="kpi-grid">
-                <div class="kpi-card blue">
-                    <div class="kpi-label">Total Events</div>
-                    <div class="kpi-value" id="kpi-total">—</div>
-                    <div class="kpi-sub">log entries</div>
-                </div>
-                <div class="kpi-card green">
-                    <div class="kpi-label">Files OK</div>
-                    <div class="kpi-value" id="kpi-success">—</div>
-                    <div class="kpi-sub">analyzed successfully</div>
-                </div>
-                <div class="kpi-card red">
-                    <div class="kpi-label">Errors</div>
-                    <div class="kpi-value" id="kpi-errors">—</div>
-                    <div class="kpi-sub">failed files</div>
-                </div>
-                <div class="kpi-card purple">
-                    <div class="kpi-label">Total Rows</div>
-                    <div class="kpi-value" id="kpi-rows">—</div>
-                    <div class="kpi-sub">analyzed</div>
-                </div>
-            </div>
+        // 2. Una fila por archivo
+        fileStarts.forEach(fs => {
+            const d         = fs.detalles || {};
+            const filePath  = d.file || '';
+            const filename  = filePath.split(/[\\/]/).pop();
+            const destTable = d.destination_table || '';
+            const execId    = d.execution_id || '';
 
-            <div class="timeline-wrap" id="timeline-wrap">
-                <div class="section-header">
-                    <div class="section-title">Event Timeline</div>
-                    <span style="font-size:16px; color: var(--text-dim)" id="timeline-range"></span>
-                </div>
-                <div class="timeline-track" id="timeline-track"></div>
-            </div>
-
-            <div class="section-header">
-                <div class="section-title">Event Log</div>
-                <div style="display:flex; gap:8px; align-items:center;">
-                    <span style="font-size:16px; color: var(--text-dim)" id="showing-count"></span>
-                    <button class="filter-btn" onclick="expandAll()">Expand All</button>
-                    <button class="filter-btn" onclick="collapseAll()">Collapse</button>
-                </div>
-            </div>
-
-            <div class="search-wrap">
-                <span class="search-icon">⌕</span>
-                <input class="search-input" type="text" placeholder="Search events, files, columns..." id="search-input"
-                    oninput="applyFilters()">
-            </div>
-
-            <div class="filters" id="filter-bar"></div>
-
-            <div class="event-table">
-                <div class="event-table-header">
-                    <span>Timestamp</span>
-                    <span>Event</span>
-                    <span>Summary</span>
-                    <span style="text-align:right">▶</span>
-                </div>
-                <div id="events-body"></div>
-                <div class="status-bar">
-                    <div class="status-dot green" id="status-dot"></div>
-                    <span id="status-text">Ready</span>
-                    <span style="margin-left: auto" id="status-count"></span>
-                </div>
-            </div>
-        </main>
-    </div>
-
-    <script>
-        const RAW_DATA = __LOG_DATA__;
-
-        let currentView = 'all';
-        let currentFilter = 'all';
-        let searchQuery = '';
-        let expandedRows = new Set();
-
-        function init() {
-            if (!RAW_DATA || RAW_DATA.length === 0) {
-                document.getElementById('events-body').innerHTML =
-                    '<div class="empty-state">No log data found</div>';
-                return;
-            }
-            buildKPIs();
-            buildTimeline();
-            buildFilterBar();
-            buildSidebar();
-            renderEvents();
-
-            const execId = findExecutionId();
-            document.getElementById('exec-id').textContent = execId ? execId.slice(0, 8) + '...' : 'unknown';
-            document.getElementById('log-filename').textContent = 'pipeline log';
-            const last = RAW_DATA[RAW_DATA.length - 1];
-            document.getElementById('last-update').textContent =
-                last?.timestamp?.split('T')[1]?.slice(0, 8) || '';
-        }
-
-        function findExecutionId() {
-            for (const e of RAW_DATA) {
-                if (e.detalles?.execution_id) return e.detalles.execution_id;
-            }
-            return null;
-        }
-
-        // ── Leer datos desde pipeline_summary ──
-        function getPipelineSummary() {
-            return RAW_DATA.find(e => e.evento === 'pipeline_summary')?.detalles || null;
-        }
-
-        function buildKPIs() {
-            const total = RAW_DATA.length;
-            const errors = RAW_DATA.filter(e => isError(e)).length;
-            const summary = getPipelineSummary();
-
-            // Filas totales — desde pipeline_summary si existe, sino sumar file_analysis
-            const totalRows = summary?.total_rows ??
-                RAW_DATA.filter(e => e.evento === 'file_analysis')
-                    .reduce((s, e) => s + (e.detalles?.rows || 0), 0);
-
-            // Archivos ok — desde pipeline_summary si existe
-            const filesOk = summary?.files_ok ??
-                RAW_DATA.filter(e => e.evento === 'file_analysis').length;
-
-            document.getElementById('kpi-total').textContent = total.toLocaleString();
-            document.getElementById('kpi-success').textContent = filesOk.toLocaleString();
-            document.getElementById('kpi-errors').textContent = errors.toLocaleString();
-            document.getElementById('kpi-rows').textContent =
-                totalRows > 999999 ? (totalRows / 1000000).toFixed(1) + 'M' :
-                    totalRows > 999 ? (totalRows / 1000).toFixed(1) + 'K' :
-                        totalRows.toString();
-
-            // Sidebar
-            const totalFiles = summary?.total_files ??
-                RAW_DATA.filter(e => e.evento === 'file_analysis').length;
-
-            document.getElementById('sb-files').textContent =
-                `${filesOk} / ${totalFiles}`;
-            document.getElementById('sb-rows').textContent = totalRows.toLocaleString();
-
-            const hasErrors = errors > 0;
-            document.getElementById('sb-status').textContent = hasErrors ? 'PARTIAL' : 'OK';
-            document.getElementById('sb-status').style.color = hasErrors ? 'var(--red)' : 'var(--green)';
-
-            // Nav counts
-            document.getElementById('nav-all').textContent = total;
-            document.getElementById('nav-pipeline').textContent =
-                RAW_DATA.filter(e => ['pipeline_start', 'pipeline_init', 'pipeline_summary'].includes(e.evento)).length;
-            document.getElementById('nav-file_analysis').textContent =
-                RAW_DATA.filter(e => e.evento === 'file_analysis').length;
-            document.getElementById('nav-errors').textContent = errors;
-
-            // Status bar
-            if (errors > 0) {
-                document.getElementById('status-dot').className = 'status-dot red';
-                document.getElementById('status-text').textContent = `${errors} error(s) detected`;
-            } else {
-                document.getElementById('status-text').textContent = 'All events processed successfully';
-            }
-        }
-
-        function isError(e) {
-            return ['analysis_error', 'file_not_found', 'critical_error'].includes(e.evento);
-        }
-
-        function buildSidebar() {
-            const summary = getPipelineSummary();
-
-            if (summary?.duration_seconds != null) {
-                // ← usar duration_seconds del log si existe
-                document.getElementById('sb-duration').textContent = summary.duration_seconds + 's';
-            } else if (RAW_DATA.length >= 2) {
-                // ← fallback: calcular desde timestamps
-                const t1 = new Date(RAW_DATA[0].timestamp);
-                const t2 = new Date(RAW_DATA[RAW_DATA.length - 1].timestamp);
-                const diff = ((t2 - t1) / 1000).toFixed(1);
-                document.getElementById('sb-duration').textContent = diff + 's';
-            }
-        }
-        function buildTimeline() {
-            const track = document.getElementById('timeline-track');
-            track.innerHTML = '';
+            const eventIdxs = [];
             RAW_DATA.forEach((e, i) => {
-                const dot = document.createElement('div');
-                dot.className = 'timeline-dot ' + getTimelineDotClass(e);
-                dot.title = `${e.timestamp.split('T')[1].slice(0, 8)} — ${e.evento}`;
-                dot.onclick = () => scrollToEvent(i);
-                track.appendChild(dot);
+                const ed = e.detalles || {};
+                if(FILE_EVENTS.has(e.evento)  && (ed.file === filePath || ed.file === filename)) eventIdxs.push(i);
+                if(TABLE_EVENTS.has(e.evento) && ed.tabla === destTable) eventIdxs.push(i);
             });
-            if (RAW_DATA.length > 0) {
-                const first = RAW_DATA[0].timestamp.split('T')[1].slice(0, 8);
-                const last = RAW_DATA[RAW_DATA.length - 1].timestamp.split('T')[1].slice(0, 8);
-                document.getElementById('timeline-range').textContent = `${first} → ${last}`;
+            eventIdxs.forEach(i => usedIdxs.add(i));
+
+            const fileEvs = eventIdxs.map(i => RAW_DATA[i]);
+            const success = fileEvs.find(e => e.evento === 'file_success');
+            const meta    = fileEvs.find(e => e.evento === 'file_analysis_metadata');
+
+            groups.push({
+                type: 'file', filePath, filename, execId,
+                rowsInFile:   meta?.detalles?.rows,
+                rowsInserted: success?.detalles?.rows_inserted,
+                duration:     success?.detalles?.duration_seconds,
+                hasError:     fileEvs.some(isError),
+                events:       fileEvs,
+            });
+        });
+
+        // 3. Eventos finales
+        RAW_DATA.forEach((e, i) => {
+            if(END_EVENTS.includes(e.evento) && !usedIdxs.has(i)){
+                groups.push({ type:'end', event: e, idx: i });
+                usedIdxs.add(i);
             }
-        }
+        });
 
-        function getTimelineDotClass(e) {
-            if (isError(e)) return 'err';
-            if (['pipeline_start', 'pipeline_init', 'pipeline_summary'].includes(e.evento)) return 'info';
-            if (e.evento === 'file_analysis') return 'ok';
-            return 'info';
-        }
+        return groups;
+    }
 
-        function buildFilterBar() {
-            const events = [...new Set(RAW_DATA.map(e => e.evento))];
-            const bar = document.getElementById('filter-bar');
-            let html = '<button class="filter-btn active" onclick="setFilter(\'all\', this)">All</button>';
-            events.forEach(ev => {
-                const isErr = ['analysis_error', 'file_not_found', 'critical_error'].includes(ev);
-                html += `<button class="filter-btn ${isErr ? 'error' : ''}" onclick="setFilter('${ev}', this)">${ev}</button>`;
-            });
-            bar.innerHTML = html;
-        }
+    // ── KPIs ──────────────────────────────────────────────────────────────
+    function buildKPIs(){
+        const complete   = RAW_DATA.find(e => e.evento === 'process_complete')?.detalles || null;
+        const summary    = RAW_DATA.find(e => e.evento === 'pipeline_summary')?.detalles || null;
+        const successes  = RAW_DATA.filter(e => e.evento === 'file_success');
+        const errors     = RAW_DATA.filter(isError).length;
+        const totalRows  = complete?.total_rows ?? summary?.total_rows ?? successes.reduce((s,e) => s+(e.detalles?.rows_inserted||0), 0);
+        const filesOk    = complete?.successful_tasks ?? summary?.files_ok    ?? successes.length;
+        const totalFiles = complete?.total_tasks      ?? summary?.total_files ?? successes.length;
 
-        function getFilteredData() {
-            return RAW_DATA.filter(e => {
-                if (currentView === 'pipeline' && !['pipeline_start', 'pipeline_init', 'pipeline_summary'].includes(e.evento)) return false;
-                if (currentView === 'file_analysis' && e.evento !== 'file_analysis') return false;
-                if (currentView === 'errors' && !isError(e)) return false;
-                if (currentFilter !== 'all' && e.evento !== currentFilter) return false;
-                if (searchQuery) {
-                    const q = searchQuery.toLowerCase();
-                    if (!JSON.stringify(e).toLowerCase().includes(q)) return false;
-                }
-                return true;
-            });
-        }
+        document.getElementById('kpi-total').textContent   = RAW_DATA.length.toLocaleString();
+        document.getElementById('kpi-success').textContent = filesOk.toLocaleString();
+        document.getElementById('kpi-errors').textContent  = errors.toLocaleString();
+        const rd = totalRows>999999?(totalRows/1e6).toFixed(1)+'M':totalRows>999?(totalRows/1e3).toFixed(1)+'K':totalRows.toString();
+        document.getElementById('kpi-rows').textContent    = rd;
+        document.getElementById('sb-files').textContent    = `${filesOk} / ${totalFiles}`;
+        document.getElementById('sb-rows').textContent     = totalRows.toLocaleString();
+        document.getElementById('nav-all').textContent     = RAW_DATA.length;
+        document.getElementById('nav-pipeline').textContent= RAW_DATA.filter(e=>END_EVENTS.includes(e.evento)).length;
+        document.getElementById('nav-file_success').textContent = successes.length;
+        document.getElementById('nav-errors').textContent  = errors;
+        const hasErr = errors > 0;
+        document.getElementById('sb-status').textContent   = hasErr ? 'PARTIAL' : 'OK';
+        document.getElementById('sb-status').style.color   = hasErr ? 'var(--error)' : 'var(--success)';
+        document.getElementById('status-dot').className    = hasErr ? 'status-dot red' : 'status-dot green';
+        document.getElementById('status-text').textContent = hasErr ? `${errors} error(s)` : 'Ejecución completada';
+        const dur = complete?.duration_seconds ?? summary?.duration_seconds;
+        if(dur!=null) document.getElementById('sb-duration').textContent=dur+'s';
+        else if(RAW_DATA.length>=2){ const diff=(new Date(RAW_DATA[RAW_DATA.length-1].timestamp)-new Date(RAW_DATA[0].timestamp))/1000; document.getElementById('sb-duration').textContent=diff.toFixed(1)+'s'; }
+    }
 
-        function renderEvents() {
-            const filtered = getFilteredData();
-            const body = document.getElementById('events-body');
-
-            document.getElementById('showing-count').textContent = `${filtered.length} of ${RAW_DATA.length}`;
-            document.getElementById('status-count').textContent = `${filtered.length} events`;
-
-            if (filtered.length === 0) {
-                body.innerHTML = '<div class="empty-state">No events match your filters</div>';
-                return;
-            }
-
-            body.innerHTML = filtered.map((e, idx) => {
-                const originalIdx = RAW_DATA.indexOf(e);
-                const time = e.timestamp.split('T')[1]?.slice(0, 12) || e.timestamp;
-                const badgeClass = getBadgeClass(e.evento);
-                const summary = getSummary(e);
-                const isExp = expandedRows.has(originalIdx);
-
-                return `
-                <div class="event-row ${isExp ? 'expanded' : ''}"
-                     id="row-${originalIdx}"
-                     onclick="toggleRow(${originalIdx})"
-                     style="animation-delay: ${idx * 0.02}s">
-                    <span class="event-time">${time}</span>
-                    <span><span class="event-badge ${badgeClass}">${e.evento}</span></span>
-                    <span class="event-summary">${summary}</span>
-                    <span class="event-expand">▶</span>
-                </div>
-                <div class="detail-panel ${isExp ? 'show' : ''}" id="detail-${originalIdx}">
-                    ${buildDetail(e, originalIdx)}
-                </div>`;
-            }).join('');
-        }
-
-        function getBadgeClass(evento) {
-            const map = {
-                'pipeline_start': 'badge-pipeline_start',
-                'pipeline_init': 'badge-pipeline_init',
-                'pipeline_summary': 'badge-pipeline_summary',
-                'file_analysis': 'badge-file_analysis',
-                'metadata': 'badge-metadata',
-                'columns': 'badge-columns',
-                'analysis_error': 'badge-analysis_error',
-                'file_not_found': 'badge-file_not_found',
-                'critical_error': 'badge-critical_error',
-                'dashboard_generated': 'badge-dashboard_generated',
+    // ── Timeline ──────────────────────────────────────────────────────────
+    function buildTimeline(){
+        const track = document.getElementById('timeline-track'); track.innerHTML='';
+        if(!RAW_DATA.length) return;
+        const times = RAW_DATA.map(e => new Date(e.timestamp).getTime());
+        const minT = Math.min(...times), maxT = Math.max(...times);
+        const total = maxT - minT || 1;
+        RAW_DATA.forEach((e,i) => {
+            const t0 = new Date(e.timestamp).getTime();
+            const t1 = RAW_DATA[i+1] ? new Date(RAW_DATA[i+1].timestamp).getTime() : t0 + (total * 0.01);
+            const pct = Math.max(((t1 - t0) / total) * 100, 0.3);
+            const seg = document.createElement('div');
+            seg.className = 'timeline-segment '+(isError(e)?'err':e.evento==='file_success'?'ok':'info');
+            seg.style.width = pct+'%';
+            const label = e.archivo || '';
+            seg.title = `${e.timestamp.split('T')[1]?.slice(0,8)} — ${e.evento}${label?' — '+label:''}`;
+            if(pct > 6) seg.textContent = label || e.evento;
+            seg.onclick = () => {
+                const groups = buildGroups();
+                groups.forEach((g,gi) => { if(g.type==='file' && g.events.includes(e)) openFile(gi); });
             };
-            return map[evento] || 'badge-default';
+            track.appendChild(seg);
+        });
+        const f=RAW_DATA[0].timestamp.split('T')[1]?.slice(0,8), l=RAW_DATA[RAW_DATA.length-1].timestamp.split('T')[1]?.slice(0,8);
+        document.getElementById('timeline-range').textContent=`${f} → ${l}`;
+    }
+
+    // ── Render ────────────────────────────────────────────────────────────
+    function renderGroups(groups){
+        const body = document.getElementById('events-body');
+        document.getElementById('status-count').textContent = `${groups.filter(g=>g.type==='file').length} archivos`;
+        if(!groups.length){ body.innerHTML='<div class="empty-state">Sin resultados</div>'; return; }
+        body.innerHTML = groups.map((g,gi) => {
+            if(g.type==='flat') return renderFlat(g);
+            if(g.type==='file') return renderFile(g, gi);
+            if(g.type==='end')  return renderEnd(g, gi);
+            return '';
+        }).join('');
+    }
+
+    function renderFlat(g){
+        const d = g.event.detalles || {};
+        const execId = d.execution_id ? d.execution_id : '—';
+        const time   = g.event.timestamp.split('T')[1]?.slice(0,8) || '';
+        return `<div class="event-row event-row--flat">
+            <span class="event-exec-id" title="${d.execution_id||''}">${execId}</span>
+            <span><span class="event-badge badge-pipeline_start">${g.event.evento}</span></span>
+            <span class="event-meta">${time}</span>
+            <span class="event-meta">—</span><span class="event-meta">—</span><span class="event-meta">—</span><span></span>
+        </div>`;
+    }
+
+    function renderFile(g, gi){
+        const execId     = g.execId || '—';
+        const rowsFile   = g.rowsInFile   != null ? g.rowsInFile.toLocaleString()   : '—';
+        const rowsLoaded = g.rowsInserted != null ? g.rowsInserted.toLocaleString() : '—';
+        const dur        = g.duration     != null ? g.duration+'s' : '—';
+        const isExp      = expandedRows.has(gi);
+        const rClass     = g.rowsInserted != null ? (g.hasError ? 'event-meta' : 'event-rows') : 'event-meta';
+
+        const evHtml = g.events.map(e => {
+            const ed   = e.detalles || {};
+            const time = e.timestamp.split('T')[1]?.slice(0,8) || '';
+            let detail = '';
+            if(TABLE_EVENTS.has(e.evento))     detail = `${ed.schema?ed.schema+'.':''}${ed.tabla||''}`;
+            else if(e.evento==='file_start')   detail = ed.file || '';
+            else if(e.evento==='file_success') detail = `${(ed.rows_inserted||0).toLocaleString()} registros cargados en ${ed.duration_seconds}s`;
+            else if(e.evento==='file_analysis_metadata')detail = `${(ed.rows||0).toLocaleString()} registros en el origen`;
+            else detail = Object.entries(ed).filter(([k])=>k!=='execution_id').slice(0,2).map(([k,v])=>`${k}: ${String(v).slice(0,40)}`).join(' · ');
+            return `<div class="file-event-item">
+                <span class="file-event-time">${time}</span>
+                <span class="event-badge ${bc(e.evento)}">${e.evento}</span>
+                <span class="file-event-detail">${detail}</span>
+            </div>`;
+        }).join('');
+
+        return `<div class="event-row ${isExp?'expanded':''}" id="frow-${gi}" onclick="toggleFile(${gi})">
+            <span class="event-exec-id" title="${g.execId||''}">${execId}</span>
+            <span class="event-filename" title="${g.filename}">${g.filename}</span>
+            <span class="event-path" title="${g.filePath}">${g.filePath}</span>
+            <span class="event-meta">${rowsFile}</span>
+            <span class="${rClass}">${rowsLoaded}</span>
+            <span class="event-duration">${dur}</span>
+            <span class="event-expand">▶</span>
+        </div>
+        <div class="detail-panel ${isExp?'show':''}" id="fdetail-${gi}">
+            <div class="file-events-list">${evHtml}</div>
+        </div>`;
+    }
+
+    function renderEnd(g, gi){
+        const d      = g.event.detalles || {};
+        const execId = d.execution_id ? d.execution_id : '—';
+        const isExp  = expandedRows.has('end'+gi);
+        let col3='—', col4='—', col5='—', col6='—';
+        if(g.event.evento==='pipeline_summary'){
+            col3=`${d.files_ok??0} ok${d.files_error?` · ${d.files_error} err`:''}`;
+            col5=d.total_rows!=null?d.total_rows.toLocaleString():'—';
+            col6=d.duration_seconds!=null?d.duration_seconds+'s':'—';
+        } else if(g.event.evento==='process_complete'){
+            col3=d.status||'';
+            col5=d.total_rows!=null?d.total_rows.toLocaleString():'—';
+            col6=d.duration_seconds!=null?d.duration_seconds+'s':'—';
+        } else if(g.event.evento==='pipeline_init'){
+            col3=`${d.cantidad||0} archivos`;
+        } else if(g.event.evento==='dashboard_generated'){
+            col3=d.path||'';
         }
+        const isComplete = g.event.evento === 'process_complete';
+        const hasErr = isComplete && (d.files_error > 0 || (d.status && d.status !== 'COMPLETED'));
+        const rowMod = isComplete ? (hasErr ? 'event-row--err' : 'event-row--ok') : '';
+        const badgeClass = isComplete ? (hasErr ? 'badge-complete-err' : 'badge-complete-ok') : bc(g.event.evento);
+        return `<div class="event-row ${isExp?'expanded':''} ${rowMod}" id="frow-end${gi}" onclick="toggleEnd(${gi})">
+            <span class="event-exec-id" title="${d.execution_id||''}">${execId}</span>
+            <span><span class="event-badge ${badgeClass}">${g.event.evento}</span></span>
+            <span class="event-meta">${col3}</span>
+            <span class="event-meta">${col4}</span>
+            <span class="event-meta">${col5}</span>
+            <span class="event-meta">${col6}</span>
+            <span class="event-expand">▶</span>
+        </div>
+        <div class="detail-panel ${isExp?'show':''}" id="fdetail-end${gi}">${buildDetail(g.event,'e'+gi)}</div>`;
+    }
 
-        function getSummary(e) {
-            const d = e.detalles || {};
+    // ── Toggles ───────────────────────────────────────────────────────────
+    function openFile(gi){ expandedRows.add(gi); document.getElementById(`frow-${gi}`)?.classList.add('expanded'); document.getElementById(`fdetail-${gi}`)?.classList.add('show'); }
+    function toggleFile(gi){
+        const row=document.getElementById(`frow-${gi}`), det=document.getElementById(`fdetail-${gi}`);
+        if(!row||!det) return;
+        if(expandedRows.has(gi)){ expandedRows.delete(gi); row.classList.remove('expanded'); det.classList.remove('show'); }
+        else{ expandedRows.add(gi); row.classList.add('expanded'); det.classList.add('show'); }
+    }
+    function toggleEnd(gi){
+        const key='end'+gi, row=document.getElementById(`frow-end${gi}`), det=document.getElementById(`fdetail-end${gi}`);
+        if(!row||!det) return;
+        if(expandedRows.has(key)){ expandedRows.delete(key); row.classList.remove('expanded'); det.classList.remove('show'); }
+        else{ expandedRows.add(key); row.classList.add('expanded'); det.classList.add('show'); }
+    }
+    function expandAll(){ buildGroups().forEach((_,i)=>openFile(i)); }
+    function collapseAll(){ expandedRows.clear(); document.querySelectorAll('.event-row').forEach(r=>r.classList.remove('expanded')); document.querySelectorAll('.detail-panel').forEach(d=>d.classList.remove('show')); }
+    function toggleCols(event, idx){ event.stopPropagation(); document.getElementById(`cols-${idx}`)?.classList.toggle('show'); document.getElementById(`cols-toggle-${idx}`)?.classList.toggle('open'); }
 
-            if (e.evento === 'file_analysis') {
-                const rows = d.rows != null ? `${d.rows.toLocaleString()} rows` : '';
-                return `<span class="summary-inline">
-                    <span class="summary-tag ok">✓</span>
-                    <span class="summary-filename">${d.file || ''}</span>
-                    ${rows ? `<span class="summary-tag">${rows}</span>` : ''}
-                </span>`;
-            }
-
-            if (e.evento === 'pipeline_summary') {
-                const ok = d.files_ok ?? 0;
-                const err = d.files_error ?? 0;
-                const rows = d.total_rows != null ? `${d.total_rows.toLocaleString()} rows` : '';
-                return `<span class="summary-inline">
-                    <span class="summary-tag ok">${ok} ok</span>
-                    ${err > 0 ? `<span class="summary-tag err">${err} errors</span>` : ''}
-                    ${rows ? `<span class="summary-tag">${rows}</span>` : ''}
-                </span>`;
-            }
-
-            if (e.evento === 'pipeline_init') {
-                const count = d.cantidad || 0;
-                const files = d.archivos || [];
-                const rowId = `filelist-${Math.random().toString(36).slice(2, 7)}`;
-                return `<span class="summary-inline" style="overflow:visible; flex-wrap:wrap; gap:4px;">
-                    <span class="summary-tag">${count} files</span>
-                    <span class="file-list-toggle" onclick="toggleFileList(event,'${rowId}')">
-                        <span class="arrow">▶</span> show files
-                    </span>
-                    <span class="file-list-dropdown" id="${rowId}">
-                        ${files.map((f, i) =>
-                    `<span class="file-list-item">
-                                <span class="file-list-num">${i + 1}.</span>${f}
-                            </span>`
-                ).join('')}
-                    </span>
-                </span>`;
-            }
-
-            if (e.evento === 'file_not_found') {
-                const path = d.path || '';
-                const filename = path.split(/[\\/]/).pop();
-                return `<span class="summary-inline">
-                    <span class="summary-tag err">✗ not found</span>
-                    <span class="summary-filename" title="${path}">${filename}</span>
-                </span>`;
-            }
-
-            if (e.evento === 'analysis_error' || e.evento === 'critical_error') {
-                const msg = d.message || d.error || 'Error occurred';
-                return `<span class="summary-inline">
-                    <span class="summary-tag err">error</span>
-                    <span class="summary-filename">${msg}</span>
-                </span>`;
-            }
-
-            if (e.evento === 'dashboard_generated') {
-                return `<span class="summary-inline">
-                    <span class="summary-filename">${d.path || ''}</span>
-                </span>`;
-            }
-
-            const parts = Object.entries(d).slice(0, 2)
-                .map(([k, v]) => `<span class="summary-tag">${k}: ${String(v).slice(0, 20)}</span>`)
-                .join('');
-            return `<span class="summary-inline">${parts}</span>`;
-        }
-
-        function buildDetail(e, idx) {
-            const d = e.detalles || {};
-            let html = '<div class="detail-grid">';
-            const columns = d.columns;
-            const rest = Object.entries(d).filter(([k]) => k !== 'columns');
-
-            rest.forEach(([k, v]) => {
-                if (Array.isArray(v)) {
-                    html += `<div class="detail-field" style="grid-column: 1/-1">
-                        <div class="detail-key" style="margin-bottom:8px">${k} (${v.length})</div>
-                        <div style="display:flex; flex-wrap:wrap; gap:6px;">
-                            ${v.map((item, i) =>
-                        `<span class="file-list-item" style="flex:1; min-width:160px;">
-                                    <span class="file-list-num">${i + 1}.</span>${item}
-                                </span>`
-                    ).join('')}
-                        </div>
-                    </div>`;
-                } else {
-                    const cls = k === 'success' ? (v ? 'ok' : 'err') :
-                        (typeof v === 'number' ? 'num' : '');
-                    const display = typeof v === 'number' ? v.toLocaleString() : String(v ?? '—');
-                    html += `<div class="detail-field">
-                        <div class="detail-key">${k}</div>
-                        <div class="detail-val ${cls}">${display}</div>
-                    </div>`;
-                }
-            });
-
-            html += '</div>';
-
-            if (Array.isArray(columns) && columns.length > 0) {
-                html += `<div class="cols-section">
-                    <div class="cols-toggle" onclick="toggleCols(event, ${idx})" id="cols-toggle-${idx}">
-                        <span class="cols-toggle-arrow">▶</span>
-                        <span>${columns.length} columns</span>
-                    </div>
-                    <div class="cols-grid" id="cols-${idx}">
-                        ${columns.map((c, i) =>
-                    `<div class="col-chip"><span class="col-idx">${i + 1}</span>${c}</div>`
-                ).join('')}
-                    </div>
-                </div>`;
-            }
-
-            return html;
-        }
-
-        function toggleRow(idx) {
-            const row = document.getElementById(`row-${idx}`);
-            const detail = document.getElementById(`detail-${idx}`);
-            if (!row || !detail) return;
-            const isExp = expandedRows.has(idx);
-            if (isExp) {
-                expandedRows.delete(idx);
-                row.classList.remove('expanded');
-                detail.classList.remove('show');
+    // ── buildDetail ───────────────────────────────────────────────────────
+    function buildDetail(e, idx='0'){
+        const d=e.detalles||{}; let html='<div class="detail-grid">';
+        const columns=d.columns;
+        Object.entries(d).filter(([k])=>k!=='columns').forEach(([k,v])=>{
+            if(Array.isArray(v)){
+                html+=`<div class="detail-field" style="grid-column:1/-1"><div class="detail-key" style="margin-bottom:8px">${k} (${v.length})</div><div style="display:flex;flex-wrap:wrap;gap:6px;">${v.map((item,i)=>`<span class="file-list-item" style="flex:1;min-width:160px;"><span class="file-list-num">${i+1}.</span>${item}</span>`).join('')}</div></div>`;
             } else {
-                expandedRows.add(idx);
-                row.classList.add('expanded');
-                detail.classList.add('show');
+                const cls=k==='success'?(v?'ok':'err'):(typeof v==='number'?'num':'');
+                html+=`<div class="detail-field"><div class="detail-key">${k}</div><div class="detail-val ${cls}">${typeof v==='number'?v.toLocaleString():String(v??'—')}</div></div>`;
             }
+        });
+        html+='</div>';
+        if(Array.isArray(columns)&&columns.length>0){
+            html+=`<div class="cols-section"><div class="cols-toggle" onclick="toggleCols(event,'${idx}')" id="cols-toggle-${idx}"><span class="cols-toggle-arrow">▶</span><span>${columns.length} columns</span></div><div class="cols-grid" id="cols-${idx}">${columns.map((c,i)=>`<div class="col-chip"><span class="col-idx">${i+1}</span>${c}</div>`).join('')}</div></div>`;
         }
+        return html;
+    }
 
-        function toggleCols(event, idx) {
-            event.stopPropagation();
-            document.getElementById(`cols-${idx}`).classList.toggle('show');
-            document.getElementById(`cols-toggle-${idx}`).classList.toggle('open');
-        }
+    // ── Búsqueda y vistas ─────────────────────────────────────────────────
+    function applyFilters(){
+        searchQuery = document.getElementById('search-input').value.toLowerCase();
+        const all = buildGroups();
+        const filtered = searchQuery ? all.filter(g => {
+            if(g.type==='flat') return JSON.stringify(g.event).toLowerCase().includes(searchQuery);
+            if(g.type==='file') return g.filename.toLowerCase().includes(searchQuery)||g.filePath.toLowerCase().includes(searchQuery)||g.events.some(e=>JSON.stringify(e).toLowerCase().includes(searchQuery));
+            return JSON.stringify(g.event).toLowerCase().includes(searchQuery);
+        }) : all;
+        renderGroups(filtered);
+    }
+    function setView(view, el){
+        document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active')); el.classList.add('active');
+        expandedRows.clear();
+        const all=buildGroups();
+        let f;
+        if(view==='all')           f=all;
+        else if(view==='file_success') f=all.filter(g=>g.type==='file');
+        else if(view==='pipeline')     f=all.filter(g=>g.type==='end'||g.type==='flat');
+        else if(view==='errors')       f=all.filter(g=>(g.type==='file'&&g.hasError)||(g.type==='end'&&isError(g.event)));
+        else f=all;
+        renderGroups(f);
+    }
 
-        function toggleFileList(event, id) {
-            event.stopPropagation();
-            const dropdown = document.getElementById(id);
-            const toggle = event.currentTarget;
-            dropdown.classList.toggle('show');
-            const isOpen = dropdown.classList.contains('show');
-            toggle.innerHTML = `<span class="arrow">${isOpen ? '▼' : '▶'}</span> ${isOpen ? 'hide files' : 'show files'}`;
-        }
-
-        function expandAll() {
-            RAW_DATA.forEach((_, i) => {
-                expandedRows.add(i);
-                document.getElementById(`row-${i}`)?.classList.add('expanded');
-                document.getElementById(`detail-${i}`)?.classList.add('show');
-            });
-        }
-
-        function collapseAll() {
-            expandedRows.clear();
-            document.querySelectorAll('.event-row').forEach(r => r.classList.remove('expanded'));
-            document.querySelectorAll('.detail-panel').forEach(d => d.classList.remove('show'));
-        }
-
-        function setView(view, el) {
-            currentView = view;
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            el.classList.add('active');
-            expandedRows.clear();
-            renderEvents();
-        }
-
-        function setFilter(filter, el) {
-            currentFilter = filter;
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-            el.classList.add('active');
-            expandedRows.clear();
-            renderEvents();
-        }
-
-        function applyFilters() {
-            searchQuery = document.getElementById('search-input').value;
-            renderEvents();
-        }
-
-        function scrollToEvent(idx) {
-            const el = document.getElementById(`row-${idx}`);
-            if (el) {
-                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                expandedRows.add(idx);
-                el.classList.add('expanded');
-                document.getElementById(`detail-${idx}`)?.classList.add('show');
-            }
-        }
-
-        init();
+    // ── Init ──────────────────────────────────────────────────────────────
+    function init(){
+        if(!RAW_DATA.length){ document.getElementById('events-body').innerHTML='<div class="empty-state">No log data</div>'; return; }
+        buildKPIs(); buildTimeline();
+        const execId=(RAW_DATA.find(e=>e.detalles?.execution_id)?.detalles?.execution_id)||'unknown';
+        document.getElementById('exec-id').textContent=execId.slice(0,8)+'...';
+        document.getElementById('last-update').textContent=RAW_DATA[RAW_DATA.length-1]?.timestamp?.split('T')[1]?.slice(0,8)||'';
+        document.getElementById('log-filename').textContent='pipeline.log';
+        renderGroups(buildGroups());
+    }
+    init();
     </script>
 </body>
 

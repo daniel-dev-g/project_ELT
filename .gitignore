@@ -9,6 +9,8 @@ wheels/
 # Virtual environments
 .venv
 
+# Credenciales Docker (nunca subir a git)
+.env
 
 # Extensiones de C y carpetas de caché de herramientas
 .ipynb_checkpoints
@@ -24,3 +26,4 @@ wheels/
 *.parquet
 *.log
 *.json
+logs/*.html

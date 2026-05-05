@@ -1,13 +1,71 @@
-# config/settings.yaml
-development:
-  driver: "ODBC Driver 17 for SQL Server"
-  server: "LAPTOP-6N8CIQUQ" # Ej: "localhost" o "192.168.1.50"
-  database: "polars"
-  trusted_connection: "yes"
-  encrypt: "no"
-  log_level: "DEBUG" # DEBUG | INFO | WARNING | ERROR | CRITICAL
+# Selecciona el motor con DB_ENGINE en .env:  postgres | sqlserver | mariadb
+# No es necesario editar este archivo — todos los motores están configurados.
+# Las credenciales y hosts se leen desde .env via ${VAR}.
 
+engines:
 
-  # NUEVA SECCIÓN para metadata
-  #metadata:
-  #schema: "etl_log" # ← PARAMETRIZABLE
+  # ─────────────────────────────────────────────
+  # PostgreSQL
+  # ─────────────────────────────────────────────
+  postgres:
+    db_engine: postgres
+    default_schema: "public"
+    host: "${POSTGRES_HOST}"
+    port: "${POSTGRES_PORT}"
+    database: ${POSTGRES_DB}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+    bulk_path_map:
+      host: "${BULK_PATH_HOST}"
+      container: "${BULK_PATH_CONTAINER}"
+    log_level: "INFO"
+
+  # ─────────────────────────────────────────────
+  # SQL Server
+  # ─────────────────────────────────────────────
+  sqlserver:
+    db_engine: sqlserver
+    default_schema: "dbo"
+    driver: "ODBC Driver 18 for SQL Server"
+    server: "${SQLSERVER_HOST},${SQLSERVER_PORT}"
+    database: ${SQLSERVER_DB}
+    username: ${SQLSERVER_USER}
+    password: ${SQLSERVER_PASSWORD}
+    trusted_connection: "no"
+    encrypt: "no"
+    bulk_path_map:
+      host: "${BULK_PATH_HOST}"
+      container: "${BULK_PATH_CONTAINER}"
+    log_level: "INFO"
+
+  # ─────────────────────────────────────────────
+  # MySQL
+  # ─────────────────────────────────────────────
+  mysql:
+    db_engine: mysql
+    default_schema: ""
+    host: "${MYSQL_HOST}"
+    port: "${MYSQL_PORT}"
+    database: ${MYSQL_DB}
+    username: ${MYSQL_USER}
+    password: ${MYSQL_PASSWORD}
+    bulk_path_map:
+      host: "${BULK_PATH_HOST}"
+      container: "${BULK_PATH_CONTAINER}"
+    log_level: "INFO"
+
+  # ─────────────────────────────────────────────
+  # MariaDB
+  # ─────────────────────────────────────────────
+  mariadb:
+    db_engine: mysql
+    default_schema: ""
+    host: "${MARIADB_HOST}"
+    port: "${MARIADB_PORT}"
+    database: ${MARIADB_DB}
+    username: ${MARIADB_USER}
+    password: ${MARIADB_PASSWORD}
+    bulk_path_map:
+      host: "${BULK_PATH_HOST}"
+      container: "${BULK_PATH_CONTAINER}"
+    log_level: "INFO"

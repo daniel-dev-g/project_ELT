@@ -1,4 +1,4 @@
-"""DataBridge — HTML Dashboard Generator for JSON logs"""
+"""FlowELT — HTML Dashboard Generator for JSON logs"""
 import json
 import logging
 from pathlib import Path
@@ -9,13 +9,19 @@ logger = logging.getLogger(__name__)
 _TEMPLATE = Path(__file__).parent / "log_viewer.html"
 
 
-def generate_dashboard(log_file: Path, output_file: Path = None) -> Path:
+def generate_dashboard(
+    log_file: Path,
+    output_file: Path | None = None,
+    execution_id: str | None = None,
+) -> Path:
     """
     Generates an interactive HTML dashboard from a JSON log file.
 
     Args:
-        log_file:    Path to the JSON log file (one JSON object per line)
-        output_file: Output HTML path (default: same name as log, .html extension)
+        log_file:     Path to the JSON log file (one JSON object per line)
+        output_file:  Output HTML path (default: same name as log, .html extension)
+        execution_id: When provided, only entries whose detalles.execution_id
+                      matches are included (filters to a single pipeline run).
 
     Returns:
         Path to the generated HTML file
@@ -32,7 +38,10 @@ def generate_dashboard(log_file: Path, output_file: Path = None) -> Path:
             line = line.strip()
             if line:
                 try:
-                    entries.append(json.loads(line))
+                    entry = json.loads(line)
+                    eid = entry.get("detalles", {}).get("execution_id")
+                    if execution_id is None or eid == execution_id:
+                        entries.append(entry)
                 except json.JSONDecodeError as e:
                     logger.warning("Skipping invalid JSON line: %s", e)
 
