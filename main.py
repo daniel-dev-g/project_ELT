@@ -46,6 +46,7 @@ def process_task(
     table = task['table_destination']
     schema = task['schema']
 
+    logger.info("Starting file: %s → [%s].[%s]", file_path, schema, table)
     registrar_log("file_start", {
         "execution_id": execution_id,
         "file": str(file_path),
@@ -83,6 +84,7 @@ def process_task(
         rows_inserted = result if isinstance(result, int) and result > 0 else 0
 
         if rows_inserted > 0:
+            logger.info("%s: %d rows inserted in %.2fs", file_path, rows_inserted, duration)
             registrar_log("file_success", {
                 "execution_id": execution_id,
                 "file": str(file_path),
@@ -93,6 +95,7 @@ def process_task(
             })
             return True, rows_inserted
 
+        logger.warning("%s: loaded but 0 rows inserted", file_path)
         registrar_log("file_failed", {
             "execution_id": execution_id,
             "file": str(file_path),
@@ -104,6 +107,7 @@ def process_task(
         return False, 0
 
     except (IsADirectoryError, ValueError, PermissionError) as e:
+        logger.error("%s: failed: %s", file_path, e)
         registrar_log("file_failed", {
             "execution_id": execution_id,
             "file": str(file_path),
@@ -114,6 +118,7 @@ def process_task(
         })
         return False, 0
     except Exception as e:  # pylint: disable=broad-exception-caught
+        logger.error("%s: failed: %s", file_path, e)
         registrar_log("file_failed", {
             "execution_id": execution_id,
             "file": str(file_path),
@@ -221,7 +226,7 @@ def main():
                 f"DB_ENGINE='{db_engine_name}' no encontrado en settings.yaml. "
                 "Valores validos: postgres, sqlserver, mariadb"
             )
-        log_level = db_cfg.get('log_level', 'WARNING')
+        log_level = db_cfg.get('log_level', 'INFO')
         root_logger.setLevel(getattr(logging, log_level))
         _handler.setLevel(getattr(logging, log_level))
 
@@ -256,6 +261,12 @@ def main():
 
         # PHASE 5: Close process
         final_status = 'COMPLETED' if summary["failed_tasks"] == 0 else 'PARTIAL'
+        logger.info(
+            "Process %s | tasks: %d ok / %d failed | rows: %d | %.2fs",
+            final_status,
+            summary["successful_tasks"], summary["failed_tasks"],
+            summary["total_rows"], round(time.time() - start_time, 2)
+        )
         registrar_log("process_complete", {
             "execution_id": execution_id,
             "status": final_status,
