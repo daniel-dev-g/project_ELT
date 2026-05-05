@@ -517,6 +517,11 @@ body::before {
     font-weight: 600;
     font-variant-numeric: tabular-nums;
 }
+.event-rows-err {
+    font-size: 13px;
+    color: var(--error);
+    font-weight: 600;
+}
 .event-duration {
     font-size: 13px;
     color: var(--text-secondary);
@@ -816,9 +821,9 @@ body::before {
     const FILE_EVENTS  = new Set(['file_start','file_success','file_analysis_metadata','file_error','file_not_found']);
     const TABLE_EVENTS = new Set(['table_already_exists','table_created']);
     const END_EVENTS   = ['pipeline_init','pipeline_summary','process_complete','dashboard_generated'];
-    function isError(e){ return ['analysis_error','file_not_found','critical_error','file_error'].includes(e.evento); }
+    function isError(e){ return ['analysis_error','file_not_found','critical_error','file_error','table_creation_error'].includes(e.evento); }
     // ── Badge CSS ─────────────────────────────────────────────────────────
-    function bc(ev){ const m={'pipeline_start':'badge-pipeline_start','pipeline_init':'badge-pipeline_init','pipeline_summary':'badge-pipeline_summary','file_analysis_metadata':'badge-file_analysis_metadata','file_success':'badge-file_analysis_metadata','file_start':'badge-metadata','table_already_exists':'badge-metadata','table_created':'badge-metadata','analysis_error':'badge-analysis_error','file_not_found':'badge-file_not_found','critical_error':'badge-critical_error','process_start':'badge-pipeline_start','process_complete':'badge-pipeline_summary'}; return m[ev]||'badge-default'; }
+    function bc(ev){ const m={'pipeline_start':'badge-pipeline_start','pipeline_init':'badge-pipeline_init','pipeline_summary':'badge-pipeline_summary','file_analysis_metadata':'badge-file_analysis_metadata','file_success':'badge-file_analysis_metadata','file_start':'badge-metadata','table_already_exists':'badge-metadata','table_created':'badge-metadata','analysis_error':'badge-analysis_error','file_not_found':'badge-file_not_found','critical_error':'badge-critical_error','table_creation_error':'badge-analysis_error','process_start':'badge-pipeline_start','process_complete':'badge-pipeline_summary'}; return m[ev]||'badge-default'; }
 
     // ── Agrupa eventos por archivo ────────────────────────────────────────
     function buildGroups(){
@@ -857,6 +862,29 @@ body::before {
                 duration:     success?.detalles?.duration_seconds,
                 hasError:     fileEvs.some(isError),
                 events:       fileEvs,
+            });
+        });
+
+        // 2b. Archivos que fallaron antes de file_start (table_creation_error sin file_start)
+        RAW_DATA.forEach((e, i) => {
+            if (e.evento !== 'table_creation_error' || usedIdxs.has(i)) return;
+            const d = e.detalles || {};
+            const filePath = d.file || '';
+            const filename = filePath.split(/[\\/]/).pop() || d.table || 'unknown';
+            const eventIdxs = [i];
+            usedIdxs.add(i);
+            RAW_DATA.forEach((e2, i2) => {
+                if (!usedIdxs.has(i2) && e2.evento === 'file_not_found') {
+                    const p = e2.detalles?.path || '';
+                    if (filename && p.includes(filename)) { eventIdxs.push(i2); usedIdxs.add(i2); }
+                }
+            });
+            groups.push({
+                type: 'file', filePath, filename,
+                execId: d.execution_id || '',
+                rowsInFile: null, rowsInserted: null, duration: null,
+                hasError: true, errorMsg: d.error || '',
+                events: eventIdxs.map(idx => RAW_DATA[idx]),
             });
         });
 
@@ -960,16 +988,22 @@ body::before {
         const rowsLoaded = g.rowsInserted != null ? g.rowsInserted.toLocaleString() : '—';
         const dur        = g.duration     != null ? g.duration+'s' : '—';
         const isExp      = expandedRows.has(gi);
-        const rClass     = g.rowsInserted != null ? (g.hasError ? 'event-meta' : 'event-rows') : 'event-meta';
+        const rClass          = g.hasError ? 'event-rows-err' : (g.rowsInserted != null ? 'event-rows' : 'event-meta');
+        const rowsLoadedDisplay = g.hasError ? 'error' : rowsLoaded;
+        const rowBorder       = g.hasError ? 'event-row--err' : (g.rowsInserted != null ? 'event-row--ok' : '');
+        const pathDisplay     = g.hasError && g.errorMsg ? g.errorMsg : g.filePath;
+        const pathTitle       = g.hasError && g.errorMsg ? `${g.filePath} — ${g.errorMsg}` : g.filePath;
 
         const evHtml = g.events.map(e => {
             const ed   = e.detalles || {};
             const time = e.timestamp.split('T')[1]?.slice(0,8) || '';
             let detail = '';
-            if(TABLE_EVENTS.has(e.evento))     detail = `${ed.schema?ed.schema+'.':''}${ed.tabla||''}`;
-            else if(e.evento==='file_start')   detail = ed.file || '';
-            else if(e.evento==='file_success') detail = `${(ed.rows_inserted||0).toLocaleString()} registros cargados en ${ed.duration_seconds}s`;
-            else if(e.evento==='file_analysis_metadata')detail = `${(ed.rows||0).toLocaleString()} registros en el origen`;
+            if(TABLE_EVENTS.has(e.evento))               detail = `${ed.schema?ed.schema+'.':''}${ed.tabla||''}`;
+            else if(e.evento==='file_start')             detail = ed.file || '';
+            else if(e.evento==='file_success')           detail = `${(ed.rows_inserted||0).toLocaleString()} registros cargados en ${ed.duration_seconds}s`;
+            else if(e.evento==='file_analysis_metadata') detail = `${(ed.rows||0).toLocaleString()} registros en el origen`;
+            else if(e.evento==='table_creation_error')   detail = `Error: ${ed.error || ''}`;
+            else if(e.evento==='file_not_found')         detail = `Not found: ${ed.path || ''}`;
             else detail = Object.entries(ed).filter(([k])=>k!=='execution_id').slice(0,2).map(([k,v])=>`${k}: ${String(v).slice(0,40)}`).join(' · ');
             return `<div class="file-event-item">
                 <span class="file-event-time">${time}</span>
@@ -978,12 +1012,12 @@ body::before {
             </div>`;
         }).join('');
 
-        return `<div class="event-row ${isExp?'expanded':''}" id="frow-${gi}" onclick="toggleFile(${gi})">
+        return `<div class="event-row ${isExp?'expanded':''} ${rowBorder}" id="frow-${gi}" onclick="toggleFile(${gi})">
             <span class="event-exec-id" title="${g.execId||''}">${execId}</span>
             <span class="event-filename" title="${g.filename}">${g.filename}</span>
-            <span class="event-path" title="${g.filePath}">${g.filePath}</span>
+            <span class="event-path" title="${pathTitle}">${pathDisplay}</span>
             <span class="event-meta">${rowsFile}</span>
-            <span class="${rClass}">${rowsLoaded}</span>
+            <span class="${rClass}">${rowsLoadedDisplay}</span>
             <span class="event-duration">${dur}</span>
             <span class="event-expand">▶</span>
         </div>

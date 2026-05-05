@@ -174,6 +174,8 @@ def _run_tasks(
                 e,
             )
             registrar_log("table_creation_error", {
+                "execution_id": execution_id,
+                "file": resolved_task['file'],
                 "table": resolved_task['table_destination'],
                 "schema": resolved_task['schema'],
                 "error": str(e)
