@@ -159,6 +159,11 @@ docker compose --profile mysql8 up
 Docker construye la imagen, levanta la BD, espera que esté lista y ejecuta la carga.
 Al terminar verás en `logs/` el dashboard HTML y el log estructurado.
 
+> **Primera ejecución o tras actualizar el proyecto:** agrega `--build` para forzar la reconstrucción de la imagen:
+> ```bash
+> docker compose --profile postgres up --build
+> ```
+
 #### Puertos expuestos (para conectar con DBeaver u otro cliente)
 
 | Motor      | Puerto local |
