@@ -118,7 +118,7 @@ Edita `config/pipeline.yaml`:
 
 ```yaml
 _defaults:
-  schema: "public"          # public → PostgreSQL | dbo → SQL Server | "" → MariaDB
+  schema: "public"          # public → PostgreSQL | dbo → SQL Server | "" → MariaDB / MySQL
   delimiter: ";"
   crear_tabla_si_no_existe: true
   truncate_before_load: false
@@ -207,7 +207,7 @@ EXEC sp_addrolemember 'bulkadmin', 'mi_usuario';
 ```ini
 # /etc/mysql/mariadb.conf.d/50-server.cnf
 [mysqld]
-secure_file_priv = ""
+secure_file_priv=
 ```
 
 ```bash
@@ -248,7 +248,7 @@ sudo apt-get update
 sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18 unixodbc-dev
 ```
 
-- **Solo si usas MySQL local**: configuración para `LOAD DATA INFILE`
+- **Solo si usas MySQL 8 o MariaDB local**: configuración para `LOAD DATA INFILE`
 
 **1. Instalar MySQL:**
 ```bash
@@ -364,6 +364,18 @@ MARIADB_USER=mi_usuario
 MARIADB_PASSWORD=mi_password
 MARIADB_DB=mi_base
 ```
+
+**MySQL 8:**
+```env
+DB_ENGINE=mysql
+MYSQL_HOST=localhost
+MYSQL_PORT=3306
+MYSQL_USER=mi_usuario
+MYSQL_PASSWORD=mi_password
+MYSQL_DB=mi_base
+```
+
+> Los puertos `3307` y `3308` son solo para los contenedores Docker (para no chocar con una instalación local). Una instalación local de MariaDB o MySQL siempre usa el puerto `3306`.
 
 ### Paso 4 — Lanzar la GUI
 
