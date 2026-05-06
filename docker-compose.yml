@@ -182,6 +182,7 @@ services:
     volumes:
       - mysql8_data:/var/lib/mysql
       - ./data:/data
+      - ./init/mysql8:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}", "--silent"]
       interval: 3s
