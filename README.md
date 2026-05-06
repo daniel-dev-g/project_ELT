@@ -150,7 +150,7 @@ docker compose --profile postgres up
 docker compose --profile sqlserver up
 
 # MariaDB 11
-docker compose --profile mysql up
+docker compose --profile mariadb up
 
 # MySQL 8
 docker compose --profile mysql8 up

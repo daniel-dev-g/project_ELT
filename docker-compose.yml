@@ -3,7 +3,7 @@
 # ESCENARIO A — Demo completo (app + BD en Docker)
 #   docker compose --profile sqlserver up
 #   docker compose --profile postgres  up
-#   docker compose --profile mysql     up   ← MariaDB 11
+#   docker compose --profile mariadb   up   ← MariaDB 11
 #   docker compose --profile mysql8    up   ← MySQL 8
 #
 # ESCENARIO B — Solo app, BD externa (tu propio servidor)
@@ -28,7 +28,7 @@ services:
   # ─────────────────────────────────────────────
   app:
     <<: *app-base
-    profiles: [sqlserver, postgres, mysql, mysql8]
+    profiles: [sqlserver, postgres, mariadb, mysql8]
     container_name: flowelt_app
     environment:
       BULK_PATH_HOST: /app/data
@@ -130,7 +130,7 @@ services:
   # MariaDB 11
   # ─────────────────────────────────────────────
   mysql:
-    profiles: [mysql]
+    profiles: [mariadb]
     image: mariadb:11
     container_name: flowelt_mysql
     command: >
