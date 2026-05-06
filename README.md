@@ -248,6 +248,27 @@ sudo apt-get update
 sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18 unixodbc-dev
 ```
 
+- **Solo si usas MySQL local**: permisos para `LOAD DATA INFILE`
+
+```bash
+# 1. Habilitar secure_file_priv vacío y local_infile
+#    Edita /etc/mysql/mysql.conf.d/mysqld.cnf y agrega bajo [mysqld]:
+#    secure_file_priv=
+#    local_infile=1
+sudo systemctl restart mysql
+
+# 2. Crear base de datos y usuario con privilegio FILE
+sudo mysql -u root -p <<'EOF'
+CREATE DATABASE IF NOT EXISTS flowelt_demo;
+CREATE USER 'admin'@'localhost' IDENTIFIED WITH mysql_native_password BY 'tu_password';
+GRANT ALL PRIVILEGES ON flowelt_demo.* TO 'admin'@'localhost';
+GRANT FILE ON *.* TO 'admin'@'localhost';
+FLUSH PRIVILEGES;
+EOF
+```
+
+> El privilegio `FILE` y `secure_file_priv=` vacío son requisitos del servidor MySQL para ejecutar `LOAD DATA INFILE` desde rutas arbitrarias.
+
 ### Paso 1 — Clonar
 
 ```bash
