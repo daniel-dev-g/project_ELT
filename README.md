@@ -149,12 +149,24 @@ docker compose --profile postgres up
 # SQL Server
 docker compose --profile sqlserver up
 
-# MariaDB
+# MariaDB 11
 docker compose --profile mysql up
+
+# MySQL 8
+docker compose --profile mysql8 up
 ```
 
 Docker construye la imagen, levanta la BD, espera que esté lista y ejecuta la carga.
 Al terminar verás en `logs/` el dashboard HTML y el log estructurado.
+
+#### Puertos expuestos (para conectar con DBeaver u otro cliente)
+
+| Motor      | Puerto local |
+|------------|-------------|
+| PostgreSQL | `5433`      |
+| SQL Server | `1433`      |
+| MariaDB 11 | `3307`      |
+| MySQL 8    | `3308`      |
 
 ### Variante — BD externa (standalone)
 
