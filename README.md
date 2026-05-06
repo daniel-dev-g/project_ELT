@@ -59,6 +59,7 @@ Funciona para volúmenes pequeños. Cuando el archivo crece, el proceso pasa de 
 | PostgreSQL | `COPY FROM`             |
 | SQL Server | `BULK INSERT`           |
 | MariaDB    | `LOAD DATA INFILE`      |
+| MySQL 8    | `LOAD DATA INFILE`      |
 
 ---
 
