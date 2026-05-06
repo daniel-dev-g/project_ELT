@@ -1,5 +1,6 @@
 """mysql_adapter.py"""
 import pathlib
+import stat as stat_module
 import logging
 import pymysql
 
@@ -99,6 +100,80 @@ class MySQLAdapter(DatabaseAdapter):
             cursor.execute(sql)
         logger.info("TRUNCATE OK: %s.%s", schema, table)
 
+    def _check_file_access(self, file_path: str) -> None:
+        """Pre-flight check: verifica que el servidor MySQL pueda leer el archivo.
+
+        Detecta los tres problemas más comunes en instalaciones locales:
+        secure_file_priv activo, permisos insuficientes en el archivo o sus
+        directorios padres, y AppArmor bloqueando el acceso desde /home/.
+        Raises ValueError con mensaje accionable antes de intentar el LOAD DATA.
+        """
+        path = pathlib.Path(file_path)
+
+        # 1. secure_file_priv
+        try:
+            with self.get_db_cursor() as cursor:
+                cursor.execute("SHOW VARIABLES LIKE 'secure_file_priv'")
+                row = cursor.fetchone()
+            sfp = row[1] if row else ''
+            if sfp:
+                raise ValueError(
+                    f"secure_file_priv='{sfp}' bloquea el acceso a '{file_path}'.\n"
+                    "Agrega en /etc/mysql/mysql.conf.d/mysqld.cnf bajo [mysqld]:\n"
+                    "  secure_file_priv=\n"
+                    "Luego ejecuta: sudo systemctl restart mysql"
+                )
+        except ValueError:
+            raise
+        except Exception:
+            pass
+
+        # 2. Permisos del archivo y directorios padres
+        try:
+            if not path.exists():
+                raise ValueError(f"Archivo no encontrado: '{file_path}'")
+
+            if not (path.stat().st_mode & stat_module.S_IROTH):
+                raise ValueError(
+                    f"El servidor MySQL no puede leer '{file_path}'.\n"
+                    "El proceso mysqld corre como usuario 'mysql' y necesita permiso de lectura.\n"
+                    f"Ejecuta:  chmod o+r '{file_path}'"
+                )
+
+            for parent in reversed(list(path.parents)):
+                if str(parent) == '/':
+                    continue
+                if not (parent.stat().st_mode & stat_module.S_IXOTH):
+                    raise ValueError(
+                        f"El servidor MySQL no puede acceder al directorio '{parent}'.\n"
+                        f"Ejecuta:  chmod o+x '{parent}'"
+                    )
+                if parent == path.parent:
+                    break
+        except ValueError:
+            raise
+        except OSError:
+            pass
+
+        # 3. AppArmor — solo si el archivo está en /home/
+        apparmor_profile = pathlib.Path('/etc/apparmor.d/usr.sbin.mysqld')
+        if apparmor_profile.exists() and str(path).startswith('/home/'):
+            try:
+                content = apparmor_profile.read_text(encoding='utf-8')
+                parent_str = str(path.parent)
+                if parent_str not in content and '/home/' not in content:
+                    raise ValueError(
+                        f"AppArmor está bloqueando el acceso de MySQL a '{file_path}'.\n"
+                        "Agrega en /etc/apparmor.d/usr.sbin.mysqld (antes del último }):\n"
+                        f"  {path.parent}/ r,\n"
+                        f"  {path.parent}/** r,\n"
+                        "Luego ejecuta: sudo apparmor_parser -r /etc/apparmor.d/usr.sbin.mysqld"
+                    )
+            except ValueError:
+                raise
+            except Exception:
+                pass
+
     def bulk_load(self, task: dict) -> int:
         """Upload CSV to MariaDB using server-side LOAD DATA INFILE.
 
@@ -122,6 +197,7 @@ class MySQLAdapter(DatabaseAdapter):
             file = file.replace(host_prefix, path_map['container'])
 
         logger.info("Path: %s", file)
+        self._check_file_access(file)
 
         if schema:
             table_ref = f"`{schema}`.`{table_destination}`"

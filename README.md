@@ -248,16 +248,33 @@ sudo apt-get update
 sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18 unixodbc-dev
 ```
 
-- **Solo si usas MySQL local**: permisos para `LOAD DATA INFILE`
+- **Solo si usas MySQL local**: configuración para `LOAD DATA INFILE`
+
+**1. Instalar MySQL:**
+```bash
+sudo apt update
+sudo apt install -y mysql-server
+sudo systemctl enable --now mysql
+sudo mysql_secure_installation
+```
+
+**2. Configurar `secure_file_priv` y `local_infile`:**
+
+Edita `/etc/mysql/mysql.conf.d/mysqld.cnf` y agrega bajo `[mysqld]`:
+
+```ini
+[mysqld]
+secure_file_priv=
+local_infile=1
+```
 
 ```bash
-# 1. Habilitar secure_file_priv vacío y local_infile
-#    Edita /etc/mysql/mysql.conf.d/mysqld.cnf y agrega bajo [mysqld]:
-#    secure_file_priv=
-#    local_infile=1
 sudo systemctl restart mysql
+```
 
-# 2. Crear base de datos y usuario con privilegio FILE
+**3. Crear base de datos y usuario:**
+
+```bash
 sudo mysql -u root -p <<'EOF'
 CREATE DATABASE IF NOT EXISTS flowelt_demo;
 CREATE USER 'admin'@'localhost' IDENTIFIED WITH mysql_native_password BY 'tu_password';
@@ -267,14 +284,35 @@ FLUSH PRIVILEGES;
 EOF
 ```
 
-> El privilegio `FILE` y `secure_file_priv=` vacío son requisitos del servidor MySQL para ejecutar `LOAD DATA INFILE` desde rutas arbitrarias.
+**4. Permisos sobre los archivos CSV:**
 
-> **Permisos sobre los archivos CSV:** el servidor MySQL corre como el usuario de sistema `mysql` y no puede leer archivos en carpetas personales sin permisos explícitos. Si los CSV están en `~/Documentos` u otra carpeta de tu home, ejecuta:
-> ```bash
-> chmod o+x /home/$USER
-> chmod o+x /home/$USER/Documentos
-> chmod o+r /home/$USER/Documentos/*.csv
-> ```
+El servidor MySQL corre como el usuario de sistema `mysql` y no puede leer archivos en carpetas personales sin permisos explícitos:
+
+```bash
+chmod o+x /home/$USER
+chmod o+x /home/$USER/Documentos   # ajusta al directorio donde estén los CSV
+chmod o+r /home/$USER/Documentos/*.csv
+```
+
+**5. AppArmor (Ubuntu):**
+
+AppArmor restringe qué rutas puede leer MySQL. Si los CSV están en `/home/`, agrega una excepción:
+
+```bash
+sudo nano /etc/apparmor.d/usr.sbin.mysqld
+```
+
+Agrega antes del último `}`:
+```
+  /home/*/Documentos/ r,
+  /home/*/Documentos/** r,
+```
+
+```bash
+sudo apparmor_parser -r /etc/apparmor.d/usr.sbin.mysqld
+```
+
+> **Detección automática:** FlowELT verifica estos requisitos antes de cada carga y muestra un mensaje accionable si algo falla — `secure_file_priv` activo, permisos insuficientes o AppArmor bloqueando el acceso.
 
 ### Paso 1 — Clonar
 
