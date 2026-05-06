@@ -284,6 +284,11 @@ MARIADB_DB=mi_base
 
 ### Paso 4 — Lanzar la GUI
 
+> **Nota:** Si previamente ejecutaste la Opción A (Docker), el directorio `logs/` puede pertenecer a `root` y la GUI no podrá escribir logs. Corrígelo antes de continuar:
+> ```bash
+> sudo chown -R $USER:$USER logs/
+> ```
+
 ```bash
 uv run python gui.py
 ```

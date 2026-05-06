@@ -133,7 +133,9 @@ services:
     profiles: [mysql]
     image: mariadb:11
     container_name: flowelt_mysql
-    command: --local-infile=1
+    command: >
+      --local-infile=1
+      --secure-file-priv=''
     security_opt:
       - apparmor:unconfined
       - seccomp:unconfined
@@ -147,6 +149,7 @@ services:
     volumes:
       - mariadb_data:/var/lib/mysql
       - ./data:/data
+      - ./init/mysql:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 3s

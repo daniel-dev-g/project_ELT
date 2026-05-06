@@ -19,7 +19,14 @@ timestamp_id = datetime.now().strftime("%Y%m%d_%H%M%S")
 nombre_log = f"logs/log_{timestamp_id}.json"
 
 # Configurar handler específico para este logger
-json_handler = logging.FileHandler(nombre_log, encoding='utf-8')
+try:
+    json_handler = logging.FileHandler(nombre_log, encoding='utf-8')
+except PermissionError:
+    raise PermissionError(
+        f"Sin permisos para escribir en '{nombre_log}'.\n"
+        "Si ejecutaste Docker anteriormente, el directorio 'logs/' pertenece a root.\n"
+        "Ejecuta:  sudo chown -R $USER:$USER logs/"
+    ) from None
 json_handler.setLevel(logging.INFO)
 json_handler.setFormatter(logging.Formatter('%(message)s'))
 
