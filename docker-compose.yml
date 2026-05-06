@@ -136,6 +136,7 @@ services:
     command: >
       --local-infile=1
       --secure-file-priv=''
+      --default-authentication-plugin=mysql_native_password
     security_opt:
       - apparmor:unconfined
       - seccomp:unconfined
