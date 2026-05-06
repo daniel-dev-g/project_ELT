@@ -171,6 +171,7 @@ services:
       --innodb-flush-log-at-trx-commit=2
       --innodb-buffer-pool-size=2G
       --innodb-log-buffer-size=256M
+      --innodb-redo-log-capacity=2G
       --innodb-flush-method=O_DIRECT
       --bulk-insert-buffer-size=256M
     environment:
