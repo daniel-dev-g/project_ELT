@@ -238,8 +238,8 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 
 - **Solo si usas SQL Server**: ODBC Driver 18
 
+**Linux (Ubuntu / Debian):**
 ```bash
-# Ubuntu / Debian
 curl -fsSL https://packages.microsoft.com/keys/microsoft.asc \
   | sudo gpg --dearmor -o /usr/share/keyrings/microsoft.gpg
 echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft.gpg] \
@@ -248,6 +248,13 @@ echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft.gpg] \
 sudo apt-get update
 sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18 unixodbc-dev
 ```
+
+**Windows:**
+
+Descarga e instala el driver desde Microsoft:
+[Microsoft ODBC Driver 18 for SQL Server (Windows)](https://learn.microsoft.com/en-us/sql/connect/odbc/download-odbc-driver-for-sql-server)
+
+Ejecuta el instalador `.msi` y sigue el wizard. Al terminar el driver quedará registrado como `ODBC Driver 18 for SQL Server` en el Administrador de orígenes de datos ODBC.
 
 - **Solo si usas MySQL 8 o MariaDB local**: configuración para `LOAD DATA INFILE`
 
