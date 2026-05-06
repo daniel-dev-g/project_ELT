@@ -223,6 +223,8 @@ sudo mariadb -e "GRANT FILE ON *.* TO 'tu_usuario'@'%'; FLUSH PRIVILEGES;"
 Corre FlowELT directamente en tu máquina con la interfaz gráfica.
 No requiere Docker.
 
+> **Nota:** Las instrucciones de instalación de dependencias del sistema están orientadas a **Windows** y **Ubuntu/Debian**. En otras distribuciones Linux los comandos pueden variar.
+
 ### Prerrequisitos
 
 - Python 3.14
