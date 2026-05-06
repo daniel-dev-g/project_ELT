@@ -33,8 +33,13 @@ _handler.setFormatter(logging.Formatter(
     "%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
 
 root_logger = logging.getLogger()
-root_logger.setLevel(logging.WARNING)
+root_logger.setLevel(logging.INFO)
 root_logger.addHandler(_handler)
+
+# Suprimir loggers verbosos de librerías externas
+for _lib in ("sqlalchemy", "urllib3", "flet", "asyncio", "httpx"):
+    logging.getLogger(_lib).setLevel(logging.WARNING)
+
 logger = logging.getLogger(__name__)
 
 
