@@ -269,6 +269,13 @@ EOF
 
 > El privilegio `FILE` y `secure_file_priv=` vacío son requisitos del servidor MySQL para ejecutar `LOAD DATA INFILE` desde rutas arbitrarias.
 
+> **Permisos sobre los archivos CSV:** el servidor MySQL corre como el usuario de sistema `mysql` y no puede leer archivos en carpetas personales sin permisos explícitos. Si los CSV están en `~/Documentos` u otra carpeta de tu home, ejecuta:
+> ```bash
+> chmod o+x /home/$USER
+> chmod o+x /home/$USER/Documentos
+> chmod o+r /home/$USER/Documentos/*.csv
+> ```
+
 ### Paso 1 — Clonar
 
 ```bash
