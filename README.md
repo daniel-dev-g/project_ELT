@@ -458,6 +458,8 @@ Archivos CSV / TXT
 
 Todos los outputs comparten el mismo `execution_id` para trazabilidad completa.
 
+**Demo del dashboard** → [Ver ejemplo en vivo](https://htmlpreview.github.io/?https://github.com/daniel-dev-g/project_ELT/blob/main/logs/examples/log_example.html)
+
 ---
 
 ## Tecnologías
