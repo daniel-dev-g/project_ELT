@@ -101,7 +101,7 @@ def process_task(
             return True, rows_inserted
 
         logger.warning("%s: loaded but 0 rows inserted", file_path)
-        registrar_log("file_failed", {
+        registrar_log("file_error", {
             "execution_id": execution_id,
             "file": str(file_path),
             "destination_table": table,
@@ -113,7 +113,7 @@ def process_task(
 
     except (IsADirectoryError, ValueError, PermissionError) as e:
         logger.error("%s: failed: %s", file_path, e)
-        registrar_log("file_failed", {
+        registrar_log("file_error", {
             "execution_id": execution_id,
             "file": str(file_path),
             "destination_table": table,
@@ -124,7 +124,7 @@ def process_task(
         return False, 0
     except Exception as e:  # pylint: disable=broad-exception-caught
         logger.error("%s: failed: %s", file_path, e)
-        registrar_log("file_failed", {
+        registrar_log("file_error", {
             "execution_id": execution_id,
             "file": str(file_path),
             "destination_table": table,
