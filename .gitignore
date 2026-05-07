@@ -27,3 +27,7 @@ wheels/
 *.log
 *.json
 logs/*.html
+
+# Ejemplos de logs — sí incluir en git
+!logs/examples/
+!logs/examples/*

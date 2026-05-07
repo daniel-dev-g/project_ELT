@@ -1,0 +1,40 @@
+2026-05-06 19:32:56,916 [INFO] flet_desktop: Starting Flet View app...
+2026-05-06 19:32:56,918 [INFO] flet_desktop: Flet client found in cache: /home/daniel/.flet/client/flet-desktop-light-0.84.0
+2026-05-06 19:33:11,654 [INFO] src.validators.db_validator: Database connection established successfully.
+2026-05-06 19:33:15,737 [INFO] src.validators.db_validator: Table [public].[taxi] exists.
+2026-05-06 19:33:15,738 [INFO] main: Starting file: /home/daniel/Documentos/yellow_tripdata_2015-01.csv → [public].[taxi]
+2026-05-06 19:33:15,751 [INFO] src.validators.db_validator: Table [public].[taxi] exists.
+2026-05-06 19:33:15,763 [INFO] src.state_manager.core.adapter_db.postgres_adapter: The user has permissions for COPY on host: localhost
+2026-05-06 19:33:15,959 [INFO] src.state_manager.core.adapter_db.postgres_adapter: TRUNCATE OK: public.taxi
+2026-05-06 19:33:15,991 [INFO] src.state_manager.core.adapter_db.postgres_adapter: Path: /home/daniel/Documentos/yellow_tripdata_2015-01.csv
+2026-05-06 19:33:15,992 [INFO] src.state_manager.core.adapter_db.postgres_adapter: Executing COPY FROM...
+2026-05-06 19:33:46,735 [INFO] src.state_manager.core.adapter_db.postgres_adapter: COPY STDIN successful - 12748986 inserted rows
+2026-05-06 19:33:46,736 [INFO] main: /home/daniel/Documentos/yellow_tripdata_2015-01.csv: 12748986 rows inserted in 31.00s
+2026-05-06 19:33:46,745 [INFO] src.validators.db_validator: Table [public].[producto] exists.
+2026-05-06 19:33:46,749 [INFO] main: Starting file: /home/daniel/Documentos/productos.csv → [public].[producto]
+2026-05-06 19:33:46,770 [INFO] src.validators.db_validator: Table [public].[producto] exists.
+2026-05-06 19:33:46,785 [INFO] src.state_manager.core.adapter_db.postgres_adapter: The user has permissions for COPY on host: localhost
+2026-05-06 19:33:46,808 [INFO] src.state_manager.core.adapter_db.postgres_adapter: TRUNCATE OK: public.producto
+2026-05-06 19:33:46,840 [INFO] src.state_manager.core.adapter_db.postgres_adapter: Path: /home/daniel/Documentos/productos.csv
+2026-05-06 19:33:46,841 [INFO] src.state_manager.core.adapter_db.postgres_adapter: Executing COPY FROM...
+2026-05-06 19:33:46,862 [INFO] src.state_manager.core.adapter_db.postgres_adapter: COPY STDIN successful - 41 inserted rows
+2026-05-06 19:33:46,863 [INFO] main: /home/daniel/Documentos/productos.csv: 41 rows inserted in 0.11s
+2026-05-06 19:33:46,870 [INFO] src.validators.db_validator: Table [public].[oficina] exists.
+2026-05-06 19:33:46,873 [INFO] main: Starting file: /home/daniel/Documentos/oficinas.csv → [public].[oficina]
+2026-05-06 19:33:46,894 [INFO] src.validators.db_validator: Table [public].[oficina] exists.
+2026-05-06 19:33:46,910 [INFO] src.state_manager.core.adapter_db.postgres_adapter: The user has permissions for COPY on host: localhost
+2026-05-06 19:33:46,928 [INFO] src.state_manager.core.adapter_db.postgres_adapter: TRUNCATE OK: public.oficina
+2026-05-06 19:33:46,960 [INFO] src.state_manager.core.adapter_db.postgres_adapter: Path: /home/daniel/Documentos/oficinas.csv
+2026-05-06 19:33:46,960 [INFO] src.state_manager.core.adapter_db.postgres_adapter: Executing COPY FROM...
+2026-05-06 19:33:46,976 [INFO] src.state_manager.core.adapter_db.postgres_adapter: COPY STDIN successful - 4 inserted rows
+2026-05-06 19:33:46,976 [INFO] main: /home/daniel/Documentos/oficinas.csv: 4 rows inserted in 0.10s
+2026-05-06 19:33:46,981 [INFO] src.validators.db_validator: Table [public].[cliente] exists.
+2026-05-06 19:33:46,983 [INFO] main: Starting file: /home/daniel/Documentos/cliente.csv → [public].[cliente]
+2026-05-06 19:33:47,011 [INFO] src.validators.db_validator: Table [public].[cliente] exists.
+2026-05-06 19:33:47,032 [INFO] src.state_manager.core.adapter_db.postgres_adapter: The user has permissions for COPY on host: localhost
+2026-05-06 19:33:47,061 [INFO] src.state_manager.core.adapter_db.postgres_adapter: TRUNCATE OK: public.cliente
+2026-05-06 19:33:47,095 [INFO] src.state_manager.core.adapter_db.postgres_adapter: Path: /home/daniel/Documentos/cliente.csv
+2026-05-06 19:33:47,095 [INFO] src.state_manager.core.adapter_db.postgres_adapter: Executing COPY FROM...
+2026-05-06 19:33:48,363 [INFO] src.state_manager.core.adapter_db.postgres_adapter: COPY STDIN successful - 480485 inserted rows
+2026-05-06 19:33:48,363 [INFO] main: /home/daniel/Documentos/cliente.csv: 480485 rows inserted in 1.38s
+2026-05-06 19:33:49,065 [INFO] src.visualization.log_dashboard: Dashboard generated: /home/daniel/Documentos/ti/proyectos/project_ELT/logs/log_20260506_193256.html (24 events)
