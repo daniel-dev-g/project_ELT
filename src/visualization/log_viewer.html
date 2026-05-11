@@ -818,10 +818,10 @@ body::before {
     // ── Clasificación ─────────────────────────────────────────────────────
     const FILE_EVENTS  = new Set(['file_start','file_success','file_analysis_metadata','file_error','file_not_found']);
     const TABLE_EVENTS = new Set(['table_already_exists','table_created']);
-    const END_EVENTS   = ['pipeline_init','pipeline_summary','process_complete','dashboard_generated'];
-    function isError(e){ return ['analysis_error','file_not_found','critical_error','file_error','table_creation_error'].includes(e.evento); }
+    const END_EVENTS   = ['pipeline_init','pipeline_summary','process_complete','dashboard_generated','process_failed'];
+    function isError(e){ return ['analysis_error','file_not_found','critical_error','file_error','table_creation_error','process_failed'].includes(e.evento); }
     // ── Badge CSS ─────────────────────────────────────────────────────────
-    function bc(ev){ const m={'pipeline_start':'badge-pipeline_start','pipeline_init':'badge-pipeline_init','pipeline_summary':'badge-pipeline_summary','file_analysis_metadata':'badge-file_analysis_metadata','file_success':'badge-file_analysis_metadata','file_start':'badge-metadata','table_already_exists':'badge-metadata','table_created':'badge-metadata','analysis_error':'badge-analysis_error','file_not_found':'badge-file_not_found','critical_error':'badge-critical_error','table_creation_error':'badge-analysis_error','process_start':'badge-pipeline_start','process_complete':'badge-pipeline_summary'}; return m[ev]||'badge-default'; }
+    function bc(ev){ const m={'pipeline_start':'badge-pipeline_start','pipeline_init':'badge-pipeline_init','pipeline_summary':'badge-pipeline_summary','file_analysis_metadata':'badge-file_analysis_metadata','file_success':'badge-file_analysis_metadata','file_start':'badge-metadata','table_already_exists':'badge-metadata','table_created':'badge-metadata','analysis_error':'badge-analysis_error','file_not_found':'badge-file_not_found','critical_error':'badge-critical_error','table_creation_error':'badge-analysis_error','process_start':'badge-pipeline_start','process_complete':'badge-pipeline_summary','process_failed':'badge-complete-err'}; return m[ev]||'badge-default'; }
 
     // ── Agrupa eventos por archivo ────────────────────────────────────────
     function buildGroups(){
@@ -916,11 +916,15 @@ body::before {
         document.getElementById('sb-rows').textContent     = totalRows.toLocaleString();
         document.getElementById('nav-file_success').textContent = totalFiles;
         document.getElementById('nav-errors').textContent  = errors;
+        const processFailed = RAW_DATA.find(e => e.evento === 'process_failed');
         const hasErr = errors > 0;
-        document.getElementById('sb-status').textContent   = hasErr ? 'PARTIAL' : 'OK';
+        const statusLabel = processFailed ? 'ERROR' : (hasErr ? 'PARTIAL' : 'OK');
+        document.getElementById('sb-status').textContent   = statusLabel;
         document.getElementById('sb-status').style.color   = hasErr ? 'var(--error)' : 'var(--success)';
         document.getElementById('status-dot').className    = hasErr ? 'status-dot red' : 'status-dot green';
-        document.getElementById('status-text').textContent = hasErr ? `${errors} error(s)` : 'Ejecución completada';
+        document.getElementById('status-text').textContent = processFailed
+            ? (processFailed.detalles?.error || 'Process failed')
+            : (hasErr ? `${errors} error(s)` : 'Ejecución completada');
         const dur = complete?.duration_seconds ?? summary?.duration_seconds;
         if(dur!=null) document.getElementById('sb-duration').textContent=dur+'s';
         else if(RAW_DATA.length>=2){ const diff=(new Date(RAW_DATA[RAW_DATA.length-1].timestamp)-new Date(RAW_DATA[0].timestamp))/1000; document.getElementById('sb-duration').textContent=diff.toFixed(1)+'s'; }
@@ -1039,11 +1043,15 @@ body::before {
             col3=`${d.cantidad||0} archivos`;
         } else if(g.event.evento==='dashboard_generated'){
             col3=d.path||'';
+        } else if(g.event.evento==='process_failed'){
+            col3=d.error||'Process failed';
+            col5=d.detail?String(d.detail).slice(0,80):'—';
         }
         const isComplete = g.event.evento === 'process_complete';
-        const hasErr = isComplete && (d.files_error > 0 || (d.status && d.status !== 'COMPLETED'));
-        const rowMod = isComplete ? (hasErr ? 'event-row--err' : 'event-row--ok') : '';
-        const badgeClass = isComplete ? (hasErr ? 'badge-complete-err' : 'badge-complete-ok') : bc(g.event.evento);
+        const isFailed   = g.event.evento === 'process_failed';
+        const hasErr = (isComplete && (d.files_error > 0 || (d.status && d.status !== 'COMPLETED'))) || isFailed;
+        const rowMod = (isComplete || isFailed) ? (hasErr ? 'event-row--err' : 'event-row--ok') : '';
+        const badgeClass = (isComplete || isFailed) ? (hasErr ? 'badge-complete-err' : 'badge-complete-ok') : bc(g.event.evento);
         return `<div class="event-row ${isExp?'expanded':''} ${rowMod}" id="frow-end${gi}" onclick="toggleEnd(${gi})">
             <span class="event-exec-id" title="${d.execution_id||''}">${execId}</span>
             <span><span class="event-badge ${badgeClass}">${g.event.evento}</span></span>
@@ -1126,7 +1134,14 @@ body::before {
         document.getElementById('last-update').textContent=RAW_DATA[RAW_DATA.length-1]?.timestamp?.split('T')[1]?.slice(0,8)||'';
         document.getElementById('log-filename').textContent='pipeline.log';
         const _allGroups = buildGroups();
-        renderGroups(_allGroups.filter(g => g.type === 'file'));
+        const _fileGroups = _allGroups.filter(g => g.type === 'file');
+        if (_fileGroups.length > 0) {
+            renderGroups(_fileGroups);
+        } else {
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.querySelector('[onclick*="errors"]')?.classList.add('active');
+            renderGroups(_allGroups.filter(g => g.type === 'end' && isError(g.event)));
+        }
     }
     init();
     </script>
