@@ -238,11 +238,8 @@ def main():
         _handler.setLevel(getattr(logging, log_level))
 
         # PHASE 2: Database connection
-        try:
-            db_adapter = factory_db(db_cfg)
-            connected, connection_error = check_db_connection(db_adapter.engine)
-        except Exception as e:
-            connected, connection_error = False, str(e)
+        db_adapter = factory_db(db_cfg)
+        connected, connection_error = check_db_connection(db_adapter.engine)
         if not connected:
             registrar_log("process_failed", {
                 "execution_id": execution_id,
