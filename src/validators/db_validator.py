@@ -19,6 +19,9 @@ def check_db_connection(engine) -> tuple[bool, str | None]:
     except OperationalError as e:
         logger.critical("Could not connect to the database. %s", e)
         return False, str(e)
+    except Exception as e:
+        logger.critical("Unexpected error connecting to the database. %s", e)
+        return False, str(e)
 
 
 def validate_table_schema(
