@@ -797,9 +797,7 @@ body::before {
 </div>
 <div class="layout">
     <aside class="sidebar"><div class="sidebar-section"><div class="sidebar-label">Views</div>
-        <div class="nav-item active" onclick="setView('all', this)"><div class="nav-dot" style="background: var(--accent-primary)"></div>All Events<span class="nav-count" id="nav-all">0</span></div>
-        <div class="nav-item" onclick="setView('pipeline', this)"><div class="nav-dot" style="background: var(--purple-accent)"></div>Pipeline<span class="nav-count" id="nav-pipeline">0</span></div>
-        <div class="nav-item" onclick="setView('file_success', this)"><div class="nav-dot" style="background: var(--success)"></div>Files<span class="nav-count" id="nav-file_success">0</span></div>
+        <div class="nav-item active" onclick="setView('file_success', this)"><div class="nav-dot" style="background: var(--success)"></div>Pipeline<span class="nav-count" id="nav-file_success">0</span></div>
         <div class="nav-item" onclick="setView('errors', this)"><div class="nav-dot" style="background: var(--error)"></div>Errors<span class="nav-count" id="nav-errors">0</span></div>
     </div>
     <div class="sidebar-section"><div class="sidebar-label">Summary</div><div class="summary-stats"><div>Files: <span id="sb-files">—</span></div><div>Rows: <span id="sb-rows">—</span></div><div>Duration: <span id="sb-duration">—</span></div><div>Status: <span id="sb-status">—</span></div></div></div></aside>
@@ -918,7 +916,7 @@ body::before {
         document.getElementById('sb-rows').textContent     = totalRows.toLocaleString();
         document.getElementById('nav-all').textContent     = RAW_DATA.length;
         document.getElementById('nav-pipeline').textContent= RAW_DATA.filter(e=>END_EVENTS.includes(e.evento)).length;
-        document.getElementById('nav-file_success').textContent = successes.length;
+        document.getElementById('nav-file_success').textContent = totalFiles;
         document.getElementById('nav-errors').textContent  = errors;
         const hasErr = errors > 0;
         document.getElementById('sb-status').textContent   = hasErr ? 'PARTIAL' : 'OK';
@@ -1129,7 +1127,8 @@ body::before {
         document.getElementById('exec-id').textContent=execId.slice(0,8)+'...';
         document.getElementById('last-update').textContent=RAW_DATA[RAW_DATA.length-1]?.timestamp?.split('T')[1]?.slice(0,8)||'';
         document.getElementById('log-filename').textContent='pipeline.log';
-        renderGroups(buildGroups());
+        const _allGroups = buildGroups();
+        renderGroups(_allGroups.filter(g => g.type === 'file'));
     }
     init();
     </script>
