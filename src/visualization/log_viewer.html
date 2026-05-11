@@ -914,8 +914,6 @@ body::before {
         document.getElementById('kpi-rows').textContent    = rd;
         document.getElementById('sb-files').textContent    = `${filesOk} / ${totalFiles}`;
         document.getElementById('sb-rows').textContent     = totalRows.toLocaleString();
-        document.getElementById('nav-all').textContent     = RAW_DATA.length;
-        document.getElementById('nav-pipeline').textContent= RAW_DATA.filter(e=>END_EVENTS.includes(e.evento)).length;
         document.getElementById('nav-file_success').textContent = totalFiles;
         document.getElementById('nav-errors').textContent  = errors;
         const hasErr = errors > 0;
