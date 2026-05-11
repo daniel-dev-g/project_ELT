@@ -52,61 +52,53 @@ def _parse_conn_error(raw: str, engine_key: str) -> str:
     """Convierte un error críptico de conexión en un mensaje legible en español."""
     r = raw.lower()
 
-    # Driver ODBC no instalado (SQL Server)
+    # Prerequisito: driver ODBC no instalado (SQL Server)
     if any(x in r for x in ["no suitable driver", "driver not found", "im002",
                               "could not find driver"]):
         return "Driver ODBC no encontrado — instala 'ODBC Driver 18 for SQL Server'"
 
-    # Host / red inalcanzable
+    # 1. Host — servidor inalcanzable o nombre no resuelve
     if any(x in r for x in ["connection refused", "could not connect", "can't connect",
                               "no route to host", "name or service not known",
                               "nodename nor servname", "server not found",
                               "not accessible", "network-related", "tcp provider",
                               "named pipes provider", "10061", "111"]):
-        return "No se pudo alcanzar el servidor — verifica host y puerto"
+        return "No se pudo alcanzar el servidor — verifica el host"
 
-    # Tiempo de espera agotado
+    # 2. Puerto — inválido o sin respuesta (timeout)
+    if any(x in r for x in ["invalid port", "port out of range"]):
+        return "Puerto inválido — debe estar entre 1 y 65535"
     if any(x in r for x in ["timeout", "timed out", "10060"]):
         return "Tiempo de espera agotado — verifica host y puerto"
 
-    # Autenticación / credenciales
+    # 3. Base de datos — no existe
+    if any(x in r for x in ["does not exist", "unknown database",
+                              "cannot open database", "invalid catalog name",
+                              "3d000"]):
+        return "La base de datos no existe — verifica el nombre"
+
+    # 4. Usuario — no existe o sin permiso de conexión
+    if "role" in r and ("does not exist" in r or "not found" in r):
+        return "El usuario no existe en el servidor"
+    if any(x in r for x in ["pg_hba", "no pg_hba.conf entry", "not authorized",
+                              "insufficient privilege", "login failed for user"]):
+        return "Acceso denegado — verifica el usuario o revisa pg_hba.conf"
+
+    # 5. Contraseña — autenticación fallida
     if any(x in r for x in ["password authentication failed", "access denied for user",
                               "login failed", "authentication failed",
                               "invalid password", "28000"]):
         if engine_key == "sqlserver":
-            return ("Autenticación fallida — verifica usuario y contraseña, "
+            return ("Contraseña incorrecta — verifica las credenciales "
                     "o usa Autenticación Windows")
-        return "Credenciales incorrectas — verifica usuario y contraseña"
-
-    # Base de datos no existe
-    if any(x in r for x in ["does not exist", "unknown database",
-                              "cannot open database", "invalid catalog name",
-                              "3d000"]):
-        return f"La base de datos no existe — verifica el nombre"
-
-    # Usuario/rol no existe (PostgreSQL)
-    if "role" in r and ("does not exist" in r or "not found" in r):
-        return "El usuario no existe en el servidor"
-
-    # Sin permisos de acceso (pg_hba, host no autorizado)
-    if any(x in r for x in ["pg_hba", "no pg_hba.conf entry", "permission denied",
-                              "not authorized", "insufficient privilege"]):
-        return "Acceso denegado — este host no tiene permiso de conexión (revisa pg_hba.conf)"
+        return "Contraseña incorrecta — verifica las credenciales"
+    if any(x in r for x in ["codec can't decode", "unicodedecodeerror",
+                              "invalid continuation byte", "invalid start byte"]):
+        return "Contraseña incorrecta o error de codificación del servidor — verifica las credenciales"
 
     # SSL / cifrado
     if any(x in r for x in ["ssl", "certificate verify", "self-signed"]):
         return "Error SSL — el servidor requiere o rechaza cifrado; revisa la configuración Encrypt"
-
-    # Puerto fuera de rango o inválido
-    if any(x in r for x in ["invalid port", "port out of range"]):
-        return "Puerto inválido — debe estar entre 1 y 65535"
-
-    # Error de encoding en respuesta del driver (locale no-UTF8 en el servidor)
-    # Ocurre cuando las credenciales son incorrectas y el servidor responde
-    # en Latin-1 u otro encoding que el driver intenta decodificar como UTF-8.
-    if any(x in r for x in ["codec can't decode", "unicodedecodeerror",
-                              "invalid continuation byte", "invalid start byte"]):
-        return "Credenciales incorrectas o error de codificación del servidor — verifica usuario y contraseña"
 
     # Fallback: primera línea del error, truncada
     first = raw.replace("\n", " ").strip()

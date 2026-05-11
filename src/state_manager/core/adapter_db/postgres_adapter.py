@@ -45,7 +45,10 @@ class PostgresAdapter(DatabaseAdapter):
             f"postgresql+psycopg2://{username}:{password}"
             f"@{host}:{port}/{database}"
         )
-        return create_engine(connection_url)
+        return create_engine(
+            connection_url,
+            connect_args={"client_encoding": "utf8"},
+        )
 
     @contextmanager
     def get_db_cursor(self):
