@@ -101,6 +101,13 @@ def _parse_conn_error(raw: str, engine_key: str) -> str:
     if any(x in r for x in ["invalid port", "port out of range"]):
         return "Puerto inválido — debe estar entre 1 y 65535"
 
+    # Error de encoding en respuesta del driver (locale no-UTF8 en el servidor)
+    # Ocurre cuando las credenciales son incorrectas y el servidor responde
+    # en Latin-1 u otro encoding que el driver intenta decodificar como UTF-8.
+    if any(x in r for x in ["codec can't decode", "unicodedecodeerror",
+                              "invalid continuation byte", "invalid start byte"]):
+        return "Credenciales incorrectas o error de codificación del servidor — verifica usuario y contraseña"
+
     # Fallback: primera línea del error, truncada
     first = raw.replace("\n", " ").strip()
     return first[:160] if len(first) > 160 else first
