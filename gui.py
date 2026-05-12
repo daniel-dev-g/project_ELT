@@ -858,10 +858,7 @@ async def main(page: ft.Page):
             "database":       f_db.value.strip(),
             "username":       f_user.value.strip(),
             "password":       f_pass.value,
-            "bulk_path_map":  {
-                "host":      os.getenv("BULK_PATH_HOST", ""),
-                "container": os.getenv("BULK_PATH_CONTAINER", ""),
-            },
+            "bulk_path_map":  {},
         }
         if key == "sqlserver":
             cfg["server"]             = f"{cfg['host']},{cfg['port']}"
