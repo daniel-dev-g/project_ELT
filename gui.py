@@ -79,14 +79,36 @@ def _probe_tcp(host: str, port: int, timeout: float = 3.0) -> bool:
         return False
 
 
-def _probe_credentials(cfg: dict, key: str) -> bool:
-    """Verifica usuario y contraseña conectando a la BD de sistema del motor."""
+_AUTH_KEYWORDS = (
+    "password authentication failed", "access denied for user",
+    "login failed for user", "authentication failed",
+    "invalid password", "28000", "wrong password",
+)
+
+
+def _probe_credentials(cfg: dict, key: str) -> str:
+    """Verifica credenciales conectando a la BD de sistema del motor.
+
+    Retorna:
+        'ok'     — conexión exitosa, credenciales correctas
+        'auth'   — fallo de autenticación (usuario/contraseña incorrectos)
+        'access' — el servidor respondió pero rechazó el acceso a la BD de
+                   sistema; las credenciales pueden ser correctas pero el
+                   usuario no tiene permiso en esa BD específica
+    """
     probe_cfg = {**cfg, "database": _SYSTEM_DB.get(key, "postgres")}
     try:
-        ok, _ = check_db_connection(factory_db(probe_cfg).engine)
-        return ok
-    except Exception:
-        return False
+        ok, err = check_db_connection(factory_db(probe_cfg).engine)
+        if ok:
+            return "ok"
+        err_lower = (err or "").lower()
+        if any(kw in err_lower for kw in _AUTH_KEYWORDS):
+            return "auth"
+        return "access"
+    except Exception as ex:
+        if any(kw in str(ex).lower() for kw in _AUTH_KEYWORDS):
+            return "auth"
+        return "access"
 
 
 def _field(**kwargs) -> ft.TextField:
@@ -847,13 +869,15 @@ async def main(page: ft.Page):
 
             # Paso 2 — ¿Son correctos usuario y contraseña? (omitir en Windows Auth)
             if not (key == "sqlserver" and sw_winauth.value):
-                cred_ok = await asyncio.wait_for(
+                cred_result = await asyncio.wait_for(
                     loop.run_in_executor(None, _probe_credentials, cfg, key),
                     timeout=5.0,
                 )
-                if not cred_ok:
+                if cred_result == "auth":
                     _show_status(False, "Usuario o contraseña incorrectos — verifica las credenciales")
                     return
+                # cred_result == "access": credenciales posiblemente correctas
+                # pero sin acceso a la BD de sistema — continúa al paso 3
 
             # Paso 3 — ¿Existe la base de datos target?
             # Las credenciales ya fueron validadas en el paso 2, por lo que
