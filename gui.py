@@ -62,8 +62,8 @@ def _parse_conn_error(raw: str, engine_key: str) -> str:
                               "no route to host", "name or service not known",
                               "nodename nor servname", "server not found",
                               "not accessible", "network-related", "tcp provider",
-                              "named pipes provider", "10061", "111"]):
-        return "No se pudo alcanzar el servidor — verifica el host"
+                              "named pipes provider", "10061"]):
+        return "No se pudo alcanzar el servidor — verifica el host y el puerto"
 
     # 2. Puerto — inválido o sin respuesta (timeout)
     if any(x in r for x in ["invalid port", "port out of range"]):
@@ -72,9 +72,12 @@ def _parse_conn_error(raw: str, engine_key: str) -> str:
         return "Tiempo de espera agotado — verifica host y puerto"
 
     # 3. Base de datos — no existe
-    if any(x in r for x in ["does not exist", "unknown database",
-                              "cannot open database", "invalid catalog name",
-                              "3d000"]):
+    # Nota: psycopg2 eleva InvalidCatalogName (ProgrammingError) para 3D000;
+    # MySQL usa "Unknown database"; SQL Server usa "Cannot open database".
+    if any(x in r for x in ["unknown database", "cannot open database",
+                              "invalid catalog name", "invalidcatalogname", "3d000"]):
+        return "La base de datos no existe — verifica el nombre"
+    if "database" in r and "does not exist" in r:
         return "La base de datos no existe — verifica el nombre"
 
     # 4. Usuario — no existe o sin permiso de conexión
@@ -87,7 +90,7 @@ def _parse_conn_error(raw: str, engine_key: str) -> str:
     # 5. Contraseña — autenticación fallida
     if any(x in r for x in ["password authentication failed", "access denied for user",
                               "login failed", "authentication failed",
-                              "invalid password", "28000"]):
+                              "invalid password", "28000", "28p01"]):
         if engine_key == "sqlserver":
             return ("Contraseña incorrecta — verifica las credenciales "
                     "o usa Autenticación Windows")
@@ -100,9 +103,9 @@ def _parse_conn_error(raw: str, engine_key: str) -> str:
     if any(x in r for x in ["ssl", "certificate verify", "self-signed"]):
         return "Error SSL — el servidor requiere o rechaza cifrado; revisa la configuración Encrypt"
 
-    # Fallback: primera línea del error, truncada
-    first = raw.replace("\n", " ").strip()
-    return first[:160] if len(first) > 160 else first
+    # Fallback: primera línea del error (sin la metadata de SQLAlchemy), truncada
+    first = raw.split("\n")[0].strip()
+    return first[:200] if len(first) > 200 else first
 
 
 def _field(**kwargs) -> ft.TextField:

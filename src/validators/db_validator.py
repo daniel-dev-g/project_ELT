@@ -16,7 +16,7 @@ def check_db_connection(engine) -> tuple[bool, str | None]:
             conn.execute(text("SELECT 1"))
         logger.info("Database connection established successfully.")
         return True, None
-    except OperationalError as e:
+    except (OperationalError, ProgrammingError) as e:
         logger.critical("Could not connect to the database. %s", e)
         return False, str(e)
 
