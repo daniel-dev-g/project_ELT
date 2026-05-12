@@ -80,10 +80,27 @@ def _probe_tcp(host: str, port: int, timeout: float = 3.0) -> bool:
 
 
 _AUTH_KEYWORDS = (
-    "password authentication failed", "access denied for user",
-    "login failed for user", "authentication failed",
-    "invalid password", "28000", "wrong password",
+    # PostgreSQL
+    "password authentication failed",   # contraseña incorrecta
+    "28p01",                            # SQLSTATE contraseña incorrecta
+    # MySQL / MariaDB
+    "access denied for user",
+    # SQL Server
+    "login failed for user",
+    # Genéricos
+    "authentication failed",
+    "invalid password",
+    "wrong password",
+    "28000",                            # SQLSTATE auth failure genérico
 )
+
+# PostgreSQL: "role X does not exist" indica usuario inexistente — requiere
+# verificar ambas subcadenas para no confundir con otros errores "does not exist"
+def _is_auth_error(err: str) -> bool:
+    r = err.lower()
+    if "role" in r and "does not exist" in r:   # PostgreSQL: usuario no existe
+        return True
+    return any(kw in r for kw in _AUTH_KEYWORDS)
 
 
 def _probe_credentials(cfg: dict, key: str) -> str:
@@ -101,12 +118,11 @@ def _probe_credentials(cfg: dict, key: str) -> str:
         ok, err = check_db_connection(factory_db(probe_cfg).engine)
         if ok:
             return "ok"
-        err_lower = (err or "").lower()
-        if any(kw in err_lower for kw in _AUTH_KEYWORDS):
+        if _is_auth_error(err or ""):
             return "auth"
         return "access"
     except Exception as ex:
-        if any(kw in str(ex).lower() for kw in _AUTH_KEYWORDS):
+        if _is_auth_error(str(ex)):
             return "auth"
         return "access"
 
