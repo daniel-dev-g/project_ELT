@@ -856,11 +856,19 @@ async def main(page: ft.Page):
                     return
 
             # Paso 3 — ¿Existe la base de datos target?
+            # Las credenciales ya fueron validadas en el paso 2, por lo que
+            # cualquier fallo aquí (incluso UnicodeDecodeError por locale Latin-1)
+            # indica que la BD no existe o el usuario no tiene permiso en ella.
             adapter = factory_db(cfg)
-            db_ok, _ = await asyncio.wait_for(
-                loop.run_in_executor(None, check_db_connection, adapter.engine),
-                timeout=5.0,
-            )
+            try:
+                db_ok, _ = await asyncio.wait_for(
+                    loop.run_in_executor(None, check_db_connection, adapter.engine),
+                    timeout=5.0,
+                )
+            except asyncio.TimeoutError:
+                raise
+            except Exception:
+                db_ok = False
             if not db_ok:
                 _show_status(False, "La base de datos no existe — verifica el nombre")
                 return
