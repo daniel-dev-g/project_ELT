@@ -445,49 +445,57 @@ body::before {
     color: var(--error);
 }
 
-/* event table — menos blanco, más integrado */
+/* event table */
 .event-table {
     background: var(--bg-surface);
     border-radius: 20px;
     border: 0.5px solid var(--border-subtle);
     overflow: hidden;
-    min-width: 1020px;
+    min-width: 900px;
+}
+.pipeline-table {
+    border-collapse: collapse;
+    width: 100%;
+    table-layout: fixed;
 }
 .main {
     overflow-x: auto;
 }
 .event-table-header {
-    display: grid;
-    grid-template-columns: 420px 165px 1fr 110px 110px 90px 36px;
-    column-gap: 20px;
-    padding: 14px 20px;
     background: #eef2f5;
     border-bottom: 1px solid var(--border-subtle);
+}
+.event-table-header th {
+    padding: 12px 12px;
     font-size: 12px;
     font-weight: 700;
     letter-spacing: 0.6px;
     text-transform: uppercase;
     color: var(--text-secondary);
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .event-row {
-    display: grid;
-    grid-template-columns: 420px 165px 1fr 110px 110px 90px 36px;
-    column-gap: 20px;
-    padding: 0 20px;
     border-bottom: 0.5px solid var(--border-subtle);
     cursor: pointer;
     transition: background 0.15s;
-    min-height: 56px;
-    align-items: center;
 }
-.event-row:last-child {
-    border-bottom: none;
+.event-row:hover { background: rgba(59, 130, 246, 0.03); }
+.event-row td {
+    padding: 0 12px;
+    height: 56px;
+    vertical-align: middle;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 0;
 }
-.event-row:hover {
-    background: rgba(59, 130, 246, 0.03);
-}
-.event-row--ok  { border-left: 3px solid var(--success); }
-.event-row--err { border-left: 3px solid var(--error); }
+.event-row--ok  td:first-child { border-left: 3px solid var(--success); }
+.event-row--err td:first-child { border-left: 3px solid var(--error); }
+.detail-row { display: none; }
+.detail-row.show { display: table-row; }
 .event-exec-id {
     font-size: 11px;
     font-family: 'JetBrains Mono', monospace;
@@ -776,17 +784,18 @@ body::before {
     .sidebar { display: none; }
     .kpi-grid { grid-template-columns: repeat(2,1fr); }
     .main { padding: 20px; }
-    .event-table-header, .event-row {
-        grid-template-columns: 100px 1fr 110px 36px;
-    }
-    .event-table-header > :nth-child(2),
-    .event-row > :nth-child(2),
-    .event-table-header > :nth-child(3),
-    .event-row > :nth-child(3),
-    .event-table-header > :nth-child(4),
-    .event-row > :nth-child(4),
-    .event-table-header > :nth-child(6),
-    .event-row > :nth-child(6) { display: none; }
+    .pipeline-table col:nth-child(1),
+    .pipeline-table col:nth-child(4),
+    .pipeline-table col:nth-child(5),
+    .pipeline-table col:nth-child(6) { display: none; }
+    .event-table-header th:nth-child(1),
+    .event-table-header th:nth-child(4),
+    .event-table-header th:nth-child(5),
+    .event-table-header th:nth-child(6) { display: none; }
+    .event-row td:nth-child(1),
+    .event-row td:nth-child(4),
+    .event-row td:nth-child(5),
+    .event-row td:nth-child(6) { display: none; }
 }
     </style>
 </head>
@@ -809,7 +818,7 @@ body::before {
         <div class="timeline-wrap"><div class="section-header"><div class="section-title">Event Timeline</div><span id="timeline-range" style="font-size:12px;"></span></div><div class="timeline-track" id="timeline-track"></div></div>
         <div class="section-header"><div class="section-title">Event Log</div><div><button class="filter-btn" onclick="expandAll()">Expand All</button><button class="filter-btn" onclick="collapseAll()" style="margin-left:6px;">Collapse</button></div></div>
         <div class="search-wrap"><span class="search-icon">⌕</span><input class="search-input" id="search-input" placeholder="Buscar archivo, ruta, tabla..." oninput="applyFilters()"></div>
-        <div class="event-table"><div class="event-table-header"><span>Execution ID</span><span>Archivo / Evento</span><span>Detalle</span><span>En archivo</span><span>Cargados</span><span>Duración</span><span></span></div><div id="events-body"></div><div class="status-bar"><div class="status-dot green" id="status-dot"></div><span id="status-text">Ready</span><span style="margin-left:auto" id="status-count"></span></div></div>
+        <div class="event-table"><table class="pipeline-table"><colgroup><col style="width:180px"><col style="width:160px"><col><col style="width:100px"><col style="width:100px"><col style="width:85px"><col style="width:36px"></colgroup><thead><tr class="event-table-header"><th>Execution ID</th><th>Archivo / Evento</th><th>Detalle</th><th>En archivo</th><th>Cargados</th><th>Duración</th><th></th></tr></thead><tbody id="events-body"></tbody></table><div class="status-bar"><div class="status-dot green" id="status-dot"></div><span id="status-text">Ready</span><span style="margin-left:auto" id="status-count"></span></div></div>
     </main>
 </div>
 <script>
@@ -1012,18 +1021,18 @@ body::before {
             </div>`;
         }).join('');
 
-        return `<div class="event-row ${isExp?'expanded':''} ${rowBorder}" id="frow-${gi}" onclick="toggleFile(${gi})">
-            <span class="event-exec-id" title="${g.execId||''}">${execId}</span>
-            <span class="event-filename" title="${g.filename}">${g.filename}</span>
-            <span class="event-path" title="${pathTitle}">${pathDisplay}</span>
-            <span class="event-meta">${rowsFile}</span>
-            <span class="${rClass}">${rowsLoadedDisplay}</span>
-            <span class="event-duration">${dur}</span>
-            <span class="event-expand">▶</span>
-        </div>
-        <div class="detail-panel ${isExp?'show':''}" id="fdetail-${gi}">
-            <div class="file-events-list">${evHtml}</div>
-        </div>`;
+        return `<tr class="event-row ${isExp?'expanded':''} ${rowBorder}" id="frow-${gi}" onclick="toggleFile(${gi})">
+            <td class="event-exec-id" title="${g.execId||''}">${execId}</td>
+            <td class="event-filename" title="${g.filename}">${g.filename}</td>
+            <td class="event-path" title="${pathTitle}">${pathDisplay}</td>
+            <td class="event-meta">${rowsFile}</td>
+            <td class="${rClass}">${rowsLoadedDisplay}</td>
+            <td class="event-duration">${dur}</td>
+            <td class="event-expand">▶</td>
+        </tr>
+        <tr class="detail-row ${isExp?'show':''}" id="fdetail-${gi}">
+            <td colspan="7"><div class="detail-panel show"><div class="file-events-list">${evHtml}</div></div></td>
+        </tr>`;
     }
 
     function renderEnd(g, gi){
@@ -1052,16 +1061,18 @@ body::before {
         const hasErr = (isComplete && (d.files_error > 0 || (d.status && d.status !== 'COMPLETED'))) || isFailed;
         const rowMod = (isComplete || isFailed) ? (hasErr ? 'event-row--err' : 'event-row--ok') : '';
         const badgeClass = (isComplete || isFailed) ? (hasErr ? 'badge-complete-err' : 'badge-complete-ok') : bc(g.event.evento);
-        return `<div class="event-row ${isExp?'expanded':''} ${rowMod}" id="frow-end${gi}" onclick="toggleEnd(${gi})">
-            <span class="event-exec-id" title="${d.execution_id||''}">${execId}</span>
-            <span><span class="event-badge ${badgeClass}">${g.event.evento}</span></span>
-            <span class="event-meta">${col3}</span>
-            <span class="event-meta">${col4}</span>
-            <span class="event-meta">${col5}</span>
-            <span class="event-meta">${col6}</span>
-            <span class="event-expand">▶</span>
-        </div>
-        <div class="detail-panel ${isExp?'show':''}" id="fdetail-end${gi}">${buildDetail(g.event,'e'+gi)}</div>`;
+        return `<tr class="event-row ${isExp?'expanded':''} ${rowMod}" id="frow-end${gi}" onclick="toggleEnd(${gi})">
+            <td class="event-exec-id" title="${d.execution_id||''}">${execId}</td>
+            <td><span class="event-badge ${badgeClass}">${g.event.evento}</span></td>
+            <td class="event-meta">${col3}</td>
+            <td class="event-meta">${col4}</td>
+            <td class="event-meta">${col5}</td>
+            <td class="event-meta">${col6}</td>
+            <td class="event-expand">▶</td>
+        </tr>
+        <tr class="detail-row ${isExp?'show':''}" id="fdetail-end${gi}">
+            <td colspan="7"><div class="detail-panel show">${buildDetail(g.event,'e'+gi)}</div></td>
+        </tr>`;
     }
 
     // ── Toggles ───────────────────────────────────────────────────────────
@@ -1079,7 +1090,7 @@ body::before {
         else{ expandedRows.add(key); row.classList.add('expanded'); det.classList.add('show'); }
     }
     function expandAll(){ buildGroups().forEach((_,i)=>openFile(i)); }
-    function collapseAll(){ expandedRows.clear(); document.querySelectorAll('.event-row').forEach(r=>r.classList.remove('expanded')); document.querySelectorAll('.detail-panel').forEach(d=>d.classList.remove('show')); }
+    function collapseAll(){ expandedRows.clear(); document.querySelectorAll('.event-row').forEach(r=>r.classList.remove('expanded')); document.querySelectorAll('.detail-row').forEach(d=>d.classList.remove('show')); }
     function toggleCols(event, idx){ event.stopPropagation(); document.getElementById(`cols-${idx}`)?.classList.toggle('show'); document.getElementById(`cols-toggle-${idx}`)?.classList.toggle('open'); }
 
     // ── buildDetail ───────────────────────────────────────────────────────
