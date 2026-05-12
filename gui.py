@@ -1,6 +1,7 @@
 """gui.py — FlowELT Desktop App"""
 import asyncio
 import os
+import socket
 import subprocess
 import sys
 import time
@@ -49,63 +50,43 @@ CONTENT_W   = 920   # usable width inside 30px horizontal padding
 
 
 def _parse_conn_error(raw: str, engine_key: str) -> str:
-    """Convierte un error críptico de conexión en un mensaje legible en español."""
+    """Fallback para errores que las sondas de conexión no cubren (ODBC, SSL, etc.)."""
     r = raw.lower()
-
-    # Prerequisito: driver ODBC no instalado (SQL Server)
     if any(x in r for x in ["no suitable driver", "driver not found", "im002",
                               "could not find driver"]):
         return "Driver ODBC no encontrado — instala 'ODBC Driver 18 for SQL Server'"
-
-    # 1. Host — servidor inalcanzable o nombre no resuelve
-    if any(x in r for x in ["connection refused", "could not connect", "can't connect",
-                              "no route to host", "name or service not known",
-                              "nodename nor servname", "server not found",
-                              "not accessible", "network-related", "tcp provider",
-                              "named pipes provider", "10061"]):
-        return "No se pudo alcanzar el servidor — verifica el host y el puerto"
-
-    # 2. Puerto — inválido o sin respuesta (timeout)
-    if any(x in r for x in ["invalid port", "port out of range"]):
-        return "Puerto inválido — debe estar entre 1 y 65535"
-    if any(x in r for x in ["timeout", "timed out", "10060"]):
-        return "Tiempo de espera agotado — verifica host y puerto"
-
-    # 3. Base de datos — no existe
-    # Nota: psycopg2 eleva InvalidCatalogName (ProgrammingError) para 3D000;
-    # MySQL usa "Unknown database"; SQL Server usa "Cannot open database".
-    if any(x in r for x in ["unknown database", "cannot open database",
-                              "invalid catalog name", "invalidcatalogname", "3d000"]):
-        return "La base de datos no existe — verifica el nombre"
-    if "database" in r and "does not exist" in r:
-        return "La base de datos no existe — verifica el nombre"
-
-    # 4. Usuario — no existe o sin permiso de conexión
-    if "role" in r and ("does not exist" in r or "not found" in r):
-        return "El usuario no existe en el servidor"
-    if any(x in r for x in ["pg_hba", "no pg_hba.conf entry", "not authorized",
-                              "insufficient privilege"]):
-        return "Acceso denegado — verifica el usuario o revisa pg_hba.conf"
-
-    # 5. Contraseña — autenticación fallida
-    if any(x in r for x in ["password authentication failed", "access denied for user",
-                              "login failed", "authentication failed",
-                              "invalid password", "28000", "28p01"]):
-        if engine_key == "sqlserver":
-            return ("Contraseña incorrecta — verifica las credenciales "
-                    "o usa Autenticación Windows")
-        return "Contraseña incorrecta — verifica las credenciales"
-    if any(x in r for x in ["codec can't decode", "unicodedecodeerror",
-                              "invalid continuation byte", "invalid start byte"]):
-        return "Contraseña incorrecta o error de codificación del servidor — verifica las credenciales"
-
-    # SSL / cifrado
     if any(x in r for x in ["ssl", "certificate verify", "self-signed"]):
         return "Error SSL — el servidor requiere o rechaza cifrado; revisa la configuración Encrypt"
-
-    # Fallback: primera línea del error (sin la metadata de SQLAlchemy), truncada
     first = raw.split("\n")[0].strip()
     return first[:200] if len(first) > 200 else first
+
+
+_SYSTEM_DB = {
+    "postgres":  "postgres",
+    "mariadb":   "information_schema",
+    "mysql":     "information_schema",
+    "sqlserver": "master",
+}
+
+
+def _probe_tcp(host: str, port: int, timeout: float = 3.0) -> bool:
+    """Verifica que host:port responde a nivel TCP."""
+    try:
+        with socket.create_connection((host, port), timeout=timeout):
+            pass
+        return True
+    except (socket.timeout, socket.error, OSError):
+        return False
+
+
+def _probe_credentials(cfg: dict, key: str) -> bool:
+    """Verifica usuario y contraseña conectando a la BD de sistema del motor."""
+    probe_cfg = {**cfg, "database": _SYSTEM_DB.get(key, "postgres")}
+    try:
+        ok, _ = check_db_connection(factory_db(probe_cfg).engine)
+        return ok
+    except Exception:
+        return False
 
 
 def _field(**kwargs) -> ft.TextField:
@@ -246,9 +227,18 @@ async def main(page: ft.Page):
         page.update()
 
     def validate_conn() -> str | None:
-        if not f_host.value.strip(): return "El campo Host es obligatorio."
-        if not f_port.value.strip(): return "El campo Puerto es obligatorio."
-        if not f_db.value.strip():   return "Ingresa el nombre de la base de datos."
+        if not f_host.value.strip():
+            return "El campo Host es obligatorio."
+        port_str = f_port.value.strip()
+        if not port_str:
+            return "El campo Puerto es obligatorio."
+        try:
+            if not 1 <= int(port_str) <= 65535:
+                return "Puerto inválido — debe estar entre 1 y 65535"
+        except ValueError:
+            return "Puerto inválido — debe ser un número"
+        if not f_db.value.strip():
+            return "Ingresa el nombre de la base de datos."
         if not sw_winauth.value and not f_user.value.strip():
             return "Ingresa el usuario."
         if not sw_winauth.value and not f_pass.value:
@@ -821,62 +811,82 @@ async def main(page: ft.Page):
         status_box.visible = False
         page.update()
 
-        try:
-            key = _selected_engine[0]
-            cfg = {
-                "db_engine":      ENGINES[key]["db_engine"],
-                "default_schema": ENGINES[key]["default_schema"],
-                "host":           f_host.value.strip(),
-                "port":           f_port.value.strip(),
-                "database":       f_db.value.strip(),
-                "username":       f_user.value.strip(),
-                "password":       f_pass.value,
-                "bulk_path_map":  {
-                    "host":      os.getenv("BULK_PATH_HOST", ""),
-                    "container": os.getenv("BULK_PATH_CONTAINER", ""),
-                },
-            }
-            if key == "sqlserver":
-                use_win = sw_winauth.value
-                cfg["server"]             = f"{cfg['host']},{cfg['port']}"
-                cfg["driver"]             = "ODBC Driver 18 for SQL Server"
-                cfg["trusted_connection"] = "yes" if use_win else "no"
-                cfg["encrypt"]            = "no"
+        key  = _selected_engine[0]
+        cfg  = {
+            "db_engine":      ENGINES[key]["db_engine"],
+            "default_schema": ENGINES[key]["default_schema"],
+            "host":           f_host.value.strip(),
+            "port":           f_port.value.strip(),
+            "database":       f_db.value.strip(),
+            "username":       f_user.value.strip(),
+            "password":       f_pass.value,
+            "bulk_path_map":  {
+                "host":      os.getenv("BULK_PATH_HOST", ""),
+                "container": os.getenv("BULK_PATH_CONTAINER", ""),
+            },
+        }
+        if key == "sqlserver":
+            cfg["server"]             = f"{cfg['host']},{cfg['port']}"
+            cfg["driver"]             = "ODBC Driver 18 for SQL Server"
+            cfg["trusted_connection"] = "yes" if sw_winauth.value else "no"
+            cfg["encrypt"]            = "no"
 
-            loop    = asyncio.get_running_loop()
-            adapter = factory_db(cfg)
-            label   = ENGINES[key]["label"]
-            addr    = f"{f_host.value.strip()}:{f_port.value.strip()}"
-            try:
-                ok, db_err = await asyncio.wait_for(
-                    loop.run_in_executor(None, check_db_connection, adapter.engine),
-                    timeout=5.0,
-                )
-            except asyncio.TimeoutError:
-                _show_status(False, "Tiempo de espera agotado — verifica host y puerto")
+        label = ENGINES[key]["label"]
+        addr  = f"{cfg['host']}:{cfg['port']}"
+        loop  = asyncio.get_running_loop()
+
+        try:
+            # Paso 1 — ¿El servidor responde en host:puerto?
+            reachable = await asyncio.wait_for(
+                loop.run_in_executor(None, _probe_tcp, cfg["host"], int(cfg["port"])),
+                timeout=3.0,
+            )
+            if not reachable:
+                _show_status(False, "No se pudo alcanzar el servidor — verifica el host y el puerto")
                 return
 
-            if ok:
-                _adapter.clear(); _adapter.append(adapter)
-                _db_cfg.clear();  _db_cfg.append({
-                    "db_engine":      ENGINES[key]["db_engine"],
-                    "default_schema": ENGINES[key]["default_schema"],
-                })
-                conn_info.value = (
-                    f"{label}  ·  {f_db.value.strip()} @ {addr}  ·  "
-                    + ("Autenticación Windows" if key == "sqlserver" and sw_winauth.value
-                       else f_user.value.strip())
+            # Paso 2 — ¿Son correctos usuario y contraseña? (omitir en Windows Auth)
+            if not (key == "sqlserver" and sw_winauth.value):
+                cred_ok = await asyncio.wait_for(
+                    loop.run_in_executor(None, _probe_credentials, cfg, key),
+                    timeout=5.0,
                 )
-                conn_card.visible     = False
-                status_box.visible    = False
-                connected_bar.visible = True
-                pipeline_section.visible = True
-                _load_existing_pipeline()
-                page.update()
-            else:
-                _show_status(False, _parse_conn_error(db_err or "", key))
+                if not cred_ok:
+                    _show_status(False, "Usuario o contraseña incorrectos — verifica las credenciales")
+                    return
+
+            # Paso 3 — ¿Existe la base de datos target?
+            adapter = factory_db(cfg)
+            db_ok, _ = await asyncio.wait_for(
+                loop.run_in_executor(None, check_db_connection, adapter.engine),
+                timeout=5.0,
+            )
+            if not db_ok:
+                _show_status(False, "La base de datos no existe — verifica el nombre")
+                return
+
+            # ✅ Conectado
+            _adapter.clear(); _adapter.append(adapter)
+            _db_cfg.clear();  _db_cfg.append({
+                "db_engine":      ENGINES[key]["db_engine"],
+                "default_schema": ENGINES[key]["default_schema"],
+            })
+            conn_info.value = (
+                f"{label}  ·  {f_db.value.strip()} @ {addr}  ·  "
+                + ("Autenticación Windows" if key == "sqlserver" and sw_winauth.value
+                   else f_user.value.strip())
+            )
+            conn_card.visible        = False
+            status_box.visible       = False
+            connected_bar.visible    = True
+            pipeline_section.visible = True
+            _load_existing_pipeline()
+            page.update()
+
+        except asyncio.TimeoutError:
+            _show_status(False, "Tiempo de espera agotado — verifica host y puerto")
         except Exception as ex:
-            _show_status(False, _parse_conn_error(str(ex), _selected_engine[0]))
+            _show_status(False, _parse_conn_error(str(ex), key))
         finally:
             set_loading(False)
 
