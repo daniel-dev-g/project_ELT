@@ -84,7 +84,7 @@ def _parse_conn_error(raw: str, engine_key: str) -> str:
     if "role" in r and ("does not exist" in r or "not found" in r):
         return "El usuario no existe en el servidor"
     if any(x in r for x in ["pg_hba", "no pg_hba.conf entry", "not authorized",
-                              "insufficient privilege", "login failed for user"]):
+                              "insufficient privilege"]):
         return "Acceso denegado — verifica el usuario o revisa pg_hba.conf"
 
     # 5. Contraseña — autenticación fallida
@@ -251,6 +251,8 @@ async def main(page: ft.Page):
         if not f_db.value.strip():   return "Ingresa el nombre de la base de datos."
         if not sw_winauth.value and not f_user.value.strip():
             return "Ingresa el usuario."
+        if not sw_winauth.value and not f_pass.value:
+            return "Ingresa la contraseña."
         return None
 
     # ── Connection card (View 1) ─────────────────────────────────────────────
