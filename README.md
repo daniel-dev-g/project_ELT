@@ -236,7 +236,7 @@ El script instala `uv` si no está presente y ejecuta `uv sync` para instalar to
 
 ### Paso 3 — Lanzar la GUI
 
-> **Nota:** Si previamente ejecutaste la Opción 1 (Docker), el directorio `logs/` puede pertenecer a `root` y la GUI no podrá escribir logs. Corrígelo antes de continuar:
+> **Linux:** Si previamente ejecutaste la Opción 1 (Docker), el directorio `logs/` puede pertenecer a `root` y la GUI no podrá escribir logs. Corrígelo antes de continuar:
 > ```bash
 > sudo chown -R $USER:$USER logs/
 > ```
