@@ -46,7 +46,7 @@ Funciona para volúmenes pequeños. Cuando el archivo crece, el proceso pasa de 
 |----------|---------------|------------|------------|------------|------------|----------------------|
 | 4        | ~2 GB         | 13.229.516 | 31.2s      | PostgreSQL | A (Docker) | `COPY FROM`          |
 | 4        | ~2 GB         | 13.229.516 | 31.73s     | SQL Server | A (Docker) | `BULK INSERT`        |
-| 4        | ~2 GB         | 13.229.516 | 59.25s     | MariaDB    | B (local)  | `LOAD DATA INFILE`   |
+| 4        | ~2 GB         | 13.229.516 | 69.85s     | MariaDB    | A (Docker) | `LOAD DATA INFILE`   |
 
 > Hardware: Intel Core i3-1005G1 @ 1.20GHz / 11 GB RAM / Ubuntu Linux / NVMe interno.
 
@@ -65,21 +65,28 @@ Funciona para volúmenes pequeños. Cuando el archivo crece, el proceso pasa de 
 
 ## Modos de uso
 
-| | Opción A — Docker | Opción B — Local |
+| | Opción 1 — Docker | Opción 2 — Visual local |
 |---|---|---|
-| **Cuándo usarlo** | Pruebas, demo, sin BD instalada | BD propia en red o máquina local |
-| **Requisito** | Docker + Docker Compose | Python 3.14 + uv |
-| **Interfaz** | CLI (`main.py` en contenedor) | GUI visual (`gui.py`) |
-| **Archivos CSV** | Dentro de `./data/input/` | Cualquier ruta de tu máquina |
-| **BD** | Contenerizada (A) o externa (A-standalone) | La tuya, sin Docker |
+| **Cuándo usarlo** | Sin BD instalada, demo, pruebas | Ya tienes una BD instalada |
+| **Requisito** | Docker + Docker Compose | Python 3.14 + BD propia |
+| **Interfaz** | CLI (contenedor) | GUI visual |
+| **Archivos CSV** | Dentro de `./data/input/` | Cualquier ruta del equipo |
 
 ---
 
-## Opción A — Docker
+## Opción 1 — Docker
+
+La BD y la app corren en contenedores. No necesitas instalar nada más que Docker.
 
 ### Prerrequisitos
 
 - [Docker](https://docs.docker.com/get-docker/) + Docker Compose
+
+> **Linux:** si instalaste Docker recientemente, agrega tu usuario al grupo `docker` para no necesitar `sudo`:
+> ```bash
+> sudo usermod -aG docker $USER
+> ```
+> Cierra sesión y vuelve a entrar para que el cambio tome efecto.
 
 ### Paso 1 — Clonar
 
@@ -90,18 +97,24 @@ cd project_ELT
 
 ### Paso 2 — Configurar entorno
 
+**Linux / macOS / Git Bash / PowerShell:**
 ```bash
 cp .env.example .env
 ```
 
-Los valores del `.env.example` son suficientes para el Escenario A — Docker crea y configura la BD automáticamente.
+**Windows cmd.exe:**
+```bat
+copy .env.example .env
+```
+
+Los valores del `.env.example` son suficientes — Docker configura la BD automáticamente.
 
 ### Paso 3 — Seleccionar motor
 
 Edita `.env`:
 
 ```env
-DB_ENGINE=postgres     # postgres | sqlserver | mariadb
+DB_ENGINE=postgres     # postgres | sqlserver | mariadb | mysql8
 ```
 
 ### Paso 4 — Agregar archivos CSV
@@ -119,7 +132,7 @@ Edita `config/pipeline.yaml`:
 
 ```yaml
 _defaults:
-  schema: "public"          # public → PostgreSQL | dbo → SQL Server | "" → MariaDB / MySQL
+  schema: "public"      # public → PostgreSQL | dbo → SQL Server | "" → MariaDB / MySQL
   delimiter: ";"
   crear_tabla_si_no_existe: true
   truncate_before_load: false
@@ -133,13 +146,11 @@ task:
     table_destination: "clientes"
     schema: "public"
     crear_tabla_si_no_existe: true
-    truncate_before_load: false       # true = vacía la tabla antes de cargar
+    truncate_before_load: false
     active: true
 ```
 
 > **Requisito:** Los archivos CSV deben incluir fila de encabezado (primera fila = nombres de columnas).
-> El pipeline la usa para inferir el esquema al crear la tabla y para configurar la carga masiva.
-> Un archivo sin encabezado producirá errores de esquema o datos corruptos.
 
 ### Paso 6 — Ejecutar
 
@@ -157,13 +168,12 @@ docker compose --profile mariadb up
 docker compose --profile mysql8 up
 ```
 
-Docker construye la imagen, levanta la BD, espera que esté lista y ejecuta la carga.
-Al terminar verás en `logs/` el dashboard HTML y el log estructurado.
-
-> **Primera ejecución o tras actualizar el proyecto:** agrega `--build` para forzar la reconstrucción de la imagen:
+> **Primera ejecución o tras actualizar el proyecto:** agrega `--build`:
 > ```bash
 > docker compose --profile postgres up --build
 > ```
+
+Al terminar verás en `logs/` el dashboard HTML y el log estructurado.
 
 #### Puertos expuestos (para conectar con DBeaver u otro cliente)
 
@@ -174,71 +184,21 @@ Al terminar verás en `logs/` el dashboard HTML y el log estructurado.
 | MariaDB 11 | `3307`      |
 | MySQL 8    | `3308`      |
 
-### Variante — BD externa (standalone)
-
-Si ya tienes una BD instalada en tu servidor, usa el perfil `standalone`.
-El contenedor Python se conecta a tu BD sin levantarla:
-
-```bash
-# Configura en .env las credenciales de tu BD externa
-docker compose --profile standalone up
-```
-
-> Usa `network_mode: host`, por lo que `127.0.0.1` apunta directamente a tu máquina.
-
-#### Permisos requeridos por motor
-
-**PostgreSQL** — el usuario necesita `pg_read_server_files` o ser superusuario:
-
-```sql
-GRANT pg_read_server_files TO mi_usuario;
-```
-
-> Si los archivos están en la misma máquina que la app, FlowELT usa `COPY FROM STDIN`
-> (client-side) y no requiere este permiso.
-
-**SQL Server** — rol `bulkadmin` o permiso `ADMINISTER BULK OPERATIONS`:
-
-```sql
-EXEC sp_addrolemember 'bulkadmin', 'mi_usuario';
-```
-
-**MariaDB** — privilegio `FILE` + `secure_file_priv` vacío:
-
-```ini
-# /etc/mysql/mariadb.conf.d/50-server.cnf
-[mysqld]
-secure_file_priv=
-```
-
-```bash
-sudo systemctl restart mariadb
-sudo mariadb -e "GRANT FILE ON *.* TO 'tu_usuario'@'%'; FLUSH PRIVILEGES;"
-```
-
 ---
 
-## Opción B — Instalación local (GUI)
+## Opción 2 — Visual local (GUI)
 
-Corre FlowELT directamente en tu máquina con la interfaz gráfica.
-No requiere Docker.
+Corre FlowELT con interfaz gráfica directamente en tu máquina.
 
-> **Nota:** Las instrucciones de instalación de dependencias del sistema están orientadas a **Windows** y **Ubuntu/Debian**. En otras distribuciones Linux los comandos pueden variar.
+> **Requisito previo:** esta opción asume que ya tienes instalada y corriendo una de las bases de datos soportadas (PostgreSQL, SQL Server, MariaDB o MySQL). Si necesitas instalarla, consulta la documentación oficial de cada motor.
 
 ### Prerrequisitos
 
-- Python 3.14
-- [uv](https://docs.astral.sh/uv/getting-started/installation/)
+- Una BD soportada ya instalada y corriendo
 
-```bash
-# Instalar uv (Linux / macOS)
-curl -LsSf https://astral.sh/uv/install.sh | sh
+> `uv` gestiona Python 3.14 automáticamente — no necesitas instalarlo manualmente.
 
-# Windows (PowerShell)
-powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-```
-
-- **Solo si usas SQL Server**: ODBC Driver 18
+**Solo si usas SQL Server:**
 
 **Linux (Ubuntu / Debian):**
 ```bash
@@ -251,78 +211,7 @@ sudo apt-get update
 sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18 unixodbc-dev
 ```
 
-**Windows:**
-
-Descarga e instala el driver desde Microsoft:
-[Microsoft ODBC Driver 18 for SQL Server (Windows)](https://learn.microsoft.com/en-us/sql/connect/odbc/download-odbc-driver-for-sql-server)
-
-Ejecuta el instalador `.msi` y sigue el wizard. Al terminar el driver quedará registrado como `ODBC Driver 18 for SQL Server` en el Administrador de orígenes de datos ODBC.
-
-- **Solo si usas MySQL 8 o MariaDB local**: configuración para `LOAD DATA INFILE`
-
-**1. Instalar MySQL:**
-```bash
-sudo apt update
-sudo apt install -y mysql-server
-sudo systemctl enable --now mysql
-sudo mysql_secure_installation
-```
-
-**2. Configurar `secure_file_priv` y `local_infile`:**
-
-Edita `/etc/mysql/mysql.conf.d/mysqld.cnf` y agrega bajo `[mysqld]`:
-
-```ini
-[mysqld]
-secure_file_priv=
-local_infile=1
-```
-
-```bash
-sudo systemctl restart mysql
-```
-
-**3. Crear base de datos y usuario:**
-
-```bash
-sudo mysql -u root -p <<'EOF'
-CREATE DATABASE IF NOT EXISTS flowelt_demo;
-CREATE USER 'admin'@'localhost' IDENTIFIED WITH mysql_native_password BY 'tu_password';
-GRANT ALL PRIVILEGES ON flowelt_demo.* TO 'admin'@'localhost';
-GRANT FILE ON *.* TO 'admin'@'localhost';
-FLUSH PRIVILEGES;
-EOF
-```
-
-**4. Permisos sobre los archivos CSV:**
-
-El servidor MySQL corre como el usuario de sistema `mysql` y no puede leer archivos en carpetas personales sin permisos explícitos:
-
-```bash
-chmod o+x /home/$USER
-chmod o+x /home/$USER/Documentos   # ajusta al directorio donde estén los CSV
-chmod o+r /home/$USER/Documentos/*.csv
-```
-
-**5. AppArmor (Ubuntu):**
-
-AppArmor restringe qué rutas puede leer MySQL. Si los CSV están en `/home/`, agrega una excepción:
-
-```bash
-sudo nano /etc/apparmor.d/usr.sbin.mysqld
-```
-
-Agrega antes del último `}`:
-```
-  /home/*/Documentos/ r,
-  /home/*/Documentos/** r,
-```
-
-```bash
-sudo apparmor_parser -r /etc/apparmor.d/usr.sbin.mysqld
-```
-
-> **Detección automática:** FlowELT verifica estos requisitos antes de cada carga y muestra un mensaje accionable si algo falla — `secure_file_priv` activo, permisos insuficientes o AppArmor bloqueando el acceso.
+**Windows:** descarga e instala [ODBC Driver 18 for SQL Server](https://learn.microsoft.com/en-us/sql/connect/odbc/download-odbc-driver-for-sql-server). El wizard lo registra automáticamente.
 
 ### Paso 1 — Clonar
 
@@ -333,63 +222,21 @@ cd project_ELT
 
 ### Paso 2 — Instalar dependencias
 
+**Linux / macOS:**
 ```bash
-uv sync
+bash install.sh
 ```
 
-### Paso 3 — Configurar entorno
-
-```bash
-cp .env.example .env
+**Windows:**
+```bat
+install.bat
 ```
 
-Edita `.env` con las credenciales de tu BD:
+El script instala `uv` si no está presente y ejecuta `uv sync` para instalar todas las dependencias del proyecto.
 
-**PostgreSQL:**
-```env
-DB_ENGINE=postgres
-POSTGRES_HOST=localhost
-POSTGRES_PORT=5432
-POSTGRES_USER=mi_usuario
-POSTGRES_PASSWORD=mi_password
-POSTGRES_DB=mi_base
-```
+### Paso 3 — Lanzar la GUI
 
-**SQL Server:**
-```env
-DB_ENGINE=sqlserver
-SQLSERVER_HOST=localhost
-SQLSERVER_PORT=1433
-SQLSERVER_USER=mi_usuario
-SQLSERVER_PASSWORD=mi_password
-SQLSERVER_DB=mi_base
-```
-
-**MariaDB:**
-```env
-DB_ENGINE=mariadb
-MARIADB_HOST=localhost
-MARIADB_PORT=3306
-MARIADB_USER=mi_usuario
-MARIADB_PASSWORD=mi_password
-MARIADB_DB=mi_base
-```
-
-**MySQL 8:**
-```env
-DB_ENGINE=mysql
-MYSQL_HOST=localhost
-MYSQL_PORT=3306
-MYSQL_USER=mi_usuario
-MYSQL_PASSWORD=mi_password
-MYSQL_DB=mi_base
-```
-
-> Los puertos `3307` y `3308` son solo para los contenedores Docker (para no chocar con una instalación local). Una instalación local de MariaDB o MySQL siempre usa el puerto `3306`.
-
-### Paso 4 — Lanzar la GUI
-
-> **Nota:** Si previamente ejecutaste la Opción A (Docker), el directorio `logs/` puede pertenecer a `root` y la GUI no podrá escribir logs. Corrígelo antes de continuar:
+> **Nota:** Si previamente ejecutaste la Opción 1 (Docker), el directorio `logs/` puede pertenecer a `root` y la GUI no podrá escribir logs. Corrígelo antes de continuar:
 > ```bash
 > sudo chown -R $USER:$USER logs/
 > ```
@@ -408,14 +255,6 @@ La interfaz permite:
 - Abrir el dashboard HTML de la ejecución con un clic
 
 ![GUI](screenshot.png)
-
-### Alternativa — CLI sin GUI
-
-Si prefieres la línea de comandos, configura `config/pipeline.yaml` manualmente y ejecuta:
-
-```bash
-uv run main.py
-```
 
 ---
 
@@ -492,11 +331,12 @@ Todos los outputs comparten el mismo `execution_id` para trazabilidad completa.
 
 ## Estado de pruebas
 
-| Motor      | Estado   | Escenario probado       | Método               |
-|------------|----------|-------------------------|----------------------|
-| PostgreSQL | Probado  | A (Docker) + B (local)  | `COPY FROM` / STDIN  |
-| SQL Server | Probado  | A (Docker)              | `BULK INSERT`        |
-| MariaDB    | Probado  | A (Docker) + B (local)  | `LOAD DATA INFILE`   |
+| Motor      | Estado   | Escenario probado  | Método               |
+|------------|----------|--------------------|----------------------|
+| PostgreSQL | Probado  | Docker + local     | `COPY FROM` / STDIN  |
+| SQL Server | Probado  | Docker             | `BULK INSERT`        |
+| MariaDB    | Probado  | Docker             | `LOAD DATA INFILE`   |
+| MySQL 8    | Probado  | Docker             | `LOAD DATA INFILE`   |
 
 ---
 

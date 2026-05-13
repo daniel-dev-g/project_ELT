@@ -100,17 +100,22 @@ class MySQLAdapter(DatabaseAdapter):
             cursor.execute(sql)
         logger.info("TRUNCATE OK: %s.%s", schema, table)
 
-    def _check_file_access(self, file_path: str) -> None:
+    def _check_file_access(self, server_path: str, app_path: str | None = None) -> None:
         """Pre-flight check: verifica que el servidor MySQL pueda leer el archivo.
+
+        server_path: ruta que usará el servidor MySQL (puede ser ruta de contenedor).
+        app_path:    ruta visible desde este proceso Python; si difiere de server_path
+                     (modo Docker con path_map) solo se verifica existencia local y
+                     se omiten las comprobaciones de permisos/AppArmor.
 
         Detecta los tres problemas más comunes en instalaciones locales:
         secure_file_priv activo, permisos insuficientes en el archivo o sus
         directorios padres, y AppArmor bloqueando el acceso desde /home/.
-        Raises ValueError con mensaje accionable antes de intentar el LOAD DATA.
         """
-        path = pathlib.Path(file_path)
+        local_path = pathlib.Path(app_path if app_path is not None else server_path)
+        docker_mode = app_path is not None and app_path != server_path
 
-        # 1. secure_file_priv
+        # 1. secure_file_priv — siempre se comprueba (consulta al servidor)
         try:
             with self.get_db_cursor() as cursor:
                 cursor.execute("SHOW VARIABLES LIKE 'secure_file_priv'")
@@ -118,7 +123,7 @@ class MySQLAdapter(DatabaseAdapter):
             sfp = row[1] if row else ''
             if sfp:
                 raise ValueError(
-                    f"secure_file_priv='{sfp}' bloquea el acceso a '{file_path}'.\n"
+                    f"secure_file_priv='{sfp}' bloquea el acceso a '{server_path}'.\n"
                     "Agrega en /etc/mysql/mysql.conf.d/mysqld.cnf bajo [mysqld]:\n"
                     "  secure_file_priv=\n"
                     "Luego ejecuta: sudo systemctl restart mysql"
@@ -128,19 +133,28 @@ class MySQLAdapter(DatabaseAdapter):
         except Exception:
             pass
 
-        # 2. Permisos del archivo y directorios padres
+        # 2. Existencia del archivo — usando la ruta visible desde este proceso
         try:
-            if not path.exists():
-                raise ValueError(f"Archivo no encontrado: '{file_path}'")
+            if not local_path.exists():
+                raise ValueError(f"Archivo no encontrado: '{server_path}'")
+        except ValueError:
+            raise
+        except OSError:
+            pass
 
-            if not (path.stat().st_mode & stat_module.S_IROTH):
+        # 3. Permisos y AppArmor — solo en instalación local (no Docker)
+        if docker_mode:
+            return
+
+        try:
+            if not (local_path.stat().st_mode & stat_module.S_IROTH):
                 raise ValueError(
-                    f"El servidor MySQL no puede leer '{file_path}'.\n"
+                    f"El servidor MySQL no puede leer '{server_path}'.\n"
                     "El proceso mysqld corre como usuario 'mysql' y necesita permiso de lectura.\n"
-                    f"Ejecuta:  chmod o+r '{file_path}'"
+                    f"Ejecuta:  chmod o+r '{server_path}'"
                 )
 
-            for parent in reversed(list(path.parents)):
+            for parent in reversed(list(local_path.parents)):
                 if str(parent) == '/':
                     continue
                 if not (parent.stat().st_mode & stat_module.S_IXOTH):
@@ -148,25 +162,24 @@ class MySQLAdapter(DatabaseAdapter):
                         f"El servidor MySQL no puede acceder al directorio '{parent}'.\n"
                         f"Ejecuta:  chmod o+x '{parent}'"
                     )
-                if parent == path.parent:
+                if parent == local_path.parent:
                     break
         except ValueError:
             raise
         except OSError:
             pass
 
-        # 3. AppArmor — solo si el archivo está en /home/
         apparmor_profile = pathlib.Path('/etc/apparmor.d/usr.sbin.mysqld')
-        if apparmor_profile.exists() and str(path).startswith('/home/'):
+        if apparmor_profile.exists() and str(local_path).startswith('/home/'):
             try:
                 content = apparmor_profile.read_text(encoding='utf-8')
-                parent_str = str(path.parent)
+                parent_str = str(local_path.parent)
                 if parent_str not in content and '/home/' not in content:
                     raise ValueError(
-                        f"AppArmor está bloqueando el acceso de MySQL a '{file_path}'.\n"
+                        f"AppArmor está bloqueando el acceso de MySQL a '{server_path}'.\n"
                         "Agrega en /etc/apparmor.d/usr.sbin.mysqld (antes del último }):\n"
-                        f"  {path.parent}/ r,\n"
-                        f"  {path.parent}/** r,\n"
+                        f"  {local_path.parent}/ r,\n"
+                        f"  {local_path.parent}/** r,\n"
                         "Luego ejecuta: sudo apparmor_parser -r /etc/apparmor.d/usr.sbin.mysqld"
                     )
             except ValueError:
@@ -191,13 +204,15 @@ class MySQLAdapter(DatabaseAdapter):
         if not pathlib.Path(file).is_absolute():
             file = str(pathlib.Path.cwd() / file)
 
+        app_path = file  # ruta visible desde este proceso Python
         path_map = self.config.get('bulk_path_map', {})
         host_prefix = path_map.get('host', '') if path_map else ''
         if host_prefix and host_prefix in file:
             file = file.replace(host_prefix, path_map['container'])
 
-        logger.info("Path: %s", file)
-        self._check_file_access(file)
+        server_path = file  # ruta que usará el servidor MySQL/MariaDB
+        logger.info("Path: %s", server_path)
+        self._check_file_access(server_path, app_path if app_path != server_path else None)
 
         if schema:
             table_ref = f"`{schema}`.`{table_destination}`"

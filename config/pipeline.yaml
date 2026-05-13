@@ -1,30 +1,21 @@
 _defaults:
   schema: public
-  delimiter: ;
+  delimiter: ','
   crear_tabla_si_no_existe: true
   truncate_before_load: true
   active: true
 task:
-- name: Carga cliente
-  file: data/input/cliente.csv
-  delimiter: ;
+- name: Carga taxi
+  file: /home/daniel/Documentos/yellow_tripdata_2015-01.csv
+  delimiter: ','
   encoding: utf8
-  table_destination: cliente
-  crear_tabla_si_no_existe: true
-  truncate_before_load: true
-  schema: public
-  active: true
-- name: Carga oficina
-  file: data/input/oficinas.csv
-  delimiter: ;
-  encoding: utf8
-  table_destination: oficina
+  table_destination: taxi
   crear_tabla_si_no_existe: true
   truncate_before_load: true
   schema: public
   active: true
 - name: Carga producto
-  file: data/input/productos.csv
+  file: /home/daniel/Documentos/productos.csv
   delimiter: ;
   encoding: utf8
   table_destination: producto
@@ -32,11 +23,20 @@ task:
   truncate_before_load: true
   schema: public
   active: true
-- name: Carga taxi
-  file: data/input/tripdata_2015-01.csv
-  delimiter: ','
+- name: Carga oficina
+  file: /home/daniel/Documentos/oficinas.csv
+  delimiter: ;
   encoding: utf8
-  table_destination: taxi
+  table_destination: oficina
+  crear_tabla_si_no_existe: true
+  truncate_before_load: true
+  schema: public
+  active: true
+- name: Carga cliente
+  file: /home/daniel/Documentos/cliente.csv
+  delimiter: ;
+  encoding: utf8
+  table_destination: cliente
   crear_tabla_si_no_existe: true
   truncate_before_load: true
   schema: public
