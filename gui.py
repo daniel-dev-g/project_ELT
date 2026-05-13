@@ -735,7 +735,7 @@ async def main(page: ft.Page):
     def build_task(t: dict) -> dict:
         return {
             "name":                    f"Carga {t['f_table'].value.strip() or 'sin nombre'}",
-            "file":                    t["file"],
+            "file":                    t["file"].replace("\\", "/"),
             "delimiter":               t["delim_dd"].value,
             "encoding":                "utf8",
             "table_destination":       t["f_table"].value.strip(),

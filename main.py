@@ -156,7 +156,11 @@ def _run_tasks(
         resolved_schema = (
             task['schema'] if default_schema is None else default_schema
         )
-        resolved_task = {**task, 'schema': resolved_schema}
+        resolved_task = {
+            **task,
+            'schema': resolved_schema,
+            'file':   task.get('file', '').replace('\\', '/'),
+        }
         try:
             validate_schema_exists(
                 db_adapter.engine, resolved_task['schema'], db_cfg['db_engine']
