@@ -254,7 +254,11 @@ La interfaz permite:
 - Ejecutar la carga y ver el resultado en pantalla
 - Abrir el dashboard HTML de la ejecución con un clic
 
-![GUI](screenshot.png)
+![Conexión](screenshot/login.png)
+
+![Pipeline](screenshot/pipeline.png)
+
+![Dashboard](screenshot/screenshot.png)
 
 ---
 
