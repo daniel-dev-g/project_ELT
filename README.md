@@ -324,7 +324,7 @@ Todos los outputs comparten el mismo `execution_id` para trazabilidad completa.
 
 | Decisión | Razón |
 |---|---|
-| Carga masiva nativa en lugar de ORM | Rendimiento — la BD lee directo del disco sin pasar datos por Python |
+| Carga masiva nativa en lugar de Python | Rendimiento — la BD lee directo del disco sin pasar datos por memoria |
 | Configuración YAML | Simplicidad y reproducibilidad sin tocar código |
 | `execution_id` por ejecución | Trazabilidad completa entre logs, dashboard y técnico |
 | `bulk_path_map` | Desacopla la ruta de Python de la ruta de la BD en Docker |
