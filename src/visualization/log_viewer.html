@@ -818,7 +818,7 @@ body::before {
         <div class="timeline-wrap"><div class="section-header"><div class="section-title">Event Timeline</div><span id="timeline-range" style="font-size:12px;"></span></div><div class="timeline-track" id="timeline-track"></div></div>
         <div class="section-header"><div class="section-title">Event Log</div><div><button class="filter-btn" onclick="expandAll()">Expand All</button><button class="filter-btn" onclick="collapseAll()" style="margin-left:6px;">Collapse</button></div></div>
         <div class="search-wrap"><span class="search-icon">⌕</span><input class="search-input" id="search-input" placeholder="Buscar archivo, ruta, tabla..." oninput="applyFilters()"></div>
-        <div class="event-table"><table class="pipeline-table"><colgroup><col style="width:180px"><col style="width:160px"><col><col style="width:100px"><col style="width:100px"><col style="width:85px"><col style="width:36px"></colgroup><thead><tr class="event-table-header"><th>Execution ID</th><th>Archivo / Evento</th><th>Detalle</th><th>En archivo</th><th>Cargados</th><th>Duración</th><th></th></tr></thead><tbody id="events-body"></tbody></table><div class="status-bar"><div class="status-dot green" id="status-dot"></div><span id="status-text">Ready</span><span style="margin-left:auto" id="status-count"></span></div></div>
+        <div class="event-table"><table class="pipeline-table"><colgroup><col style="width:120px"><col style="width:170px"><col><col style="width:130px"><col style="width:130px"><col style="width:110px"><col style="width:36px"></colgroup><thead><tr class="event-table-header"><th>Exec ID</th><th>Archivo</th><th>Detalle</th><th>Filas CSV</th><th>Cargadas</th><th>Tiempo</th><th></th></tr></thead><tbody id="events-body"></tbody></table><div class="status-bar"><div class="status-dot green" id="status-dot"></div><span id="status-text">Ready</span><span style="margin-left:auto" id="status-count"></span></div></div>
     </main>
 </div>
 <script>
@@ -981,10 +981,11 @@ body::before {
 
     function renderFlat(g){
         const d = g.event.detalles || {};
-        const execId = d.execution_id ? d.execution_id : '—';
+        const execId      = d.execution_id ? d.execution_id : '—';
+        const execIdShort = d.execution_id ? d.execution_id.slice(0,8)+'…' : '—';
         const time   = g.event.timestamp.split('T')[1]?.slice(0,8) || '';
         return `<div class="event-row event-row--flat">
-            <span class="event-exec-id" title="${d.execution_id||''}">${execId}</span>
+            <span class="event-exec-id" title="${d.execution_id||''}">${execIdShort}</span>
             <span><span class="event-badge badge-pipeline_start">${g.event.evento}</span></span>
             <span class="event-meta">${time}</span>
             <span class="event-meta">—</span><span class="event-meta">—</span><span class="event-meta">—</span><span></span>
@@ -992,7 +993,8 @@ body::before {
     }
 
     function renderFile(g, gi){
-        const execId     = g.execId || '—';
+        const execId      = g.execId || '—';
+        const execIdShort = g.execId ? g.execId.slice(0,8)+'…' : '—';
         const rowsFile   = g.rowsInFile   != null ? g.rowsInFile.toLocaleString()   : '—';
         const rowsLoaded = g.rowsInserted != null ? g.rowsInserted.toLocaleString() : '—';
         const dur        = g.duration     != null ? g.duration+'s' : '—';
@@ -1022,7 +1024,7 @@ body::before {
         }).join('');
 
         return `<tr class="event-row ${isExp?'expanded':''} ${rowBorder}" id="frow-${gi}" onclick="toggleFile(${gi})">
-            <td class="event-exec-id" title="${g.execId||''}">${execId}</td>
+            <td class="event-exec-id" title="${g.execId||''}">${execIdShort}</td>
             <td class="event-filename" title="${g.filename}">${g.filename}</td>
             <td class="event-path" title="${pathTitle}">${pathDisplay}</td>
             <td class="event-meta">${rowsFile}</td>
@@ -1036,8 +1038,9 @@ body::before {
     }
 
     function renderEnd(g, gi){
-        const d      = g.event.detalles || {};
-        const execId = d.execution_id ? d.execution_id : '—';
+        const d           = g.event.detalles || {};
+        const execId      = d.execution_id ? d.execution_id : '—';
+        const execIdShort = d.execution_id ? d.execution_id.slice(0,8)+'…' : '—';
         const isExp  = expandedRows.has('end'+gi);
         let col3='—', col4='—', col5='—', col6='—';
         if(g.event.evento==='pipeline_summary'){
@@ -1062,7 +1065,7 @@ body::before {
         const rowMod = (isComplete || isFailed) ? (hasErr ? 'event-row--err' : 'event-row--ok') : '';
         const badgeClass = (isComplete || isFailed) ? (hasErr ? 'badge-complete-err' : 'badge-complete-ok') : bc(g.event.evento);
         return `<tr class="event-row ${isExp?'expanded':''} ${rowMod}" id="frow-end${gi}" onclick="toggleEnd(${gi})">
-            <td class="event-exec-id" title="${d.execution_id||''}">${execId}</td>
+            <td class="event-exec-id" title="${d.execution_id||''}">${execIdShort}</td>
             <td><span class="event-badge ${badgeClass}">${g.event.evento}</span></td>
             <td class="event-meta">${col3}</td>
             <td class="event-meta">${col4}</td>
