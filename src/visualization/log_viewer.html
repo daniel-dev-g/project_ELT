@@ -151,7 +151,7 @@ body::before {
 /* layout grid */
 .layout {
     display: grid;
-    grid-template-columns: 280px 1fr;
+    grid-template-columns: 200px 1fr;
     min-height: calc(100vh - 64px);
 }
 
@@ -239,7 +239,7 @@ body::before {
 
 /* main area */
 .main {
-    padding: 32px 24px;
+    padding: 32px 36px;
     background: radial-gradient(ellipse at 20% 30%, rgba(59, 130, 246, 0.02), transparent);
 }
 
@@ -818,7 +818,7 @@ body::before {
         <div class="timeline-wrap"><div class="section-header"><div class="section-title">Event Timeline</div><span id="timeline-range" style="font-size:12px;"></span></div><div class="timeline-track" id="timeline-track"></div></div>
         <div class="section-header"><div class="section-title">Event Log</div><div><button class="filter-btn" onclick="expandAll()">Expand All</button><button class="filter-btn" onclick="collapseAll()" style="margin-left:6px;">Collapse</button></div></div>
         <div class="search-wrap"><span class="search-icon">⌕</span><input class="search-input" id="search-input" placeholder="Buscar archivo, ruta, tabla..." oninput="applyFilters()"></div>
-        <div class="event-table"><table class="pipeline-table"><colgroup><col style="width:120px"><col style="width:250px"><col><col style="width:140px"><col style="width:140px"><col style="width:100px"><col style="width:36px"></colgroup><thead><tr class="event-table-header"><th>Exec ID</th><th>Archivo</th><th>Detalle</th><th>Filas CSV</th><th>Cargadas</th><th>Tiempo</th><th></th></tr></thead><tbody id="events-body"></tbody></table><div class="status-bar"><div class="status-dot green" id="status-dot"></div><span id="status-text">Ready</span><span style="margin-left:auto" id="status-count"></span></div></div>
+        <div class="event-table"><table class="pipeline-table"><colgroup><col style="width:120px"><col style="width:300px"><col><col style="width:150px"><col style="width:150px"><col style="width:110px"><col style="width:36px"></colgroup><thead><tr class="event-table-header"><th>Exec ID</th><th>Archivo</th><th>Detalle</th><th>Filas CSV</th><th>Cargadas</th><th>Tiempo</th><th></th></tr></thead><tbody id="events-body"></tbody></table><div class="status-bar"><div class="status-dot green" id="status-dot"></div><span id="status-text">Ready</span><span style="margin-left:auto" id="status-count"></span></div></div>
     </main>
 </div>
 <script>
